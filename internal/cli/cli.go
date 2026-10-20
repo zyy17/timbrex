@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/zyy17/timbrex/internal/parse"
 	"github.com/zyy17/timbrex/internal/providers"
 	_ "github.com/zyy17/timbrex/internal/providers/stub"
 )
@@ -17,6 +19,17 @@ const version = "0.1.0"
 // Run parses args and runs a command.
 func Run(args []string) error {
 	return run(args, os.Stdin, os.Stdout, os.Stderr)
+}
+
+// FormatError is the stderr line for a failed command.
+// A parse error already starts with file:line:col, so it is not prefixed.
+// Other failures get an "error:" prefix. The process still exits 1.
+func FormatError(err error) string {
+	var pe *parse.Error
+	if errors.As(err, &pe) {
+		return pe.Error()
+	}
+	return "error: " + err.Error()
 }
 
 func run(args []string, in io.Reader, out, errOut io.Writer) error {

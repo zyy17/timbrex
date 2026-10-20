@@ -8,6 +8,31 @@ import (
 	"testing"
 )
 
+func TestFormatErrorKeepsParseLocation(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "scene.tbx")
+	if err := os.WriteFile(path, []byte("Hello [slow\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := run([]string{"check", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	got := FormatError(err)
+	if !strings.HasPrefix(got, path+":1:7: error[V012]:") {
+		t.Fatalf("format = %q", got)
+	}
+	bad := filepath.Join(dir, "batch.tbx")
+	if err := os.WriteFile(bad, []byte("[thoughtfully]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err = run([]string{"check", "--strict-tags", bad}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if FormatError(err) != "error: check failed" {
+		t.Fatalf("check = %q", FormatError(err))
+	}
+	missing := run([]string{"check", filepath.Join(dir, "missing.tbx")}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if !strings.HasPrefix(FormatError(missing), "error: ") {
+		t.Fatalf("missing = %q", FormatError(missing))
+	}
+}
+
 func TestVersion(t *testing.T) {
 	var out bytes.Buffer
 	if err := run([]string{"version"}, strings.NewReader(""), &out, &out); err != nil {
