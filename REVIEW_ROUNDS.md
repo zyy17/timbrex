@@ -61,4 +61,12 @@ Strict self-review of the M0 tip. P0 and P1 were fixed before the next round. P2
 - P0: 0. P1: 0
 - Checked: the path is lex, parse, check, lower, then a provider. The CLI does not reimplement the tag grammar. Go sources, comments, and CLI text stay English.
 
-Stopped after rounds 7 and 8: two consecutive clean rounds, different angles, no P0 or P1.
+Rounds 7 and 8 were clean. Review continues through round 20.
+
+## Round 9
+
+- Tip: `0055d16`
+- Angle: escape sequences and Unicode / CR-LF normalization in the lexer
+- P0: 0. P1: 1
+- Fixed: `]]` was always one literal `]`, so a nested tag that ended on the next `]` never closed (`[whisper|say [pause 1s]]`, `[whisper|[emph|hi]]`). `]]` stays a literal `]` in plain text and inside a single open tag. A deeper `]` closes that tag. A literal `]` inside the inner tag is `\]`. Regressions: `TestScanNestedCloseIsTwoBrackets`, `TestNestedSpansCloseTogether`.
+- Checked: BOM strip and CR/CRLF folding happen before lex; full-width brackets and colons stay text; `\[ \] \| \\ \:` and `[[` still fold; a lone `\` is one byte; fence bodies keep escaped brackets raw.
