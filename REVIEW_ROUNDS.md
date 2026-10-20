@@ -110,3 +110,11 @@ Rounds 7 and 8 were clean. Review continues through round 20.
 - P0: 0. P1: 1
 - Fixed: `main` prefixed every failure with `error:`, so a parse error was `error: scene.tbx:1:7: error[V012]: ...` and the location was no longer at the start of the line. Parse errors are printed as-is. `check failed` and other failures still use `error:`. Exit status stays 1 for any failure and 0 when the only findings are warnings or info. Regression: `TestFormatErrorKeepsParseLocation`.
 - Checked: V012 after front matter is line 4 column 7; a tag after a non-ASCII character uses a rune column; an inner unclosed tag points at that tag. Wording that differs from the SPEC sample (`unclosed tag` versus `unclosed span`) is left as P2.
+
+## Round 15
+
+- Tip: `81e9ee8`
+- Angle: fuzz and adversarial malformed scripts
+- P0: 0. P1: 0
+- Checked: `FuzzParse` ran about 124k inputs with no panic. Four thousand nested spans parse. A one-megabyte tag parses. Eighty thousand unclosed nested tags return V012. A modest YAML alias bomb returns immediately. Invalid UTF-8 does not spin. Regression: `FuzzParse`, `TestDeepNestAndHugeTagDoNotPanic`.
+- P2, not fixed: millions of nested tags could still exhaust the goroutine stack. No depth cap was added, because a few thousand nests already succeed and the spec states no limit.
