@@ -164,6 +164,29 @@ func TestCheckWarnsAndStillOk(t *testing.T) {
 	}
 }
 
+func TestSynthCheckFailureWritesNoWav(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad.tbx")
+	if err := os.WriteFile(path, []byte("[thoughtfully]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	wav := filepath.Join(dir, "bad.wav")
+	if err := os.WriteFile(wav, []byte("KEEP"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := run([]string{"synth", "--strict-tags", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "check failed") {
+		t.Fatalf("err = %v", err)
+	}
+	b, err := os.ReadFile(wav)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "KEEP" {
+		t.Fatalf("wav = %q", b)
+	}
+}
+
 func TestSynthUnknownProvider(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "hi.tbx")

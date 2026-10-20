@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"math"
 	"os"
+	"path/filepath"
 
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/providers"
@@ -84,5 +85,33 @@ func writeWAV(path string, pcm []int16, rate int) error {
 	for i, sample := range pcm {
 		binary.LittleEndian.PutUint16(data[44+2*i:], uint16(sample))
 	}
-	return os.WriteFile(path, data, 0o644)
+	// Write a sibling temp file and rename it into place. A failed write
+	// must not truncate an existing wav.
+	dir := filepath.Dir(path)
+	f, err := os.CreateTemp(dir, ".timbrex-*.partial")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	ok := false
+	defer func() {
+		if !ok {
+			_ = os.Remove(tmp)
+		}
+	}()
+	if _, err := f.Write(data); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp, 0o644); err != nil {
+		return err
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		return err
+	}
+	ok = true
+	return nil
 }

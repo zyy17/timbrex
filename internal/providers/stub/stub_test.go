@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/zyy17/timbrex/internal/ir"
@@ -33,5 +34,71 @@ func TestWritesWAV(t *testing.T) {
 	}
 	if len(b) < 44 || string(b[:4]) != "RIFF" || string(b[8:12]) != "WAVE" {
 		t.Fatalf("not a wav: %d bytes", len(b))
+	}
+}
+
+func TestOverwriteReplacesWav(t *testing.T) {
+	p, err := providers.Get("stub")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(t.TempDir(), "out.wav")
+	if err := os.WriteFile(out, []byte("KEEP-WAV"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Synthesize(context.Background(), &ir.Document{}, providers.Options{Out: out}); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(b) < 12 || string(b[:4]) != "RIFF" || string(b[8:12]) != "WAVE" {
+		t.Fatalf("not replaced: %q", b[:min(12, len(b))])
+	}
+}
+
+func TestOverwriteKeepsPreviousWavOnFailure(t *testing.T) {
+	p, err := providers.Get("stub")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	out := filepath.Join(dir, "out.wav")
+	const keep = "KEEP-WAV"
+	if err := os.WriteFile(out, []byte(keep), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var old syscall.Rlimit
+	if err := syscall.Getrlimit(syscall.RLIMIT_FSIZE, &old); err != nil {
+		t.Fatal(err)
+	}
+	lim := old
+	lim.Cur = 32
+	if err := syscall.Setrlimit(syscall.RLIMIT_FSIZE, &lim); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := syscall.Setrlimit(syscall.RLIMIT_FSIZE, &old); err != nil {
+			t.Errorf("restore rlimit: %v", err)
+		}
+	}()
+	_, err = p.Synthesize(context.Background(), &ir.Document{}, providers.Options{Out: out})
+	if err == nil {
+		t.Fatal("expected a failed write")
+	}
+	b, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != keep {
+		t.Fatalf("previous wav = %q", b)
+	}
+	matches, err := filepath.Glob(filepath.Join(dir, ".timbrex-*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("partial files = %v", matches)
 	}
 }
