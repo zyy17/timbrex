@@ -84,6 +84,41 @@ func TestCheckStrict(t *testing.T) {
 	}
 }
 
+func TestFrontMatterStrictAndProvider(t *testing.T) {
+	dir := t.TempDir()
+	strictPath := filepath.Join(dir, "strict.tbx")
+	body := "---\nstrict_tags: true\n---\n[thoughtfully]\n"
+	if err := os.WriteFile(strictPath, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := run([]string{"check", strictPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "check failed") {
+		t.Fatalf("strict err = %v", err)
+	}
+	err = run([]string{"check", "--no-strict-tags", strictPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("flag overrides front matter: %v", err)
+	}
+
+	provPath := filepath.Join(dir, "prov.tbx")
+	if err := os.WriteFile(provPath, []byte("---\nprovider: missing\n---\nHello\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err = run([]string{"synth", provPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "unknown provider") {
+		t.Fatalf("provider err = %v", err)
+	}
+	wav := filepath.Join(dir, "prov.wav")
+	var out bytes.Buffer
+	err = run([]string{"synth", "--provider", "stub", provPath}, strings.NewReader(""), &out, &bytes.Buffer{})
+	if err != nil || strings.TrimSpace(out.String()) != wav {
+		t.Fatalf("err=%v out=%q", err, out.String())
+	}
+	if _, err := os.Stat(wav); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSynthUnknownProvider(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "hi.tbx")
