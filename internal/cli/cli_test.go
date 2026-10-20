@@ -210,6 +210,43 @@ func TestSynthCanceledContextWritesNoWav(t *testing.T) {
 	}
 }
 
+func TestStrictCastAutoCheckThenSynth(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "scene.tbx")
+	body := "---\ncast: auto\n---\nlin: [act \"quietly\"] hello\nchen: [thoughtfully]\nlin: again\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{"check", "--strict-tags", path}, strings.NewReader(""), &stdout, &stderr)
+	if err == nil || !strings.Contains(err.Error(), "check failed") {
+		t.Fatalf("err = %v", err)
+	}
+	if strings.TrimSpace(stdout.String()) != "" {
+		t.Fatalf("stdout = %q", stdout.String())
+	}
+	msg := stderr.String()
+	if !strings.Contains(msg, "error[V041]") || !strings.Contains(msg, "thoughtfully") {
+		t.Fatalf("stderr = %q", msg)
+	}
+	if strings.Contains(msg, "error[V041]") && strings.Contains(msg, "quietly") {
+		t.Fatalf("explicit act rejected: %q", msg)
+	}
+	lin := strings.Count(msg, `cast auto recognized speaker "lin"`)
+	chen := strings.Count(msg, `cast auto recognized speaker "chen"`)
+	if lin != 1 || chen != 1 {
+		t.Fatalf("speakers lin=%d chen=%d stderr=%q", lin, chen, msg)
+	}
+	wav := filepath.Join(dir, "scene.wav")
+	err = run(context.Background(), []string{"synth", "--strict-tags", path, "-o", wav}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "check failed") {
+		t.Fatalf("synth err = %v", err)
+	}
+	if _, statErr := os.Stat(wav); !os.IsNotExist(statErr) {
+		t.Fatalf("wav stat = %v", statErr)
+	}
+}
+
 func TestSynthUnknownProvider(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "hi.tbx")
