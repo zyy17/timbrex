@@ -215,6 +215,30 @@ func TestQuotedArgHidesMarkup(t *testing.T) {
 	}
 }
 
+func TestLoneBackslashIsText(t *testing.T) {
+	script, err := Parse("t.tbx", "hello\\\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Blocks[0].Nodes[0].Text != `hello\` {
+		t.Fatalf("text = %q", script.Blocks[0].Nodes[0].Text)
+	}
+	script, err = Parse("t.tbx", "say \\q there\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Blocks[0].Nodes[0].Text != `say \q there` {
+		t.Fatalf("text = %q", script.Blocks[0].Nodes[0].Text)
+	}
+	script, err = Parse("t.tbx", "a\\\\b\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Blocks[0].Nodes[0].Text != `a\b` {
+		t.Fatalf("text = %q", script.Blocks[0].Nodes[0].Text)
+	}
+}
+
 func TestUnclosedQuote(t *testing.T) {
 	_, err := Parse("t.tbx", "[act \"hi]\n")
 	if err == nil || !strings.Contains(err.Error(), "unclosed quote") {

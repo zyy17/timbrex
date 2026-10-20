@@ -113,7 +113,9 @@ func (s *scanner) next() (Token, error) {
 			s.skip(2)
 			return Token{Kind: Text, Lit: string(n), Line: line, Col: col}, nil
 		}
-		return s.text(), nil
+		// A lone backslash is literal. text() stops before "\", so this byte
+		// must be consumed here or Scan spins on the same position.
+		return s.emit(Text, `\`, 1), nil
 	default:
 		return s.text(), nil
 	}
