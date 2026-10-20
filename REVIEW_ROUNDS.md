@@ -118,3 +118,43 @@ Rounds 7 and 8 were clean. Review continues through round 20.
 - P0: 0. P1: 0
 - Checked: `FuzzParse` ran about 124k inputs with no panic. Four thousand nested spans parse. A one-megabyte tag parses. Eighty thousand unclosed nested tags return V012. A modest YAML alias bomb returns immediately. Invalid UTF-8 does not spin. Regression: `FuzzParse`, `TestDeepNestAndHugeTagDoNotPanic`.
 - P2, not fixed: millions of nested tags could still exhaust the goroutine stack. No depth cap was added, because a few thousand nests already succeed and the spec states no limit.
+
+## Round 16
+
+- Tip: `7abefed`
+- Angle: synth temp files, partial WAV on failure, overwrite
+- P0: 0. P1: 1
+- Fixed: the stub used `os.WriteFile`, which truncates the destination before the bytes are written. A failed write left a partial RIFF header in place of a previous wav. It now writes a sibling temp file and renames it over the destination only after the write and close succeed. A failed write removes the temp file. Regressions: `TestOverwriteKeepsPreviousWavOnFailure`, `TestOverwriteReplacesWav`, `TestSynthCheckFailureWritesNoWav`.
+- Checked: a failed check does not call the provider, so an existing wav is left unchanged.
+
+## Round 17
+
+- Tip: `2c45d2e`
+- Angle: version text, cancelable CLI context, duplicate provider ids
+- P0: 0. P1: 3
+- Fixed: `timbrex version` and `timbrex --version` both print `timbrex 0.1.0`. `Run` uses `signal.NotifyContext` for interrupt and SIGTERM, and synth passes `cmd.Context()` into the provider. Tests call `run` with their own context so they do not install a process-wide handler. `Register` panics on an empty or duplicate id instead of overwriting. Regressions: `TestVersion`, `TestSynthCanceledContextWritesNoWav`, `TestRegisterDuplicatePanics`, `TestRegisterEmptyIDPanics`.
+
+## Round 18
+
+- Tip: `2c45d2e` (no code change)
+- Angle: package API readability and dead code
+- P0: 0. P1: 0
+- Checked: `peekAhead` is used by blank-line skipping. Production functions are referenced. `Options.Path` is part of the provider contract; the stub does not read it. `Front.Lang` is kept on the front-matter struct and is not used by lowering. No unused code was removed.
+
+## Round 19
+
+- Tip: `7e5dd41`
+- Angle: check then synth, strict tags with cast auto, bilingual editor install
+- P0: 0. P1: 0
+- Checked: `--strict-tags` with `cast: auto` lists each speaker once, rejects `[thoughtfully]` with V041, keeps `[act "quietly"]`, and `synth` writes no wav. Regression: `TestStrictCastAutoCheckThenSynth`. The English and Chinese README install steps match: `editors/vscode`, `cursor` or `code --install-extension .`, reload, language id `timbrex`, extensions `.tbx` and `.timbrex`.
+
+## Round 20
+
+- Tip: `05a19ec`
+- Angle: final sweep against SPEC v0.3.4
+- P0: 0. P1: 1
+- Fixed: a fence info string must start with an ASCII identifier. A fence whose info is `123` is now a parse error. `ssml azure` is unchanged. Regression: `TestFenceInfoMustStartWithIdent`.
+- Left out of M0, recorded earlier: `timbrex fix` / `fmt`, W101 W102 W104 I060, tbxset expand, `timbrex.yaml` loading, per-tag parameter schemas, provider namespaces, tree-sitter, and real provider APIs.
+- P2 still open: an ASCII id plus a full-width colon is narration without W103; a speaker line with leading spaces stays narration; V012 text says `unclosed tag`; very deep nesting has no stack cap; the stub ignores `Options.Path`.
+
+Rounds 9 through 20 are on main. `make lint` and `go test ./...` were green after each fix.
