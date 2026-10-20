@@ -42,8 +42,8 @@ Requires Go 1.27.
 
 ```sh
 make build   # writes ./timbrex
-make test
-make lint
+make test    # builds ./timbrex, then runs the tests
+make lint    # golangci-lint v2.14.0, same as CI
 make fmt
 make tidy    # fails if go.mod or go.sum would change
 ```

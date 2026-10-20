@@ -32,8 +32,8 @@ make build
 
 ```sh
 make build   # 生成 ./timbrex
-make test
-make lint
+make test    # 先生成 ./timbrex，再跑测试
+make lint    # golangci-lint v2.14.0，与 CI 相同
 make fmt
 make tidy    # go.mod 或 go.sum 会变化时失败
 ```

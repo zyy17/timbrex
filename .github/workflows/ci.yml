@@ -18,7 +18,7 @@ jobs:
         with:
           go-version-file: go.mod
       - run: make tidy
-      - run: go test ./...
+      - run: make test
 
   lint:
     runs-on: ubuntu-latest
@@ -30,4 +30,5 @@ jobs:
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.14.0
-          args: ./...
+          install-only: true
+      - run: make lint

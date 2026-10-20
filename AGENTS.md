@@ -36,7 +36,7 @@ Later packages, not in this tree yet: `internal/expand` (dataset templates), `in
 - Idiomatic Go: community naming, short functions, flat structs. Avoid deep nesting.
 - Teachability first. Prefer the smallest clear code. Do not pad scope.
 - Comments only on key paths (what the grammar freezes, what a provider must take from vendor docs). No narrating comments.
-- Pass `go test ./...` and `golangci-lint run ./...` (see `.golangci.yml` and `make lint`) before you claim done.
+- Pass `make test` and `make lint` before you claim done. `make test` builds `./timbrex` and runs `go test ./...`. `make lint` runs golangci-lint v2.14.0 and `golangci-lint fmt --diff`. CI uses the Go version in `go.mod` and that same linter.
 - Prefer a pattern that is already in the tree over a new abstraction.
 
 ## CLI
@@ -83,7 +83,7 @@ Out:
 ## Git
 
 - Atomic Conventional Commits (`feat`, `fix`, `docs`, `refactor`, `test`, `chore`). Clean messages. No emoji.
-- Self-test before push: `go test ./...` and `golangci-lint run ./...`.
+- Self-test before push: `make test` and `make lint`.
 - Do not commit secrets, `.env`, or API keys.
 
 ## When unsure
