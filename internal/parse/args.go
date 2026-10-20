@@ -108,6 +108,7 @@ func scanNumber(s string, i int) (string, string, int, bool) {
 	}
 	kind := "number"
 	// Longer suffixes win. "st" and "ms" must be tested before "s".
+	// A suffix counts only at a token boundary, so "10stone" stays one word.
 	switch {
 	case hasSuffix(s, i, "ms"):
 		i += 2
@@ -127,12 +128,24 @@ func scanNumber(s string, i int) (string, string, int, bool) {
 	case hasSuffix(s, i, "s"):
 		i++
 		kind = "duration"
+	default:
+		if i < len(s) && isValueCont(s[i]) {
+			return "", "", 0, false
+		}
 	}
 	return s[start:i], kind, i, true
 }
 
 func hasSuffix(s string, i int, suf string) bool {
-	return i+len(suf) <= len(s) && s[i:i+len(suf)] == suf
+	end := i + len(suf)
+	if end > len(s) || s[i:end] != suf {
+		return false
+	}
+	return end == len(s) || !isValueCont(s[end])
+}
+
+func isValueCont(c byte) bool {
+	return isLetter(c) || isDigit(c) || c == '_' || c == '-' || c == '.'
 }
 
 func scanWord(s string, i int) (string, int) {

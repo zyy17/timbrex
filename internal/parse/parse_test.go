@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -130,6 +131,53 @@ func TestTagArguments(t *testing.T) {
 	if tags[0].Args[0].Raw != "500ms" {
 		t.Fatalf("pause = %+v", tags[0].Args)
 	}
+}
+
+func TestNumberSuffixBoundary(t *testing.T) {
+	script, err := Parse("t.tbx", "[pause 10stone] [pitch +2st] [wait 3minutes]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tags := tagArgs(script.Blocks[0].Nodes)
+	if tags[0][0] != "word:10stone" {
+		t.Fatalf("10stone = %v", tags[0])
+	}
+	if tags[1][0] != "semitone:+2st" {
+		t.Fatalf("+2st = %v", tags[1])
+	}
+	if tags[2][0] != "word:3minutes" {
+		t.Fatalf("3minutes = %v", tags[2])
+	}
+}
+
+func TestLexErrorKeepsFileLine(t *testing.T) {
+	src := "---\ntimbrex: 1\n---\n```ssml azure\n<speak>\n"
+	_, err := Parse("scene.tbx", src)
+	if err == nil {
+		t.Fatal("expected unclosed fence")
+	}
+	var pe *Error
+	if !errors.As(err, &pe) {
+		t.Fatalf("err = %T %v", err, err)
+	}
+	if pe.File != "scene.tbx" || pe.Line != 4 || !strings.Contains(pe.Msg, "unclosed fence") {
+		t.Fatalf("err = %+v", pe)
+	}
+}
+
+func tagArgs(nodes []ast.Node) [][]string {
+	var out [][]string
+	for _, node := range nodes {
+		if node.Kind != ast.Tag {
+			continue
+		}
+		var args []string
+		for _, arg := range node.Args {
+			args = append(args, arg.Kind+":"+arg.Raw)
+		}
+		out = append(out, args)
+	}
+	return out
 }
 
 func TestUnclosedQuote(t *testing.T) {

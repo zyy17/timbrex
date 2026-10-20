@@ -34,3 +34,32 @@ func TestLowerHello(t *testing.T) {
 		t.Fatalf("event = %+v", doc.Utterances[0].Nodes[0])
 	}
 }
+
+func TestLowerSceneFenceAndArgs(t *testing.T) {
+	src := "" +
+		"---\nprovider: stub\n---\n" +
+		"// dropped\n" +
+		"[bgm rain.wav vol=-22dB]\n" +
+		"She waited [act \"holding back tears\"]\n" +
+		"```ssml azure\n<speak>hi</speak>\n```\n"
+	script, err := parse.Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := Script(script)
+	if doc.Provider != "stub" || len(doc.Utterances) != 3 {
+		t.Fatalf("doc = %+v", doc)
+	}
+	scene := doc.Utterances[0].Nodes
+	if len(scene) != 1 || scene[0].Kind != ir.Event || scene[0].Scope != "scene" || scene[0].Args != "rain.wav vol=-22dB" {
+		t.Fatalf("scene = %+v", scene)
+	}
+	act := doc.Utterances[1].Nodes
+	if doc.Utterances[1].Speaker != "narrator" || len(act) != 2 || act[1].Kind != ir.State || act[1].Scope != "turn" || act[1].Args != `"holding back tears"` {
+		t.Fatalf("act = %+v speaker %q", act, doc.Utterances[1].Speaker)
+	}
+	raw := doc.Utterances[2].Nodes
+	if len(raw) != 1 || raw[0].Kind != ir.Raw || raw[0].Name != "ssml azure" || raw[0].Text != "<speak>hi</speak>\n" {
+		t.Fatalf("raw = %+v", raw)
+	}
+}

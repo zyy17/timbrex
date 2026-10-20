@@ -104,7 +104,8 @@ repository:
           "1": {name: entity.other.attribute-name.tbx}
           "2": {name: punctuation.separator.key-value.tbx}
       # Longer suffixes are listed before "s" (st, ms, min).
-      - match: '[+-]?(?:\d+\.\d+|\d+)(?:ms|min|st|dB|%|s)?'
+      # The suffix must end the token, so "10stone" is not a semitone.
+      - match: '[+-]?(?:\d+\.\d+|\d+)(?:ms|min|st|dB|%|s)?(?![A-Za-z0-9_.-])'
         name: constant.numeric.tbx
       - match: '[A-Za-z_][A-Za-z0-9_.-]*'
         name: variable.parameter.tbx
