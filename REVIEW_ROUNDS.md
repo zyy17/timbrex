@@ -32,4 +32,33 @@ Strict self-review of the M0 tip. P0 and P1 were fixed before the next round. P2
 - Checked: `Synthesize` takes a context, a document, and an output path; unknown ids error; the stub writes a WAV only after `ctx.Err()` is nil; a failed check does not call the provider. One stub implementation is registered from `init`.
 - P2, not fixed: the CLI passes `context.Background()`, and `Register` overwrites a duplicate id.
 
-Stopped after rounds 3 and 4: two consecutive clean rounds, different angles, no P0 or P1.
+## Round 5
+
+- Tip: `96129c9`
+- Angle: vocabulary check against SPEC tag placement
+- P0: 0. P1: 2
+- Fixed: `overlap` and `gap` are rejected in narration, including when they lead the paragraph. A closing tag reports V013 only, so `[/pinyin]` does not also say that pinyin needs content. Regressions: `TestNarrationRejectsLeadingTurnTag`, `TestClosingWrapReportsOnlyV013`.
+
+## Round 6
+
+- Tip: `0f61a65`
+- Angle: docs and code drift
+- P0: 0. P1: 1
+- Fixed: SPEC says `timbrex check` lists the speakers `cast: auto` recognized. It now emits one info per id and still exits successfully. Regression: `TestCastAutoListsSpeakers`. AGENTS.md now calls `.timbrex` an alias, matching the spec and the editor contribution.
+
+## Round 7
+
+- Tip: `0f61a65` (no code change)
+- Angle: concurrency and cancellation
+- P0: 0. P1: 0
+- Checked: vocabulary and the provider registry are written from `init` before requests. `Parse` and `Apply` do not share mutable maps across calls. The stub checks `ctx.Err` before it writes a file.
+- P2, not fixed: the CLI still passes `context.Background()`, and `Register` overwrites a duplicate id.
+
+## Round 8
+
+- Tip: `0f61a65` (no code change)
+- Angle: module layout and readability
+- P0: 0. P1: 0
+- Checked: the path is lex, parse, check, lower, then a provider. The CLI does not reimplement the tag grammar. Go sources, comments, and CLI text stay English.
+
+Stopped after rounds 7 and 8: two consecutive clean rounds, different angles, no P0 or P1.
