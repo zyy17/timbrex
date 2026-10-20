@@ -102,3 +102,11 @@ Rounds 7 and 8 were clean. Review continues through round 20.
 - P0: 0. P1: 2
 - Fixed: `go test` never compiled package main, and `golangci-lint fmt` was configured but not run. `make test` now builds `./timbrex` before the tests. `make lint` runs `golangci-lint run` and `golangci-lint fmt --diff`. CI calls `make test` and `make lint` with Go from `go.mod` (1.27) and golangci-lint v2.14.0. Regression: `TestCIMatchesMakefile`.
 - Checked: `go mod tidy -diff` is clean. README and AGENTS name the same Go and linter versions.
+
+## Round 14
+
+- Tip: `992f5c1`
+- Angle: error message quality and exit codes
+- P0: 0. P1: 1
+- Fixed: `main` prefixed every failure with `error:`, so a parse error was `error: scene.tbx:1:7: error[V012]: ...` and the location was no longer at the start of the line. Parse errors are printed as-is. `check failed` and other failures still use `error:`. Exit status stays 1 for any failure and 0 when the only findings are warnings or info. Regression: `TestFormatErrorKeepsParseLocation`.
+- Checked: V012 after front matter is line 4 column 7; a tag after a non-ASCII character uses a rune column; an inner unclosed tag points at that tag. Wording that differs from the SPEC sample (`unclosed tag` versus `unclosed span`) is left as P2.
