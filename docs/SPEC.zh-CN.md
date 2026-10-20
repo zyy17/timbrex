@@ -552,11 +552,12 @@ scene.tbx:12:9  error[V012]   unclosed span: [slow|谁都没有说话
 scene.tbx:13:5  error[V013]   [/whisper] is not valid; spans use [whisper|…] (fixable)
 scene.tbx:15:1  warning[W103] "小林：" looks like speaker lin (display name 小林); treated as narration (fixable)
 scene.tbx:16:7  warning[W101] full-width 【笑】 is plain text; did you mean [laugh]? (fixable)
-scene.tbx:18:14 warning[W040] unknown [laff] used as free-form acting; did you mean [laugh]?
-emo.tbxset.yaml:template:21 error[V041] unregistered tag [laff] (strict_tags); did you mean [laugh]?
-                              for free-form acting write [act "laff"]   (affects 3,000 items)
-scene.tbx:19:3  info[I050]    non-English acting "强忍着眼泪"; elevenlabs prefers English (act_translate=lexicon: no match, sent as-is)
+scene.tbx:18:14 warning[W040] unknown [paus] used as free-form acting; did you mean [pause]?
+emo.tbxset.yaml:template:21 error[V041] unregistered tag [paus]; did you mean [pause]? for free-form acting write [act "paus"]
+scene.tbx:19:3  info[I050]    non-ASCII free-form acting
 ```
+
+建议只匹配编辑距离不超过 2 的一个已注册名。`[paus]` 建议 `[pause]`。`[laff]` 与 `[laugh]` 的距离是 3，因此不附建议。M0 的 I050 文本是 `non-ASCII free-form acting`，不翻译这句自由表演。
 
 ---
 

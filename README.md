@@ -50,7 +50,7 @@ make tidy    # fails if go.mod or go.sum would change
 
 `timbrex version` prints the tool version. `timbrex synth --provider` selects a registered provider. Front matter `provider:` is the fallback when the flag is omitted. The default is `stub`.
 
-`timbrex check --strict-tags` is the batch rule: an unregistered `[tag]` is an error, and `[act "…"]` is the explicit free-form form. `--no-strict-tags` forces the single-script rule. With neither flag, front matter `strict_tags` applies, and a normal script defaults to allowing free-form tags.
+`timbrex check --strict-tags` is the batch rule: an unregistered `[tag]` is error V041, and `[act "…"]` is the explicit free-form form. `--no-strict-tags` forces the single-script rule. With neither flag, front matter `strict_tags` applies, and a normal script defaults to allowing free-form tags. A single unknown word within edit distance 2 of a standard tag is warning W040, and the command still succeeds. Non-ASCII free-form acting is info I050. `[laff]` is distance 3 from `[laugh]`, so it is reported with no suggestion. `[paus]` suggests `[pause]`.
 
 ## Editor highlighting
 

@@ -2,12 +2,14 @@
 //
 // The parser stays structural. Strict mode, closing tags, and note words
 // are decided here so a batch run can reject an unregistered tag.
+// A near miss in a single script is warning W040. Non-ASCII acting text is info I050.
 package check
 
 import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/zyy17/timbrex/internal/ast"
 	"github.com/zyy17/timbrex/internal/vocab"
@@ -93,6 +95,10 @@ func turnTag(n *ast.Node) bool {
 
 func (c *checker) one(n *ast.Node, atStart, scene bool) {
 	c.resolve(n)
+	// Accepted acting only. A strict-mode V041 already explains the tag.
+	if n.Name == "act" && (!n.Free || !c.strict) && hasNonASCII(actingText(n)) {
+		c.diag(n, "info", "I050", "non-ASCII free-form acting")
+	}
 	if n.Span {
 		c.walk(n.Content, false, false)
 	}
@@ -143,6 +149,10 @@ func (c *checker) free(n *ast.Node, raw string) {
 	n.Note = raw
 	n.Args = nil
 	if !c.strict {
+		// One unknown word within distance 2. A phrase is free-form with no warning.
+		if s := suggest(raw); s != "" {
+			c.diag(n, "warning", "W040", "unknown ["+raw+"] used as free-form acting; did you mean ["+s+"]?")
+		}
 		return
 	}
 	msg := `unregistered tag "` + raw + `"; for free-form acting write [act "` + raw + `"]`
@@ -166,14 +176,44 @@ func splitNote(args []ast.Arg) ([]ast.Arg, string) {
 }
 
 func (c *checker) error(n *ast.Node, code, msg string) {
+	c.diag(n, "error", code, msg)
+}
+
+func (c *checker) diag(n *ast.Node, severity, code, msg string) {
 	c.diags = append(c.diags, Diag{
 		File:     c.file,
 		Line:     n.Line,
 		Col:      n.Col,
-		Severity: "error",
+		Severity: severity,
 		Code:     code,
 		Msg:      msg,
 	})
+}
+
+func actingText(n *ast.Node) string {
+	if n.Free {
+		return n.Note
+	}
+	text := n.Note
+	for _, arg := range n.Args {
+		if arg.Kind != "quoted" {
+			continue
+		}
+		if text != "" {
+			text += " "
+		}
+		text += arg.Raw
+	}
+	return text
+}
+
+func hasNonASCII(s string) bool {
+	for _, r := range s {
+		if r > unicode.MaxASCII {
+			return true
+		}
+	}
+	return false
 }
 
 func closing(raw string) (string, bool) {
@@ -198,6 +238,7 @@ func closing(raw string) (string, bool) {
 
 // suggest returns a registered name within Levenshtein distance 2.
 // Phrases are not matched; only a single unknown word is.
+// [laff] is distance 3 from [laugh], so it is reported with no suggestion.
 func suggest(raw string) string {
 	if strings.ContainsAny(raw, " \t") || strings.Contains(raw, ":") {
 		return ""

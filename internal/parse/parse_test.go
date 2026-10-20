@@ -266,6 +266,135 @@ func TestFullWidthIsText(t *testing.T) {
 	}
 }
 
+func TestEscapedPipeIsNotSpan(t *testing.T) {
+	script, err := Parse("t.tbx", "Say [whisper\\|hi] now\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tag := script.Blocks[0].Nodes[1]
+	if tag.Span || tag.Raw != `whisper|hi` {
+		t.Fatalf("tag = %+v", tag)
+	}
+}
+
+func TestEscapedBracketInContent(t *testing.T) {
+	script, err := Parse("t.tbx", "[whisper|a\\]b]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tag := script.Blocks[0].Nodes[0]
+	if !tag.Span || tag.Content[0].Text != "a]b" {
+		t.Fatalf("tag = %+v", tag)
+	}
+}
+
+func TestNestedTag(t *testing.T) {
+	script, err := Parse("t.tbx", "[whisper|say [pause 1s] now]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	span := script.Blocks[0].Nodes[0]
+	if !span.Span || span.Name != "whisper" || len(span.Content) != 3 {
+		t.Fatalf("span = %+v", span)
+	}
+	pause := span.Content[1]
+	if pause.Name != "pause" || pause.Args[0].Raw != "1s" || pause.Args[0].Kind != "duration" {
+		t.Fatalf("pause = %+v", pause)
+	}
+}
+
+func TestSpanClosesAcrossLinesInParagraph(t *testing.T) {
+	src := "---\ncast:\n  lin: { name: Lin }\n---\nlin: [whisper|hello\nthere]\n"
+	script, err := Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(script.Blocks) != 1 || script.Blocks[0].Speaker != "lin" {
+		t.Fatalf("blocks = %+v", script.Blocks)
+	}
+	span := script.Blocks[0].Nodes[0]
+	if !span.Span || span.Content[0].Text != "hello\nthere" {
+		t.Fatalf("span = %+v", span)
+	}
+}
+
+func TestUnclosedTagStopsAtParagraph(t *testing.T) {
+	_, err := Parse("scene.tbx", "[whisper|hello\n\nthere]\n")
+	var pe *Error
+	if err == nil || !errors.As(err, &pe) || pe.Code != "V012" || pe.Line != 1 {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestUnknownSpeakerStaysInTurn(t *testing.T) {
+	src := "---\ncast:\n  lin: { name: Lin }\n---\nlin: hello\nnope: there\n"
+	script, err := Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(script.Blocks) != 1 || script.Blocks[0].Speaker != "lin" {
+		t.Fatalf("blocks = %+v", script.Blocks)
+	}
+	if script.Blocks[0].Nodes[0].Text != "hello\nnope: there" {
+		t.Fatalf("text = %q", script.Blocks[0].Nodes[0].Text)
+	}
+}
+
+func TestFrontMatterOnlyAtStart(t *testing.T) {
+	script, err := Parse("t.tbx", "Hello\n---\ntimbrex: 1\n---\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Front.Timbrex != 0 || script.Blocks[0].Kind != ast.Narration {
+		t.Fatalf("script = %+v", script)
+	}
+	if !strings.Contains(script.Blocks[0].Nodes[0].Text, "---") {
+		t.Fatalf("text = %q", script.Blocks[0].Nodes[0].Text)
+	}
+}
+
+func TestBOMAndCRLF(t *testing.T) {
+	src := "\uFEFF---\r\ncast: auto\r\n---\r\nlin: hi\r\n"
+	script, err := Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !script.Front.CastAuto || script.Blocks[0].Speaker != "lin" {
+		t.Fatalf("script = %+v", script)
+	}
+}
+
+func TestMoreValues(t *testing.T) {
+	src := "[pause 1min] [happy 0.8] [sfx \"distant thunder\" dur=3s]\n"
+	script, err := Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tags := tagArgs(script.Blocks[0].Nodes)
+	if tags[0][0] != "duration:1min" || tags[1][0] != "number:0.8" {
+		t.Fatalf("tags = %#v", tags)
+	}
+	if len(tags[2]) != 2 || tags[2][0] != "quoted:distant thunder" || tags[2][1] != "duration:3s" {
+		t.Fatalf("sfx = %#v", tags[2])
+	}
+	var sfx ast.Node
+	for _, node := range script.Blocks[0].Nodes {
+		if node.Name == "sfx" {
+			sfx = node
+		}
+	}
+	if sfx.Args[1].Key != "dur" {
+		t.Fatalf("sfx args = %+v", sfx.Args)
+	}
+}
+
+func TestUnescapedBracketInsideTag(t *testing.T) {
+	_, err := Parse("t.tbx", "[whisper [pause]]\n")
+	if err == nil || !strings.Contains(err.Error(), "unescaped [ inside tag") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestExample(t *testing.T) {
 	b, err := os.ReadFile("../../examples/hello.tbx")
 	if err != nil {

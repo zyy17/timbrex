@@ -3,6 +3,7 @@ package lower
 import (
 	"testing"
 
+	"github.com/zyy17/timbrex/internal/check"
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/parse"
 )
@@ -61,5 +62,35 @@ func TestLowerSceneFenceAndArgs(t *testing.T) {
 	raw := doc.Utterances[2].Nodes
 	if len(raw) != 1 || raw[0].Kind != ir.Raw || raw[0].Name != "ssml azure" || raw[0].Text != "<speak>hi</speak>\n" {
 		t.Fatalf("raw = %+v", raw)
+	}
+}
+
+func TestLowerStateEventAndSpanNote(t *testing.T) {
+	src := "[slow]\n[pause]\nShe [laugh nervously|while laughing] now\n"
+	script, err := parse.Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diags := check.Apply(script, false); check.Failed(diags) != nil {
+		t.Fatal(diags)
+	}
+	doc := Script(script)
+	if len(doc.Utterances) != 3 {
+		t.Fatalf("doc = %+v", doc)
+	}
+	slow := doc.Utterances[0].Nodes[0]
+	if slow.Kind != ir.State || slow.Name != "slow" || slow.Scope != "scene" {
+		t.Fatalf("slow = %+v", slow)
+	}
+	pause := doc.Utterances[1].Nodes[0]
+	if pause.Kind != ir.Event || pause.Name != "pause" || pause.Scope != "scene" {
+		t.Fatalf("pause = %+v", pause)
+	}
+	laugh := doc.Utterances[2].Nodes[1]
+	if doc.Utterances[2].Speaker != "narrator" || laugh.Kind != ir.SpanStart || laugh.Note != "nervously" || laugh.Name != "laugh" {
+		t.Fatalf("laugh = %+v", laugh)
+	}
+	if doc.Utterances[2].Nodes[2].Text != "while laughing" || doc.Utterances[2].Nodes[3].Kind != ir.SpanEnd {
+		t.Fatalf("span = %+v", doc.Utterances[2].Nodes)
 	}
 }

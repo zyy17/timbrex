@@ -437,10 +437,12 @@ Section 8 of [SPEC.zh-CN.md](SPEC.zh-CN.md) lists each vendor control and the Ti
 ```
 scene.tbx:12:9  error[V012]   unclosed span
 scene.tbx:13:5  error[V013]   [/whisper] is not valid; spans use [whisper|…]
-scene.tbx:18:14 warning[W040] unknown [laff] used as free-form acting; did you mean [laugh]?
-emo.tbxset.yaml:template:21 error[V041] unregistered tag [laff] (strict_tags); did you mean [laugh]?
-                              for free-form acting write [act "laff"]
+scene.tbx:18:14 warning[W040] unknown [paus] used as free-form acting; did you mean [pause]?
+emo.tbxset.yaml:template:21 error[V041] unregistered tag [paus]; did you mean [pause]? for free-form acting write [act "paus"]
+scene.tbx:19:3  info[I050]    non-ASCII free-form acting
 ```
+
+A suggestion is one registered name at Levenshtein distance 2 or less. `[paus]` suggests `[pause]`. `[laff]` is distance 3 from `[laugh]`, so that diagnostic has no suggestion. M0 reports I050 as `non-ASCII free-form acting` and does not translate the phrase.
 
 ## 12. Shape of a scene
 

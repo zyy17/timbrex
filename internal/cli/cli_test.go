@@ -119,6 +119,26 @@ func TestFrontMatterStrictAndProvider(t *testing.T) {
 	}
 }
 
+func TestCheckWarnsAndStillOk(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "near.tbx")
+	body := "[paus]\n[act \"caf\u00e9\"]\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	err := run([]string{"check", path}, strings.NewReader(""), &stdout, &stderr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(stdout.String()) != "ok" {
+		t.Fatalf("stdout = %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "warning[W040]") || !strings.Contains(stderr.String(), "info[I050]") {
+		t.Fatalf("stderr = %q", stderr.String())
+	}
+}
+
 func TestSynthUnknownProvider(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "hi.tbx")
