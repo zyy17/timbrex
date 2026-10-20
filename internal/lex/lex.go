@@ -94,7 +94,11 @@ func (s *scanner) next() (Token, error) {
 		s.depth++
 		return s.emit(LBrack, "[", 1), nil
 	case ']':
-		if s.peekAt(1) == ']' {
+		// ]] is a literal ] in plain text and inside one open tag.
+		// A deeper ] closes that tag, so [whisper|say [pause 1s]]
+		// and [whisper|[emph|hi]] both parse. Write \] for a literal
+		// ] inside the inner tag.
+		if s.peekAt(1) == ']' && s.foldCloseEscape() {
 			return s.text(), nil
 		}
 		if s.depth > 0 {
@@ -237,7 +241,7 @@ func (s *scanner) text() Token {
 			break
 		}
 		if r == ']' {
-			if s.peekAt(1) == ']' {
+			if s.peekAt(1) == ']' && s.foldCloseEscape() {
 				b.WriteByte(']')
 				s.skip(2)
 				continue
@@ -328,6 +332,14 @@ func (s *scanner) peekAt(n int) rune {
 	}
 	r, _ := utf8.DecodeRuneInString(s.src[i:])
 	return r
+}
+
+// foldCloseEscape reports whether ]] is one literal bracket.
+// At depth 0 or 1 it is the SPEC escape. At depth 2 or more the first
+// ] closes the inner tag; otherwise ]] would swallow the closer and
+// nested spans that end together would stay unclosed.
+func (s *scanner) foldCloseEscape() bool {
+	return s.depth <= 1
 }
 
 func escapable(r rune) bool {

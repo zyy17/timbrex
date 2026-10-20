@@ -347,6 +347,47 @@ func TestEscapedBracketInContent(t *testing.T) {
 	}
 }
 
+func TestNestedSpansCloseTogether(t *testing.T) {
+	script, err := Parse("t.tbx", "[whisper|say [pause 1s]]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	span := script.Blocks[0].Nodes[0]
+	if !span.Span || span.Name != "whisper" || len(span.Content) != 2 {
+		t.Fatalf("span = %+v", span)
+	}
+	if span.Content[0].Text != "say " || span.Content[1].Name != "pause" {
+		t.Fatalf("content = %+v", span.Content)
+	}
+
+	script, err = Parse("t.tbx", "[whisper|say [emph|hi]]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	span = script.Blocks[0].Nodes[0]
+	if !span.Span || len(span.Content) != 2 || !span.Content[1].Span {
+		t.Fatalf("emph span = %+v", span)
+	}
+	if span.Content[1].Name != "emph" || span.Content[1].Content[0].Text != "hi" {
+		t.Fatalf("emph = %+v", span.Content[1])
+	}
+
+	// A single open tag still treats ]] as one literal bracket.
+	script, err = Parse("t.tbx", "[whisper|a]]b]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	span = script.Blocks[0].Nodes[0]
+	if !span.Span || span.Content[0].Text != "a]b" {
+		t.Fatalf("literal = %+v", span)
+	}
+	_, err = Parse("t.tbx", "[whisper|hello]]\n")
+	var pe *Error
+	if err == nil || !errors.As(err, &pe) || pe.Code != "V012" {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestNestedTag(t *testing.T) {
 	script, err := Parse("t.tbx", "[whisper|say [pause 1s] now]\n")
 	if err != nil {

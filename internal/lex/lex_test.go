@@ -30,6 +30,18 @@ func TestScanPipeOutsideTagIsText(t *testing.T) {
 	}
 }
 
+func TestScanNestedCloseIsTwoBrackets(t *testing.T) {
+	toks := mustScan(t, "[whisper|say [pause 1s]]")
+	got := kinds(toks)
+	want := []Kind{LBrack, Text, Pipe, Text, LBrack, Text, RBrack, RBrack, EOF}
+	if !sameKinds(got, want) {
+		t.Fatalf("kinds = %v, want %v", got, want)
+	}
+	if toks[5].Lit != "pause 1s" {
+		t.Fatalf("inner = %q", toks[5].Lit)
+	}
+}
+
 func TestScanEscapes(t *testing.T) {
 	toks := mustScan(t, "say [[hi]] and \\[not\\]")
 	if joinText(toks) != "say [hi] and [not]" {

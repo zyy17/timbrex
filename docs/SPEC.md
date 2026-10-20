@@ -145,7 +145,7 @@ ident         = ASCII_LETTER , { ASCII_LETTER | DIGIT | "_" | "-" | "." } ;
 2. If the first word is `ns:ident` and `ns` is a registered namespace, it is a namespace tag. A registered `ident` uses that TagSpec. Otherwise the text after `:` is **namespace raw** and goes to that provider unchanged.
 3. Otherwise, if the first word is an ASCII ident registered in the loaded vocabulary (case-insensitive, `-` and `_` equivalent), match arguments: `key=value` first, then positional values by type. Remaining words are a `note` when the tag says `note: allow`, and an error otherwise.
 4. Otherwise the tag is **implicit free-form acting**. `note` is the raw body, in any language. In strict mode (tbxset default, or `strict_tags: true`) this is error V041, with registered names at edit distance 2 or less, and the hint to write `[act "…"]`. Namespace raw text and `[act "…"]` are not affected.
-5. `|content` is parsed recursively and must close inside the same paragraph.
+5. `|content` is parsed recursively and must close inside the same paragraph. `]]` is a literal `]` in plain text and inside a single open tag. When a tag is already open, `]` closes the inner tag, so `[whisper|say [pause 1s]]` and `[whisper|[emph|hi]]` both close. A literal `]` inside that inner tag is `\]`.
 
 ### 2.4 Why spans are `[x|content]`
 
