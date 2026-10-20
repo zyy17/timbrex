@@ -80,6 +80,10 @@ func (s *scanner) next() (Token, error) {
 	if s.atFence() {
 		return s.fence()
 	}
+	// A quoted argument is opaque. "|" "[" "]" inside it are not markup.
+	if s.depth > 0 && s.peek() == '"' {
+		return s.quoted()
+	}
 	switch s.peek() {
 	case '\n':
 		return s.emit(Newline, "\n", 1), nil
@@ -241,10 +245,42 @@ func (s *scanner) text() Token {
 		if r == '\\' {
 			break
 		}
+		if s.depth > 0 && r == '"' {
+			break
+		}
 		b.WriteRune(r)
 		s.advance()
 	}
 	return Token{Kind: Text, Lit: b.String(), Line: line, Col: col}
+}
+
+// quoted reads one double-quoted string inside a tag, including its quotes.
+// \" and \\ stay in the literal so the argument parser can unescape them.
+func (s *scanner) quoted() (Token, error) {
+	line, col := s.line, s.col
+	var b strings.Builder
+	b.WriteByte('"')
+	s.advance()
+	for s.i < len(s.src) {
+		r := s.peek()
+		if r == '"' {
+			b.WriteByte('"')
+			s.advance()
+			return Token{Kind: Text, Lit: b.String(), Line: line, Col: col}, nil
+		}
+		if r == '\\' {
+			n := s.peekAt(1)
+			if n == '"' || n == '\\' {
+				b.WriteByte('\\')
+				b.WriteRune(n)
+				s.skip(2)
+				continue
+			}
+		}
+		b.WriteRune(r)
+		s.advance()
+	}
+	return Token{}, &Error{Line: line, Col: col, Msg: "unclosed quote"}
 }
 
 func (s *scanner) emit(kind Kind, lit string, n int) Token {

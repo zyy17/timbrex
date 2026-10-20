@@ -180,6 +180,41 @@ func tagArgs(nodes []ast.Node) [][]string {
 	return out
 }
 
+func TestQuotedArgHidesMarkup(t *testing.T) {
+	script, err := Parse("t.tbx", "[act \"a|b\" \"say [hi] and a]b\"]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tag := script.Blocks[0].Nodes[0]
+	if tag.Span || tag.Name != "act" || len(tag.Args) != 2 {
+		t.Fatalf("tag = %+v", tag)
+	}
+	if tag.Args[0].Kind != "quoted" || tag.Args[0].Raw != "a|b" {
+		t.Fatalf("first = %+v", tag.Args[0])
+	}
+	if tag.Args[1].Kind != "quoted" || tag.Args[1].Raw != "say [hi] and a]b" {
+		t.Fatalf("second = %+v", tag.Args[1])
+	}
+
+	script, err = Parse("t.tbx", "[act \"a|b\"|tail]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tag = script.Blocks[0].Nodes[0]
+	if !tag.Span || len(tag.Args) != 1 || tag.Args[0].Raw != "a|b" || tag.Content[0].Text != "tail" {
+		t.Fatalf("span = %+v", tag)
+	}
+
+	script, err = Parse("t.tbx", "[act \"a\\\"|b\"]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tag = script.Blocks[0].Nodes[0]
+	if tag.Span || len(tag.Args) != 1 || tag.Args[0].Raw != `a"|b` {
+		t.Fatalf("escaped = %+v", tag)
+	}
+}
+
 func TestUnclosedQuote(t *testing.T) {
 	_, err := Parse("t.tbx", "[act \"hi]\n")
 	if err == nil || !strings.Contains(err.Error(), "unclosed quote") {
