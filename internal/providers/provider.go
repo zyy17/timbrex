@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/zyy17/timbrex/internal/ir"
 )
@@ -34,7 +35,14 @@ type Provider interface {
 var registry = map[string]Provider{}
 
 // Register adds a provider. The ID must be unique.
+// A duplicate id panics. Registration runs from init, which cannot return an error.
 func Register(p Provider) {
+	if p == nil || p.ID() == "" {
+		panic("timbrex: provider is missing an id")
+	}
+	if _, ok := registry[p.ID()]; ok {
+		panic("timbrex: duplicate provider " + strconv.Quote(p.ID()))
+	}
 	registry[p.ID()] = p
 }
 

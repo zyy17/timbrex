@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -17,8 +20,11 @@ import (
 const version = "0.1.0"
 
 // Run parses args and runs a command.
+// Interrupt and SIGTERM cancel the command context.
 func Run(args []string) error {
-	return run(args, os.Stdin, os.Stdout, os.Stderr)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	return run(ctx, args, os.Stdin, os.Stdout, os.Stderr)
 }
 
 // FormatError is the stderr line for a failed command.
@@ -32,13 +38,13 @@ func FormatError(err error) string {
 	return "error: " + err.Error()
 }
 
-func run(args []string, in io.Reader, out, errOut io.Writer) error {
+func run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer) error {
 	cmd := newCommand()
 	cmd.SetArgs(args)
 	cmd.SetIn(in)
 	cmd.SetOut(out)
 	cmd.SetErr(errOut)
-	return cmd.Execute()
+	return cmd.ExecuteContext(ctx)
 }
 
 func newCommand() *cobra.Command {
@@ -50,6 +56,7 @@ func newCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+	cmd.SetVersionTemplate("timbrex " + version + "\n")
 	cmd.AddCommand(versionCmd(), checkCmd(), synthCmd())
 	return cmd
 }

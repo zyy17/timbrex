@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -55,7 +54,7 @@ func synthesize(cmd *cobra.Command, path, providerName, outPath string, strictOn
 	if outPath == "" {
 		outPath = strings.TrimSuffix(path, filepath.Ext(path)) + ".wav"
 	}
-	res, err := p.Synthesize(context.Background(), doc, providers.Options{Path: path, Out: outPath})
+	res, err := p.Synthesize(cmd.Context(), doc, providers.Options{Path: path, Out: outPath})
 	if err != nil {
 		return err
 	}

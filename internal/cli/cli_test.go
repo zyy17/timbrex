@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +15,7 @@ func TestFormatErrorKeepsParseLocation(t *testing.T) {
 	if err := os.WriteFile(path, []byte("Hello [slow\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err := run([]string{"check", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	err := run(context.Background(), []string{"check", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	got := FormatError(err)
 	if !strings.HasPrefix(got, path+":1:7: error[V012]:") {
 		t.Fatalf("format = %q", got)
@@ -23,29 +24,33 @@ func TestFormatErrorKeepsParseLocation(t *testing.T) {
 	if err := os.WriteFile(bad, []byte("[thoughtfully]\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err = run([]string{"check", "--strict-tags", bad}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	err = run(context.Background(), []string{"check", "--strict-tags", bad}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	if FormatError(err) != "error: check failed" {
 		t.Fatalf("check = %q", FormatError(err))
 	}
-	missing := run([]string{"check", filepath.Join(dir, "missing.tbx")}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	missing := run(context.Background(), []string{"check", filepath.Join(dir, "missing.tbx")}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	if !strings.HasPrefix(FormatError(missing), "error: ") {
 		t.Fatalf("missing = %q", FormatError(missing))
 	}
 }
 
 func TestVersion(t *testing.T) {
-	var out bytes.Buffer
-	if err := run([]string{"version"}, strings.NewReader(""), &out, &out); err != nil {
+	var out, flag bytes.Buffer
+	if err := run(context.Background(), []string{"version"}, strings.NewReader(""), &out, &out); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out.String(), "timbrex "+version) {
-		t.Fatalf("out = %q", out.String())
+	if err := run(context.Background(), []string{"--version"}, strings.NewReader(""), &flag, &flag); err != nil {
+		t.Fatal(err)
+	}
+	want := "timbrex " + version + "\n"
+	if out.String() != want || flag.String() != want {
+		t.Fatalf("version = %q flag = %q", out.String(), flag.String())
 	}
 }
 
 func TestCheckExample(t *testing.T) {
 	var out bytes.Buffer
-	err := run([]string{"check", "../../examples/hello.tbx"}, strings.NewReader(""), &out, &out)
+	err := run(context.Background(), []string{"check", "../../examples/hello.tbx"}, strings.NewReader(""), &out, &out)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +66,7 @@ func TestCheckError(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out bytes.Buffer
-	err := run([]string{"check", path}, strings.NewReader(""), &out, &out)
+	err := run(context.Background(), []string{"check", path}, strings.NewReader(""), &out, &out)
 	if err == nil || !strings.Contains(err.Error(), "unclosed tag") {
 		t.Fatalf("err = %v", err)
 	}
@@ -75,7 +80,7 @@ func TestSynthStub(t *testing.T) {
 	}
 	outPath := filepath.Join(dir, "hi.wav")
 	var out bytes.Buffer
-	err := run([]string{"synth", path, "-o", outPath}, strings.NewReader(""), &out, &out)
+	err := run(context.Background(), []string{"synth", path, "-o", outPath}, strings.NewReader(""), &out, &out)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,12 +103,12 @@ func TestCheckStrict(t *testing.T) {
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err := run([]string{"check", "--strict-tags", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	err := run(context.Background(), []string{"check", "--strict-tags", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "check failed") {
 		t.Fatalf("err = %v", err)
 	}
 	var out bytes.Buffer
-	err = run([]string{"check", "--no-strict-tags", path}, strings.NewReader(""), &out, &bytes.Buffer{})
+	err = run(context.Background(), []string{"check", "--no-strict-tags", path}, strings.NewReader(""), &out, &bytes.Buffer{})
 	if err != nil || strings.TrimSpace(out.String()) != "ok" {
 		t.Fatalf("err=%v out=%q", err, out.String())
 	}
@@ -116,11 +121,11 @@ func TestFrontMatterStrictAndProvider(t *testing.T) {
 	if err := os.WriteFile(strictPath, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err := run([]string{"check", strictPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	err := run(context.Background(), []string{"check", strictPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "check failed") {
 		t.Fatalf("strict err = %v", err)
 	}
-	err = run([]string{"check", "--no-strict-tags", strictPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	err = run(context.Background(), []string{"check", "--no-strict-tags", strictPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	if err != nil {
 		t.Fatalf("flag overrides front matter: %v", err)
 	}
@@ -129,13 +134,13 @@ func TestFrontMatterStrictAndProvider(t *testing.T) {
 	if err := os.WriteFile(provPath, []byte("---\nprovider: missing\n---\nHello\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err = run([]string{"synth", provPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	err = run(context.Background(), []string{"synth", provPath}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "unknown provider") {
 		t.Fatalf("provider err = %v", err)
 	}
 	wav := filepath.Join(dir, "prov.wav")
 	var out bytes.Buffer
-	err = run([]string{"synth", "--provider", "stub", provPath}, strings.NewReader(""), &out, &bytes.Buffer{})
+	err = run(context.Background(), []string{"synth", "--provider", "stub", provPath}, strings.NewReader(""), &out, &bytes.Buffer{})
 	if err != nil || strings.TrimSpace(out.String()) != wav {
 		t.Fatalf("err=%v out=%q", err, out.String())
 	}
@@ -152,7 +157,7 @@ func TestCheckWarnsAndStillOk(t *testing.T) {
 		t.Fatal(err)
 	}
 	var stdout, stderr bytes.Buffer
-	err := run([]string{"check", path}, strings.NewReader(""), &stdout, &stderr)
+	err := run(context.Background(), []string{"check", path}, strings.NewReader(""), &stdout, &stderr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +179,7 @@ func TestSynthCheckFailureWritesNoWav(t *testing.T) {
 	if err := os.WriteFile(wav, []byte("KEEP"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err := run([]string{"synth", "--strict-tags", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	err := run(context.Background(), []string{"synth", "--strict-tags", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "check failed") {
 		t.Fatalf("err = %v", err)
 	}
@@ -187,13 +192,31 @@ func TestSynthCheckFailureWritesNoWav(t *testing.T) {
 	}
 }
 
+func TestSynthCanceledContextWritesNoWav(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "hi.tbx")
+	if err := os.WriteFile(path, []byte("Hello\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	wav := filepath.Join(dir, "hi.wav")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := run(ctx, []string{"synth", path, "-o", wav}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil {
+		t.Fatal("expected cancel")
+	}
+	if _, statErr := os.Stat(wav); !os.IsNotExist(statErr) {
+		t.Fatalf("stat = %v", statErr)
+	}
+}
+
 func TestSynthUnknownProvider(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "hi.tbx")
 	if err := os.WriteFile(path, []byte("Hello\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err := run([]string{"synth", path, "--provider", "missing"}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	err := run(context.Background(), []string{"synth", path, "--provider", "missing"}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "unknown provider") {
 		t.Fatalf("err = %v", err)
 	}
