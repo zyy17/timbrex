@@ -98,6 +98,28 @@ func TestPauseRejectsSpan(t *testing.T) {
 	}
 }
 
+func TestNarrationRejectsLeadingTurnTag(t *testing.T) {
+	script, err := parse.Parse("scene.tbx", "[overlap -200ms] hello\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	diags := Apply(script, false)
+	if len(diags) != 1 || !strings.Contains(diags[0].Msg, "start of a turn") {
+		t.Fatalf("diags = %#v", diags)
+	}
+}
+
+func TestClosingWrapReportsOnlyV013(t *testing.T) {
+	script, err := parse.Parse("scene.tbx", "Say [/pinyin] please\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	diags := Apply(script, false)
+	if len(diags) != 1 || diags[0].Code != "V013" {
+		t.Fatalf("diags = %#v", diags)
+	}
+}
+
 func TestOverlapMustLeadTurn(t *testing.T) {
 	src := "---\ncast:\n  lin: { name: Lin }\n---\nlin: hello [overlap -200ms]\n"
 	script, err := parse.Parse("scene.tbx", src)

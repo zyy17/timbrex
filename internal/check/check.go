@@ -48,8 +48,11 @@ func Apply(script *ast.Script, strict bool) []Diag {
 			continue
 		case ast.Scene:
 			c.walk(block.Nodes, true, true)
-		default:
+		case ast.Turn:
 			c.walk(block.Nodes, true, false)
+		default:
+			// Narration is not a turn, so overlap and gap are out of place.
+			c.walk(block.Nodes, false, false)
 		}
 	}
 	return c.diags
@@ -94,15 +97,15 @@ func turnTag(n *ast.Node) bool {
 }
 
 func (c *checker) one(n *ast.Node, atStart, scene bool) {
-	c.resolve(n)
+	closed := c.resolve(n)
 	// Accepted acting only. A strict-mode V041 already explains the tag.
-	if n.Name == "act" && (!n.Free || !c.strict) && hasNonASCII(actingText(n)) {
+	if !closed && n.Name == "act" && (!n.Free || !c.strict) && hasNonASCII(actingText(n)) {
 		c.diag(n, "info", "I050", "non-ASCII free-form acting")
 	}
 	if n.Span {
 		c.walk(n.Content, false, false)
 	}
-	if n.Free {
+	if closed || n.Free {
 		return
 	}
 	spec, ok := vocab.Lookup(n.Name)
@@ -120,27 +123,30 @@ func (c *checker) one(n *ast.Node, atStart, scene bool) {
 	}
 }
 
-func (c *checker) resolve(n *ast.Node) {
+// resolve reports V013 for a closing tag and returns true so later rules
+// do not also treat [/pinyin] as a pinyin tag that needs content.
+func (c *checker) resolve(n *ast.Node) bool {
 	raw := strings.TrimSpace(n.Raw)
 	if name, ok := closing(raw); ok {
 		c.error(n, "V013", `[/`+name+`] is not valid; spans use [`+name+`|...]`)
 		n.Name = name
-		return
+		return true
 	}
 	if !n.Head {
 		c.free(n, raw)
-		return
+		return false
 	}
 	spec, ok := vocab.Lookup(n.Name)
 	if !ok {
 		c.free(n, raw)
-		return
+		return false
 	}
 	n.Name = spec.Name
 	n.Free = false
 	if spec.Note {
 		n.Args, n.Note = splitNote(n.Args)
 	}
+	return false
 }
 
 func (c *checker) free(n *ast.Node, raw string) {
