@@ -78,3 +78,27 @@ Rounds 7 and 8 were clean. Review continues through round 20.
 - P0: 0. P1: 2
 - Fixed: front matter `narrator:` now sets the speaker of unprefixed paragraphs (default remains `narrator`). A narration paragraph that starts with a cast display name plus an ASCII or full-width colon stays narration and warns W103. The longest name wins; equal lengths use the smaller id. `cast: auto` still treats an ident prefix as a speaker, so that line is not W103. Regressions: `TestNarratorConfig`, `TestDisplayNamePrefixWarns`.
 - P2, not fixed: a declared id followed by a full-width colon is narration with no W103. Leading spaces before `id:` stay narration, matching the turn production.
+
+## Round 11
+
+- Tip: `5e7974a`
+- Angle: capability lowering against SPEC 3.2 and the capability notes
+- P0: 0. P1: 2
+- Fixed: `overlap` and `gap` were scene-scoped on a scene line and here-scoped inside a turn. They are turn attributes (the next turn, when alone on a line), so the scope is `turn`. Registered names are written in canonical form, so `[PAUSE]` lowers as `pause`. Regressions: `TestLowerTurnTagsAreTurnScope`, `TestLowerCanonicalName`.
+- Checked: events stay `here` in a line and `scene` on a scene line; state uses the block scope; spans stay `span`; a scene-line `pause` is still an event on the scene timeline. Per-tag parameter schemas and provider capability plans stay out of M0.
+
+## Round 12
+
+- Tip: `5a3bd63`
+- Angle: TextMate grammar against the parser's tokens
+- P0: 0. P1: 2
+- Fixed: a nested tag treated `]]` as one escape, so `[whisper|say [pause 1s]]` never closed in the highlighter. Inner tags now close on the next unescaped `]`. A `[` or `]` after an even run of backslashes is real, so `\\[pause]` is a tag, and `\[x\]` is not a second tag name. Regression: `TestGrammarNestedTagClose`, checked by tokenizing the grammar with vscode-textmate.
+- Checked: quotes still hide `|` and brackets; `]]` inside one tag stays an escape; `10stone` and `3minutes` are one argument; fences swallow markup; front matter stays embedded YAML; `lin\:` and an indented `lin:` are not speakers.
+
+## Round 13
+
+- Tip: `ded8df9`
+- Angle: CI, Makefile, AGENTS.md, and Go version consistency
+- P0: 0. P1: 2
+- Fixed: `go test` never compiled package main, and `golangci-lint fmt` was configured but not run. `make test` now builds `./timbrex` before the tests. `make lint` runs `golangci-lint run` and `golangci-lint fmt --diff`. CI calls `make test` and `make lint` with Go from `go.mod` (1.27) and golangci-lint v2.14.0. Regression: `TestCIMatchesMakefile`.
+- Checked: `go mod tidy -diff` is clean. README and AGENTS name the same Go and linter versions.
