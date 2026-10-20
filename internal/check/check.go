@@ -55,7 +55,28 @@ func Apply(script *ast.Script, strict bool) []Diag {
 			c.walk(block.Nodes, false, false)
 		}
 	}
+	if script.Front.CastAuto {
+		c.listAutoSpeakers(script)
+	}
 	return c.diags
+}
+
+// listAutoSpeakers reports each speaker id cast: auto accepted, once.
+func (c *checker) listAutoSpeakers(script *ast.Script) {
+	seen := map[string]bool{}
+	for _, block := range script.Blocks {
+		if block.Kind != ast.Turn || block.Speaker == "" || seen[block.Speaker] {
+			continue
+		}
+		seen[block.Speaker] = true
+		c.diags = append(c.diags, Diag{
+			File:     c.file,
+			Line:     block.Line,
+			Col:      block.Col,
+			Severity: "info",
+			Msg:      `cast auto recognized speaker "` + block.Speaker + `"`,
+		})
+	}
 }
 
 // Failed returns an error when diags contain an error severity.

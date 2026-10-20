@@ -38,7 +38,7 @@ make fmt
 make tidy    # go.mod 或 go.sum 会变化时失败
 ```
 
-`timbrex version` 打印工具版本。`timbrex synth --provider` 选择已注册的 provider。未指定时用 front matter 的 `provider:`，再没有则是 `stub`。
+`timbrex version` 打印工具版本。`timbrex synth --provider` 选择已注册的 provider。未指定时用 front matter 的 `provider:`，再没有则是 `stub`。`cast: auto` 时，`timbrex check` 会把每个识别到的说话人列出来一次。
 
 `timbrex check --strict-tags` 是批量规则：未注册的 `[tag]` 报错 V041，自由表演要写成 `[act "…"]`。`--no-strict-tags` 强制单脚本规则。两个开关都不用时，看 front matter 的 `strict_tags`；普通脚本默认允许自由表演。单个未注册词与标准标签的编辑距离不超过 2 时给出警告 W040，命令仍然成功。非 ASCII 的自由表演是 info I050。`[laff]` 与 `[laugh]` 的距离是 3，所以不给建议。`[paus]` 会建议 `[pause]`。
 

@@ -98,6 +98,32 @@ func TestPauseRejectsSpan(t *testing.T) {
 	}
 }
 
+func TestCastAutoListsSpeakers(t *testing.T) {
+	src := "---\ncast: auto\n---\nlin: hi\nchen: yo\nlin: again\n"
+	script, err := parse.Parse("scene.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	diags := Apply(script, false)
+	if Failed(diags) != nil {
+		t.Fatal(diags)
+	}
+	var got []string
+	for _, d := range diags {
+		if d.Severity != "info" {
+			t.Fatalf("diags = %#v", diags)
+		}
+		got = append(got, d.Msg)
+	}
+	want := []string{
+		`cast auto recognized speaker "lin"`,
+		`cast auto recognized speaker "chen"`,
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("got %v", got)
+	}
+}
+
 func TestNarrationRejectsLeadingTurnTag(t *testing.T) {
 	script, err := parse.Parse("scene.tbx", "[overlap -200ms] hello\n")
 	if err != nil {
