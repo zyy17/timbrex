@@ -54,28 +54,40 @@ func flatten(nodes []ast.Node, blockScope string) []ir.Node {
 			}
 			continue
 		}
+		name := canonical(node.Name)
 		if node.Span {
 			out = append(out, ir.Node{
-				Kind: ir.SpanStart, Name: node.Name, Args: formatArgs(node.Args), Note: node.Note, Scope: "span",
+				Kind: ir.SpanStart, Name: name, Args: formatArgs(node.Args), Note: node.Note, Scope: "span",
 			})
 			out = append(out, flatten(node.Content, blockScope)...)
-			out = append(out, ir.Node{Kind: ir.SpanEnd, Name: node.Name, Scope: "span"})
+			out = append(out, ir.Node{Kind: ir.SpanEnd, Name: name, Scope: "span"})
 			continue
 		}
 		kind := ir.Event
 		scope := "here"
-		spec, ok := vocab.Lookup(node.Name)
-		if node.Free || (ok && spec.Kind == vocab.State) {
+		spec, ok := vocab.Lookup(name)
+		if ok && spec.Kind == vocab.Turn {
+			// overlap and gap describe a turn, including the next turn when
+			// they sit alone on a scene line. They are not scene state.
+			scope = "turn"
+		} else if node.Free || (ok && spec.Kind == vocab.State) {
 			kind = ir.State
 			scope = blockScope
 		} else if blockScope == "scene" {
 			scope = "scene"
 		}
 		out = append(out, ir.Node{
-			Kind: kind, Name: node.Name, Args: formatArgs(node.Args), Note: node.Note, Scope: scope,
+			Kind: kind, Name: name, Args: formatArgs(node.Args), Note: node.Note, Scope: scope,
 		})
 	}
 	return out
+}
+
+func canonical(name string) string {
+	if spec, ok := vocab.Lookup(name); ok {
+		return spec.Name
+	}
+	return name
 }
 
 func formatArgs(args []ast.Arg) string {

@@ -1,6 +1,7 @@
 package lower
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/zyy17/timbrex/internal/check"
@@ -77,6 +78,48 @@ func TestLowerSceneFenceAndArgs(t *testing.T) {
 	raw := doc.Utterances[2].Nodes
 	if len(raw) != 1 || raw[0].Kind != ir.Raw || raw[0].Name != "ssml azure" || raw[0].Text != "<speak>hi</speak>\n" {
 		t.Fatalf("raw = %+v", raw)
+	}
+}
+
+func TestLowerTurnTagsAreTurnScope(t *testing.T) {
+	src := "---\ncast:\n  lin: { name: Lin }\n---\n[overlap -200ms]\nlin: [gap 1s] Hello\n[pause]\n"
+	script, err := parse.Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diags := check.Apply(script, false); check.Failed(diags) != nil {
+		t.Fatal(diags)
+	}
+	doc := Script(script)
+	if len(doc.Utterances) != 3 {
+		t.Fatalf("doc = %+v", doc)
+	}
+	overlap := doc.Utterances[0].Nodes[0]
+	if overlap.Kind != ir.Event || overlap.Name != "overlap" || overlap.Scope != "turn" || overlap.Args != "-200ms" {
+		t.Fatalf("overlap = %+v", overlap)
+	}
+	gap := doc.Utterances[1].Nodes[0]
+	if doc.Utterances[1].Speaker != "lin" || gap.Kind != ir.Event || gap.Name != "gap" || gap.Scope != "turn" || gap.Args != "1s" {
+		t.Fatalf("gap = %+v", gap)
+	}
+	if strings.TrimSpace(doc.Utterances[1].Nodes[1].Text) != "Hello" {
+		t.Fatalf("turn = %+v", doc.Utterances[1].Nodes)
+	}
+	pause := doc.Utterances[2].Nodes[0]
+	if pause.Kind != ir.Event || pause.Scope != "scene" || pause.Name != "pause" {
+		t.Fatalf("pause = %+v", pause)
+	}
+}
+
+func TestLowerCanonicalName(t *testing.T) {
+	script, err := parse.Parse("t.tbx", "Say [PAUSE 1s]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := Script(script)
+	ev := doc.Utterances[0].Nodes[1]
+	if ev.Kind != ir.Event || ev.Name != "pause" || ev.Scope != "here" || ev.Args != "1s" {
+		t.Fatalf("event = %+v", ev)
 	}
 }
 
