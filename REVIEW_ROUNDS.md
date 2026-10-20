@@ -70,3 +70,11 @@ Rounds 7 and 8 were clean. Review continues through round 20.
 - P0: 0. P1: 1
 - Fixed: `]]` was always one literal `]`, so a nested tag that ended on the next `]` never closed (`[whisper|say [pause 1s]]`, `[whisper|[emph|hi]]`). `]]` stays a literal `]` in plain text and inside a single open tag. A deeper `]` closes that tag. A literal `]` inside the inner tag is `\]`. Regressions: `TestScanNestedCloseIsTwoBrackets`, `TestNestedSpansCloseTogether`.
 - Checked: BOM strip and CR/CRLF folding happen before lex; full-width brackets and colons stay text; `\[ \] \| \\ \:` and `[[` still fold; a lone `\` is one byte; fence bodies keep escaped brackets raw.
+
+## Round 10
+
+- Tip: `ab8c4de`
+- Angle: cast and speaker resolution edge cases
+- P0: 0. P1: 2
+- Fixed: front matter `narrator:` now sets the speaker of unprefixed paragraphs (default remains `narrator`). A narration paragraph that starts with a cast display name plus an ASCII or full-width colon stays narration and warns W103. The longest name wins; equal lengths use the smaller id. `cast: auto` still treats an ident prefix as a speaker, so that line is not W103. Regressions: `TestNarratorConfig`, `TestDisplayNamePrefixWarns`.
+- P2, not fixed: a declared id followed by a full-width colon is narration with no W103. Leading spaces before `id:` stay narration, matching the turn production.
