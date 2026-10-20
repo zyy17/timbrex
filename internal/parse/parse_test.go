@@ -253,6 +253,17 @@ func TestEmptyTag(t *testing.T) {
 	}
 }
 
+func TestFenceInfoMustStartWithIdent(t *testing.T) {
+	_, err := Parse("t.tbx", "```123\nraw\n```\n")
+	if err == nil || !strings.Contains(err.Error(), "fence info must start with an identifier") {
+		t.Fatalf("err = %v", err)
+	}
+	script, err := Parse("t.tbx", "```ssml azure\n<x/>\n```\n")
+	if err != nil || script.Blocks[0].Info != "ssml azure" {
+		t.Fatalf("err=%v block=%+v", err, script)
+	}
+}
+
 func TestFencePassthrough(t *testing.T) {
 	src := "```ssml azure\n<speak>[not a tag]</speak>\n```\nHello\n"
 	script, err := Parse("t.tbx", src)

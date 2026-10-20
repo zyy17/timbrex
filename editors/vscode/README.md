@@ -8,7 +8,7 @@ Highlighted tokens, matching [docs/SPEC.md](../../docs/SPEC.md):
 
 - YAML front matter between `---` at the start of the file
 - `//` comments only at the start of a line
-- raw fences that have an info string (a line of three backticks, then an info string such as `ssml azure`)
+- raw fences whose info starts with an identifier (a line of three backticks, then an info string such as `ssml azure`)
 - `[tag]`, `[tag args]`, `[tag|content]`, nested tags, quoted strings, `key=value`, and numeric suffixes (`ms`, `min`, `st`, `dB`, `%`, `s`)
 - escapes `[[` `]]` `\[` `\]` `\|` `\\` `\:`
 

@@ -94,6 +94,14 @@ func (p *parser) blocks() ([]ast.Block, error) {
 		}
 		if p.peek().Kind == lex.Fence {
 			tok := p.next()
+			if !fenceInfoOK(tok.Lit) {
+				return nil, &Error{
+					File: p.file,
+					Line: tok.Line,
+					Col:  tok.Col,
+					Msg:  "fence info must start with an identifier",
+				}
+			}
 			blocks = append(blocks, ast.Block{
 				Kind: ast.Fence,
 				Info: tok.Lit,
@@ -273,6 +281,20 @@ func (p *parser) next() lex.Token {
 		p.i++
 	}
 	return tok
+}
+
+// fenceInfoOK matches fence_info = ident , { WS , ( ident | kv ) } at the start.
+// The first word must be an ASCII identifier. Later words are not checked here.
+func fenceInfoOK(info string) bool {
+	info = strings.TrimSpace(info)
+	if info == "" {
+		return false
+	}
+	field := info
+	if i := strings.IndexAny(info, " \t"); i >= 0 {
+		field = info[:i]
+	}
+	return field != "" && identLen(field) == len(field)
 }
 
 func blankLine(line []lex.Token) bool {
