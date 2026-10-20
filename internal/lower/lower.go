@@ -11,10 +11,15 @@ import (
 )
 
 // Script converts a parsed script into utterances.
-// Comments are dropped. Narration is spoken by "narrator".
+// Comments are dropped. Narration is spoken by "narrator" unless
+// front matter narrator: names another speaker.
 // Call check.Apply first so free-form tags already carry their note.
 func Script(script *ast.Script) *ir.Document {
 	doc := &ir.Document{Provider: script.Front.Provider}
+	narrator := script.Front.Narrator
+	if narrator == "" {
+		narrator = "narrator"
+	}
 	for _, block := range script.Blocks {
 		switch block.Kind {
 		case ast.Comment:
@@ -32,7 +37,7 @@ func Script(script *ast.Script) *ir.Document {
 			})
 		default:
 			doc.Utterances = append(doc.Utterances, ir.Utterance{
-				Speaker: "narrator",
+				Speaker: narrator,
 				Nodes:   flatten(block.Nodes, "turn"),
 			})
 		}

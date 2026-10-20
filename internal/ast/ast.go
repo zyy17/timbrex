@@ -67,11 +67,13 @@ type Cast struct {
 // Cast is nil when the script did not declare one.
 // CastAuto is the cast: auto form.
 // StrictTags is nil when the key is absent.
+// Narrator replaces the default narration speaker when set.
 type Front struct {
 	Timbrex    int
 	Provider   string
 	Lang       string
 	StrictTags *bool
+	Narrator   string
 	CastAuto   bool
 	Cast       map[string]Cast
 }

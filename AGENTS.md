@@ -43,6 +43,7 @@ Later packages, not in this tree yet: `internal/expand` (dataset templates), `in
 
 - Binary name: `timbrex`. Script extension: `.tbx`. `.timbrex` is an alias for the same language. The CLI reads the path it is given.
 - With `cast: auto`, `check` lists each recognized speaker once.
+- Front matter `narrator:` names the narration speaker. The default is `narrator`.
 - M0 commands: `version`, `check`, `synth`.
 - `check` parses, resolves tags, and prints `ok` or diagnostics. `--strict-tags` / `--no-strict-tags` override front matter `strict_tags`.
 - `synth` writes audio after the same check. `--provider` wins, then front matter `provider:`, then `stub`.
@@ -56,7 +57,7 @@ In:
 - Plain text, `[tag]`, `[tag args|content]`, nested spans, speaker lines, `//` comments, YAML front matter, scene lines, raw fences
 - Cast: an `ident:` line is a turn only when that id is in `cast`, or when `cast: auto`. Otherwise it is narration
 - Value grammar: number, duration, percent, semitone, decibel, quoted string, word, and `key=value`
-- Standard vocabulary, V041 in strict mode, W040 for a near miss in a single script, I050 for non-ASCII acting text, V013 for `[/name]`, V012 for an unclosed tag
+- Standard vocabulary, V041 in strict mode, W040 for a near miss in a single script, W103 when a display name is used as a speaker prefix, I050 for non-ASCII acting text, V013 for `[/name]`, V012 for an unclosed tag
 - Explicit `[act "…"]` in strict mode. Implicit free-form tags become `act` when strict mode is off
 - Lowering to IR. Stub synthesis
 - TextMate grammar in `editors/vscode` for `.tbx`

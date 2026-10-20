@@ -8,6 +8,21 @@ import (
 	"github.com/zyy17/timbrex/internal/parse"
 )
 
+func TestNarratorConfig(t *testing.T) {
+	src := "---\nnarrator: host\ncast:\n  lin: { name: Lin }\n---\nHello\nlin: Hi\n"
+	script, err := parse.Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Front.Narrator != "host" {
+		t.Fatalf("narrator = %q", script.Front.Narrator)
+	}
+	doc := Script(script)
+	if len(doc.Utterances) != 2 || doc.Utterances[0].Speaker != "host" || doc.Utterances[1].Speaker != "lin" {
+		t.Fatalf("doc = %+v", doc)
+	}
+}
+
 func TestLowerHello(t *testing.T) {
 	src := "---\ncast:\n  lin: { name: Lin }\n---\nlin: [laugh] Hi [whisper|there]\n"
 	script, err := parse.Parse("t.tbx", src)

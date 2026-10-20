@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/zyy17/timbrex/internal/ast"
 	"github.com/zyy17/timbrex/internal/parse"
 )
 
@@ -95,6 +96,63 @@ func TestPauseRejectsSpan(t *testing.T) {
 	diags := Apply(script, false)
 	if len(diags) != 1 || !strings.Contains(diags[0].Msg, "does not take content") {
 		t.Fatalf("diags = %#v", diags)
+	}
+}
+
+func TestDisplayNamePrefixWarns(t *testing.T) {
+	src := "---\ncast:\n  lin: { name: Lin }\n  anna: { name: Anna }\n  ann: { name: Ann }\n---\nLin: hello\n\nlin: real\n\nAnna: longer\n\nAnn: short\n"
+	script, err := parse.Parse("scene.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Blocks[0].Kind != ast.Narration || script.Blocks[1].Kind != ast.Turn {
+		t.Fatalf("blocks = %+v", script.Blocks)
+	}
+	diags := Apply(script, false)
+	if Failed(diags) != nil {
+		t.Fatal(diags)
+	}
+	var got []string
+	for _, d := range diags {
+		if d.Code != "W103" || d.Severity != "warning" {
+			t.Fatalf("diags = %#v", diags)
+		}
+		got = append(got, d.Msg)
+	}
+	want := []string{
+		`"Lin:" looks like speaker lin (display name Lin); treated as narration`,
+		`"Anna:" looks like speaker anna (display name Anna); treated as narration`,
+		`"Ann:" looks like speaker ann (display name Ann); treated as narration`,
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("got %v", got)
+	}
+
+	// A full-width colon is still the display name, not a speaker.
+	src = "---\ncast:\n  lin: { name: Lin }\n---\nLin\uFF1Ahello\n"
+	script, err = parse.Parse("scene.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	diags = Apply(script, false)
+	if len(diags) != 1 || diags[0].Code != "W103" || !strings.Contains(diags[0].Msg, "lin") {
+		t.Fatalf("diags = %#v", diags)
+	}
+
+	// cast: auto takes an ident prefix, so the display name is a speaker.
+	src = "---\ncast: auto\n---\nLin: hello\n"
+	script, err = parse.Parse("scene.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Blocks[0].Kind != ast.Turn || script.Blocks[0].Speaker != "Lin" {
+		t.Fatalf("block = %+v", script.Blocks[0])
+	}
+	diags = Apply(script, false)
+	for _, d := range diags {
+		if d.Code == "W103" {
+			t.Fatalf("diags = %#v", diags)
+		}
 	}
 }
 

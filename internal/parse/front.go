@@ -18,6 +18,7 @@ type frontDoc struct {
 	Provider   string    `yaml:"provider"`
 	Lang       string    `yaml:"lang"`
 	StrictTags *bool     `yaml:"strict_tags"`
+	Narrator   string    `yaml:"narrator"`
 	Cast       *castYAML `yaml:"cast"`
 }
 
@@ -70,6 +71,7 @@ func splitFront(file, src string) (ast.Front, string, error) {
 		Provider:   doc.Provider,
 		Lang:       doc.Lang,
 		StrictTags: doc.StrictTags,
+		Narrator:   strings.TrimSpace(doc.Narrator),
 	}
 	if doc.Cast != nil {
 		front.CastAuto = doc.Cast.Auto
