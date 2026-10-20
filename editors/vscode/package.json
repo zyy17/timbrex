@@ -1,0 +1,31 @@
+{
+  "name": "timbrex",
+  "displayName": "Timbrex",
+  "description": "Syntax highlighting for Timbrex speech scripts (.tbx)",
+  "version": "0.1.0",
+  "publisher": "timbrex",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "timbrex",
+        "aliases": ["Timbrex", "tbx"],
+        "extensions": [".tbx", ".timbrex"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "timbrex",
+        "scopeName": "source.tbx",
+        "path": "./syntaxes/tbx.tmLanguage.yaml"
+      }
+    ]
+  }
+}

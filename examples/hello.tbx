@@ -1,0 +1,9 @@
+---
+timbrex: 1
+cast:
+  lin: { name: Lin }
+  chen: { name: Chen }
+---
+// A two-line scene.
+lin: [laugh] Really? [pause 500ms] That's great!
+chen: [sigh] [whisper|I knew it already.]

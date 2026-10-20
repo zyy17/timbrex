@@ -1,0 +1,89 @@
+# AGENTS.md
+
+Rules for humans and coding agents working on Timbrex. Prefer this file over history when they disagree. Design and usage live in [README.md](README.md) and [docs/SPEC.md](docs/SPEC.md). Do not paste chat logs into the docs.
+
+## What this project is
+
+Timbrex is an English-ASCII tag language for expressive speech, plus a compiler that turns a `.tbx` script into audio through more than one provider. The grammar is frozen. Growth belongs in the tag vocabulary, capability declarations, and provider packages.
+
+Three goals:
+
+1. **Small compiler.** Pipeline is lex, then parse, then IR, then lower. If a maintained library already covers a piece (YAML front matter, the CLI, HTTP, audio muxing), use it. Do not build a compiler framework.
+2. **Audio from scripts.** The end state is `timbrex synth script.tbx` and `timbrex check`. Support as many TTS providers as practical. When adding a provider, read that vendor's official docs and implement the real API, tags, and parameters. No guessed request shapes.
+3. **Readable code.** Short packages, short functions, little indirection. A reader should follow one script from source to a provider call without a pile of wrappers.
+
+## Layering
+
+| Package | May know | Must not know |
+| --- | --- | --- |
+| `internal/lex` | Source text, tokens | AST, files, providers |
+| `internal/parse` | Tokens, AST, YAML front matter | IR, providers, the CLI |
+| `internal/ast` | The script tree | I/O, providers |
+| `internal/ir` | Utterances, tag names as strings | Source text, the CLI |
+| `internal/lower` | AST, IR, the standard tag kinds | I/O, providers, the CLI |
+| `internal/vocab` | The standard tag list | Files, the CLI |
+| `internal/check` | AST, vocabulary, diagnostics | Lexing, providers, the CLI |
+| `internal/providers` | IR, the provider interface | Lexing, Cobra |
+| `internal/providers/<name>` | That vendor's API and one `Provider` | The lexer, the parser, Cobra |
+| `internal/cli` | Cobra, wiring parse → lower → provider | Tag grammar details |
+
+Only `internal/cli` may import Cobra. A provider registers itself from `init`. The CLI blank-imports the providers it ships.
+
+Later packages, not in this tree yet: `internal/expand` (dataset templates), `internal/caps` (provider capability files), `internal/config` (`timbrex.yaml`). Do not add them as empty shells.
+
+## Code style
+
+- Idiomatic Go: community naming, short functions, flat structs. Avoid deep nesting.
+- Teachability first. Prefer the smallest clear code. Do not pad scope.
+- Comments only on key paths (what the grammar freezes, what a provider must take from vendor docs). No narrating comments.
+- Pass `go test ./...` and `golangci-lint run ./...` (see `.golangci.yml` and `make lint`) before you claim done.
+- Prefer a pattern that is already in the tree over a new abstraction.
+
+## CLI
+
+- Binary name: `timbrex`. Script extension: `.tbx` (`.timbrex` is a future alias).
+- M0 commands: `version`, `check`, `synth`.
+- `check` parses, resolves tags, and prints `ok` or diagnostics. `--strict-tags` / `--no-strict-tags` override front matter `strict_tags`.
+- `synth` writes audio after the same check. `--provider` wins, then front matter `provider:`, then `stub`.
+- `stub` is the fake provider. It writes a WAV tone so the pipeline can be tested. It is not a speech engine.
+- Do not add a real provider until its official documentation has been read and the request matches that documentation.
+
+## M0 scope
+
+In:
+
+- Plain text, `[tag]`, `[tag args|content]`, nested spans, speaker lines, `//` comments, YAML front matter, scene lines, raw fences
+- Cast: an `ident:` line is a turn only when that id is in `cast`, or when `cast: auto`. Otherwise it is narration
+- Value grammar: number, duration, percent, semitone, decibel, quoted string, word, and `key=value`
+- Standard vocabulary, V041 in strict mode, V013 for `[/name]`, V012 for an unclosed tag
+- Explicit `[act "…"]` in strict mode. Implicit free-form tags become `act` when strict mode is off
+- Lowering to IR. Stub synthesis
+- TextMate grammar in `editors/vscode` for `.tbx`
+
+Out:
+
+- Real TTS SDKs, `timbrex fix` / `fmt`, dataset expand, `timbrex.yaml` / `timbrex.lock`
+- Per-tag parameter schemas, registered provider namespaces, tree-sitter
+- Audio muxing and streaming
+
+## Language
+
+- Docs may be bilingual. English is the primary text (`README.md`, `docs/SPEC.md`). A Chinese companion uses the `.zh-CN.md` suffix and must say the same thing.
+- Identifiers, package names, comments, CLI help, and CLI errors are English.
+- Commit messages are English Conventional Commits.
+
+## Docs
+
+- Design and usage. No conversation transcripts.
+- Keep README honest when behavior changes. Update the Chinese companion in the same change when the English text changes.
+- [docs/SPEC.md](docs/SPEC.md) is the language target. The code may lag it; say so in the README rather than pretending a command exists.
+
+## Git
+
+- Atomic Conventional Commits (`feat`, `fix`, `docs`, `refactor`, `test`, `chore`). Clean messages. No emoji.
+- Self-test before push: `go test ./...` and `golangci-lint run ./...`.
+- Do not commit secrets, `.env`, or API keys.
+
+## When unsure
+
+Prefer the smallest change that keeps the pipeline readable and the grammar frozen. If a request wants a new syntax, say so and point at a new tag, a provider package, or a capability file instead.

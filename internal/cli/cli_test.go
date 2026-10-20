@@ -1,0 +1,97 @@
+package cli
+
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestVersion(t *testing.T) {
+	var out bytes.Buffer
+	if err := run([]string{"version"}, strings.NewReader(""), &out, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "timbrex "+version) {
+		t.Fatalf("out = %q", out.String())
+	}
+}
+
+func TestCheckExample(t *testing.T) {
+	var out bytes.Buffer
+	err := run([]string{"check", "../../examples/hello.tbx"}, strings.NewReader(""), &out, &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(out.String()) != "ok" {
+		t.Fatalf("out = %q", out.String())
+	}
+}
+
+func TestCheckError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad.tbx")
+	if err := os.WriteFile(path, []byte("Hello [slow\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	err := run([]string{"check", path}, strings.NewReader(""), &out, &out)
+	if err == nil || !strings.Contains(err.Error(), "unclosed tag") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestSynthStub(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "hi.tbx")
+	if err := os.WriteFile(path, []byte("Hello there.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outPath := filepath.Join(dir, "hi.wav")
+	var out bytes.Buffer
+	err := run([]string{"synth", path, "-o", outPath}, strings.NewReader(""), &out, &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(out.String()) != outPath {
+		t.Fatalf("out = %q", out.String())
+	}
+	b, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b[:4]) != "RIFF" {
+		t.Fatalf("header = %q", b[:4])
+	}
+}
+
+func TestCheckStrict(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "batch.tbx")
+	body := "[act \"quietly\"]\n[thoughtfully]\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := run([]string{"check", "--strict-tags", path}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "check failed") {
+		t.Fatalf("err = %v", err)
+	}
+	var out bytes.Buffer
+	err = run([]string{"check", "--no-strict-tags", path}, strings.NewReader(""), &out, &bytes.Buffer{})
+	if err != nil || strings.TrimSpace(out.String()) != "ok" {
+		t.Fatalf("err=%v out=%q", err, out.String())
+	}
+}
+
+func TestSynthUnknownProvider(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "hi.tbx")
+	if err := os.WriteFile(path, []byte("Hello\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := run([]string{"synth", path, "--provider", "missing"}, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "unknown provider") {
+		t.Fatalf("err = %v", err)
+	}
+}
