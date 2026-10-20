@@ -62,38 +62,60 @@ repository:
     match: '"([^"\\]|\\.)*"'
     name: string.quoted.double.tbx
 
-  # [name args] or [name args|content]. Nested tags use the same rule.
-  # [[ and \[ are escapes, so they do not open a tag.
+  # [name args] or [name args|content].
+  # A "[" or "]" is escaped only when an odd run of backslashes precedes it,
+  # so \\[pause] is a literal backslash plus a tag.
+  # ]] is a literal ] inside a single tag. A tag opened from content closes
+  # on the next unescaped ], so [whisper|say [pause 1s]] is two tags.
   tag:
-    begin: '(?<!\\)\[(?!\[)'
+    begin: '(?<=(?:^|[^\\])(?:\\\\)*)(\[)(?!\[)[ \t]*([A-Za-z][A-Za-z0-9_.-]*(?::[A-Za-z][A-Za-z0-9_.-]*)?)?'
     beginCaptures:
-      "0": {name: punctuation.definition.tag.begin.tbx}
-    end: '(?<!\\)\](?!\])'
+      "1": {name: punctuation.definition.tag.begin.tbx}
+      "2": {name: entity.name.tag.tbx}
+    end: '(?<=(?:^|[^\\])(?:\\\\)*)\](?!\])'
     endCaptures:
       "0": {name: punctuation.definition.tag.end.tbx}
     name: meta.tag.tbx
     patterns:
-      - include: "#tag-name"
       - include: "#tag-content"
       - include: "#tag-arg"
 
-  # The name is the ident immediately after "[". Later words are arguments.
-  tag-name:
-    match: '(?<=\[)[ \t]*([A-Za-z][A-Za-z0-9_.-]*(?::[A-Za-z][A-Za-z0-9_.-]*)?)'
-    captures:
-      "1": {name: entity.name.tag.tbx}
+  # Inner tags close on ], even when the next character is the outer closer.
+  tag-nested:
+    begin: '(?<=(?:^|[^\\])(?:\\\\)*)(\[)(?!\[)[ \t]*([A-Za-z][A-Za-z0-9_.-]*(?::[A-Za-z][A-Za-z0-9_.-]*)?)?'
+    beginCaptures:
+      "1": {name: punctuation.definition.tag.begin.tbx}
+      "2": {name: entity.name.tag.tbx}
+    end: '(?<=(?:^|[^\\])(?:\\\\)*)\]'
+    endCaptures:
+      "0": {name: punctuation.definition.tag.end.tbx}
+    name: meta.tag.tbx
+    patterns:
+      - include: "#tag-content-nested"
+      - include: "#tag-arg"
 
   # Text after an unescaped "|" is content. Nested tags and strings still apply.
   tag-content:
-    begin: '(?<!\\)\|'
+    begin: '(?<=(?:^|[^\\])(?:\\\\)*)\|'
     beginCaptures:
       "0": {name: punctuation.separator.tag-content.tbx}
-    end: '(?=(?<!\\)\](?!\]))'
+    end: '(?=(?<=(?:^|[^\\])(?:\\\\)*)\](?!\]))'
     name: meta.tag.content.tbx
     patterns:
       - include: "#escape"
       - include: "#string"
-      - include: "#tag"
+      - include: "#tag-nested"
+
+  tag-content-nested:
+    begin: '(?<=(?:^|[^\\])(?:\\\\)*)\|'
+    beginCaptures:
+      "0": {name: punctuation.separator.tag-content.tbx}
+    end: '(?=(?<=(?:^|[^\\])(?:\\\\)*)\])'
+    name: meta.tag.content.tbx
+    patterns:
+      - include: "#escape"
+      - include: "#string"
+      - include: "#tag-nested"
 
   tag-arg:
     patterns:
