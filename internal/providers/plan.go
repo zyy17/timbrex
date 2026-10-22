@@ -50,7 +50,10 @@ func Plan(doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
 					case "voice":
 						seg.Voice = v
 					case "as":
-						seg.Voice = voiceFor(doc, id, v, defaultVoice)
+						seg.Voice, err = asVoice(doc, id, v, defaultVoice)
+						if err != nil {
+							return err
+						}
 					case "lang":
 						seg.Lang = v
 					}
@@ -127,6 +130,31 @@ func voiceFor(doc *ir.Document, id, speaker, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func asVoice(doc *ir.Document, id, speaker, fallback string) (string, error) {
+	if speaker == "" {
+		return "", fmt.Errorf("[as] needs a speaker id")
+	}
+	if v := doc.Voices[speaker][id]; v != "" {
+		return v, nil
+	}
+	if knownSpeaker(doc, speaker) {
+		return fallback, nil
+	}
+	return "", fmt.Errorf("[as %s] is not a speaker in this script", speaker)
+}
+
+func knownSpeaker(doc *ir.Document, speaker string) bool {
+	if _, ok := doc.Voices[speaker]; ok {
+		return true
+	}
+	for _, utt := range doc.Utterances {
+		if utt.Speaker == speaker {
+			return true
+		}
+	}
+	return false
 }
 
 func speakable(nodes []ir.Node) bool {
