@@ -57,6 +57,7 @@ func speakerPrefix(line []lex.Token) (string, []lex.Token, int, int) {
 	}
 	out := append([]lex.Token(nil), line...)
 	out[0].Lit = strings.TrimLeft(lit[n+1:], " \t")
+	out[0].Col += len(lit) - len(out[0].Lit)
 	if out[0].Lit == "" {
 		out = out[1:]
 	}

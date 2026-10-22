@@ -7,6 +7,7 @@ package parse
 import (
 	"errors"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/zyy17/timbrex/internal/ast"
 	"github.com/zyy17/timbrex/internal/lex"
@@ -14,6 +15,9 @@ import (
 
 // Parse reads src as a Timbrex script. file is used only in error text.
 func Parse(file, src string) (*ast.Script, error) {
+	if !utf8.ValidString(src) {
+		return nil, &Error{File: file, Line: 1, Col: 1, Msg: "script must be valid UTF-8"}
+	}
 	src = normalize(src)
 	front, body, err := splitFront(file, src)
 	if err != nil {

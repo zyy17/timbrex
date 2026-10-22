@@ -31,6 +31,8 @@ A **scene line** contains only tags without spans, plus optional whitespace. Eve
 
 A blank line ends a paragraph. A declared `speaker_id:` at column zero starts a new turn even without a blank line. Subsequent ordinary lines remain in that turn. Speaker-like text inside a span remains content.
 
+A standalone comment, scene line, or raw fence also ends the current paragraph. Ordinary text after it starts narration unless it has a declared speaker prefix. Repeat the prefix to resume the same speaker after one of these blocks.
+
 ```tbx
 ---
 cast:

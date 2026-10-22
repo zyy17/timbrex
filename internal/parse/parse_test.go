@@ -22,6 +22,38 @@ func TestPlainText(t *testing.T) {
 	}
 }
 
+func TestRejectInvalidUTF8(t *testing.T) {
+	for _, src := range []string{"Hello\xff", "[act \"\xff\"|Hello]", "```ssml\n\xff\n```"} {
+		if _, err := Parse("invalid.tbx", src); err == nil || !strings.Contains(err.Error(), "valid UTF-8") {
+			t.Fatalf("error = %v", err)
+		}
+	}
+	if _, err := Parse("valid.tbx", "你好\uFFFD"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSpeakerTextKeepsSourceColumn(t *testing.T) {
+	script, err := Parse("test.tbx", "---\ncast: auto\n---\nlin: \t你好")
+	if err != nil {
+		t.Fatal(err)
+	}
+	node := script.Blocks[0].Nodes[0]
+	if node.Text != "你好" || node.Line != 4 || node.Col != 7 {
+		t.Fatalf("text = %+v", node)
+	}
+}
+
+func TestCommentEndsSpeakerParagraph(t *testing.T) {
+	script, err := Parse("test.tbx", "---\ncast: auto\n---\nlin: Hello\n// direction\nNarration")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(script.Blocks) != 3 || script.Blocks[0].Kind != ast.Turn || script.Blocks[1].Kind != ast.Comment || script.Blocks[2].Kind != ast.Narration {
+		t.Fatalf("blocks = %+v", script.Blocks)
+	}
+}
+
 func TestSpeakerTagAndSpan(t *testing.T) {
 	src := "" +
 		"---\n" +
