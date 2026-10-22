@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"strings"
@@ -64,9 +65,8 @@ func Request(ctx context.Context, client *http.Client, method, endpoint, content
 		return nil, fmt.Errorf("HTTP %d %s", res.StatusCode, http.StatusText(res.StatusCode))
 	}
 	if strings.HasPrefix(req.Header.Get("Accept"), "audio/") {
-		kind := res.Header.Get("Content-Type")
-		if kind != "" && !strings.HasPrefix(kind, "audio/") && !strings.HasPrefix(kind, "application/octet-stream") {
-			return nil, fmt.Errorf("expected audio response, got %s", kind)
+		if err := checkPCMContentType(res.Header.Get("Content-Type")); err != nil {
+			return nil, err
 		}
 	}
 	data, err := io.ReadAll(io.LimitReader(res.Body, MaxResponseBytes+1))
@@ -80,4 +80,20 @@ func Request(ctx context.Context, client *http.Client, method, endpoint, content
 		return nil, fmt.Errorf("empty response")
 	}
 	return data, nil
+}
+
+func checkPCMContentType(header string) error {
+	if header == "" {
+		return nil
+	}
+	kind, _, err := mime.ParseMediaType(header)
+	if err != nil {
+		return fmt.Errorf("invalid audio Content-Type")
+	}
+	switch kind {
+	case "audio/pcm", "audio/x-pcm", "audio/raw", "application/octet-stream":
+		return nil
+	default:
+		return fmt.Errorf("expected raw PCM response, got %s", kind)
+	}
 }

@@ -98,6 +98,8 @@ References: [HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-au
 
 Each HTTP request has a two-minute timeout and a 64 MiB response limit. The final PCM output is limited to 1 GiB. All speech segments are validated before requests start. Runtime failures report the provider and segment number. HTTP errors include status codes; MiniMax/Qwen API errors include vendor error codes. Response bodies and signed URL query strings are omitted from diagnostics.
 
+Audio responses must contain raw 24 kHz mono S16LE PCM. Conflicting media types, recognizable audio containers, and empty or odd-length PCM are rejected. Raw PCM has no metadata, so these checks cannot independently verify its sample rate, channel count, or sound quality; those rely on the requested vendor format.
+
 The renderer uses a temporary file beside the destination and renames it only after success. Cancellation or failure removes temporary output and preserves an existing destination. The parent directory must exist. Earlier requests may already have incurred charges; there is no retry, fallback, cache, or resumable rendering.
 
 For troubleshooting, check the selected model, voice, region, and key permissions against the linked vendor docs. A successful offline test establishes the implemented contract, not service availability or speech quality. Long input should be split into paragraphs; Timbrex does not automatically chunk it to vendor token limits.

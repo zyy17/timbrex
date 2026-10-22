@@ -25,15 +25,34 @@ func TestHTTPStatusAndRedirects(t *testing.T) {
 	}
 }
 
-func TestHTTPRejectsNonAudioSuccess(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"error":"invalid key"}`)
-	}))
-	defer srv.Close()
-	_, err := Request(context.Background(), nil, http.MethodGet, srv.URL, "", map[string]string{"Accept": "audio/*"}, nil)
-	if err == nil || !strings.Contains(err.Error(), "expected audio") {
-		t.Fatalf("err = %v", err)
+func TestHTTPAudioContentType(t *testing.T) {
+	for _, tt := range []struct {
+		contentType string
+		valid       bool
+	}{
+		{"audio/pcm", true},
+		{"audio/x-pcm", true},
+		{"audio/raw", true},
+		{"application/octet-stream", true},
+		{"Audio/PCM; rate=24000", true},
+		{"application/json", false},
+		{"audio/mpeg", false},
+		{"audio/wav", false},
+		{"audio/L16", false},
+		{"application/octet-stream-invalid", false},
+		{"audio/pcm; malformed", false},
+	} {
+		t.Run(tt.contentType, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", tt.contentType)
+				_, _ = w.Write([]byte{1, 0, 2, 0})
+			}))
+			defer srv.Close()
+			_, err := Request(context.Background(), nil, http.MethodGet, srv.URL, "", map[string]string{"Accept": "audio/*"}, nil)
+			if (err == nil) != tt.valid {
+				t.Fatalf("valid=%t, err=%v", tt.valid, err)
+			}
+		})
 	}
 }
 

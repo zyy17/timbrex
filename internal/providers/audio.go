@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -41,6 +43,11 @@ func Render(ctx context.Context, id string, opt Options, segments []Segment, syn
 			}
 			if len(pcm) == 0 || len(pcm)%2 != 0 {
 				return Result{}, fmt.Errorf("%s segment %d: invalid 16-bit PCM audio", id, i+1)
+			}
+			// PCM has no header. Reject recognizable audio containers, including
+			// those returned as application/octet-stream or decoded from JSON.
+			if kind := http.DetectContentType(pcm); strings.HasPrefix(kind, "audio/") || kind == "application/ogg" {
+				return Result{}, fmt.Errorf("%s segment %d: expected raw PCM, got %s", id, i+1, kind)
 			}
 		}
 		size += uint64(len(pcm))
