@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -34,6 +35,11 @@ var events = map[string]string{
 	"laugh": "[laughs]", "sigh": "[sighs]", "gasp": "[gasps]",
 	"clear-throat": "[clears throat]", "giggle": "[giggles]", "cough": "[coughs]",
 }
+
+var (
+	breakTag   = regexp.MustCompile(`<break[\t\n\r />]`)
+	phonemeTag = regexp.MustCompile(`</?phoneme[\t\n\r />]`)
+)
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
 	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
@@ -78,9 +84,16 @@ func build(seg providers.Segment, model string) (request, error) {
 	if err != nil {
 		return r, err
 	}
+	if !inline && breakTag.MatchString(text) ||
+		(model == "eleven_flash_v2" || model == "eleven_turbo_v2") && phonemeTag.MatchString(text) {
+		return r, fmt.Errorf("literal SSML conflicts with this provider's native markup; use a Unicode alternative")
+	}
 	var prefix strings.Builder
 	for _, n := range seg.Controls {
 		if n.Name == "speed" || n.Name == "fast" || n.Name == "slow" {
+			if model == "eleven_v4" || model == "eleven_v4_turbo" {
+				return r, fmt.Errorf("[%s] is not supported by %s", n.Name, model)
+			}
 			speed, err := providers.Speed(n, 0.7, 1.2)
 			if err != nil {
 				return r, err
