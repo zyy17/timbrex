@@ -96,12 +96,14 @@ func FuzzDecodeWAV(f *testing.F) {
 }
 
 func TestDecodeWAVSizeBoundary(t *testing.T) {
-	data := make([]byte, MaxResponseBytes+1)
+	data := make([]byte, MaxResponseBytes+2)
 	copy(data, wavHeader(MaxResponseBytes-44))
 	pcm, err := DecodeWAV(data[:MaxResponseBytes])
 	if err != nil || len(pcm) != MaxResponseBytes-44 {
 		t.Fatalf("exact bound: bytes=%d err=%v", len(pcm), err)
 	}
+	// Keep the oversized fixture structurally valid, so only the size guard rejects it.
+	copy(data, wavHeader(MaxResponseBytes+2-44))
 	if _, err := DecodeWAV(data); err == nil {
 		t.Fatal("accepted response above limit")
 	}
