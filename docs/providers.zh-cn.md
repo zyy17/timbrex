@@ -118,7 +118,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 ## Gemini TTS
 
-```sh
+```bash
 # 须已设置 GEMINI_API_KEY。
 ./timbrex synth examples/gemini.tbx -o gemini.wav
 ```
@@ -133,12 +133,12 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 ## Fish Audio
 
-```sh
-# 须已设置 FISH_API_KEY 和属于你自己的 FISH_VOICE_ID。
+```bash
+# 须已设置 FISH_API_KEY 和 FISH_VOICE_ID。
 ./timbrex synth examples/fish.tbx -o fish.wav
 ```
 
-使用 bearer 认证、`model: s2.1-pro` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。初版仅支持 `s2.1-pro`；由于服务端会对未知模型请求头静默回退，未知及其他模型均在本地拒绝。没有默认账号音色。请用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定你有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；角色音色按片段串行合成。
+使用 bearer 认证、`model: s2.1-pro` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。初版仅支持 `s2.1-pro`；由于服务端会对未知模型请求头静默回退，未知及其他模型均在本地拒绝。没有默认账号音色。使用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；角色音色按片段串行合成。
 
 语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入；自由表演指令、数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
 

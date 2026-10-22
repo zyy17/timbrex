@@ -118,7 +118,7 @@ For troubleshooting, check the selected model, voice, region, and key permission
 
 ## Gemini TTS
 
-```sh
+```bash
 # GEMINI_API_KEY must already be set.
 ./timbrex synth examples/gemini.tbx -o gemini.wav
 ```
@@ -133,7 +133,7 @@ References: [current TTS guide](https://ai.google.dev/gemini-api/docs/speech-gen
 
 ## Fish Audio
 
-```sh
+```bash
 # FISH_API_KEY and FISH_VOICE_ID must already be set to your own resources.
 ./timbrex synth examples/fish.tbx -o fish.wav
 ```
