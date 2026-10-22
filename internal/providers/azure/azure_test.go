@@ -9,6 +9,18 @@ import (
 	"github.com/zyy17/timbrex/internal/providers"
 )
 
+func TestPitchRespectsAzureFrequencyRange(t *testing.T) {
+	for _, tc := range []struct {
+		pitch string
+		valid bool
+	}{{"-12st", true}, {"+7st", true}, {"+7.0195st", true}, {"+7.02st", false}, {"+12st", false}, {"-12.01st", false}} {
+		_, err := build(providers.Segment{Voice: "en-US-GuyNeural", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}, Controls: []ir.Node{{Name: "pitch", Args: []ir.Arg{{Raw: tc.pitch, Kind: "semitone"}}}}})
+		if (err == nil) != tc.valid {
+			t.Errorf("pitch %s: valid=%v, err=%v", tc.pitch, tc.valid, err)
+		}
+	}
+}
+
 func TestSSMLEscapesTextAndAttributes(t *testing.T) {
 	voice := `en-US-"<&Neural`
 	style := `calm" malicious="yes`
