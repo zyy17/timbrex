@@ -60,7 +60,7 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 ./timbrex synth examples/expressive.tbx --provider minimax -o minimax.wav
 ```
 
-使用 bearer 认证调用 `POST https://api.minimax.io/v1/t2a_v2`，请求非流式 hex 输出和 PCM 音频。适配器要求 `base_resp.status_code` 明确表示成功，检查完成状态和 hex 解码，并拒绝可选 `extra_info` 音频元数据中冲突的采样率、声道数或格式。每段文字必须少于 10000 字符。
+使用 bearer 认证调用 `POST https://api.minimax.io/v1/t2a_v2`，请求非流式 hex 输出和 PCM 音频。适配器要求 `base_resp.status_code` 明确表示成功，检查完成状态和 hex 解码，并拒绝可选 `extra_info` 音频元数据中冲突的采样率、声道数、格式或解码后字节数。每段文字必须少于 10000 字符。
 
 默认的 `speech-2.8-hd` 支持已映射的非语言事件。适配器仅在 `speech-2.6-hd` 或 `speech-2.6-turbo` 下支持耳语，且同一片段不能同时使用耳语和另一种情绪。音高要求整数半音。语言提示当前映射 `zh en ja ko fr de es ru pt it ar hi th id vi yue`，`zh-HK` 和 `zh-MO` 映射为粤语。其他提示会在本地报错。这是适配器实现的子集，不代表厂商完整语言覆盖。
 
@@ -98,7 +98,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 单次 HTTP 请求超时为两分钟，响应限制为 64 MiB；最终 PCM 输出限制为 1 GiB。所有语音片段会在发起请求前验证。运行时错误包含厂商和片段编号。HTTP 错误包含状态码，MiniMax/Qwen API 错误包含厂商错误代码。诊断省略响应正文和签名 URL 的查询参数。
 
-音频响应必须是原始的 24 kHz、单声道、S16LE PCM。媒体类型或明确提供的 `rate`/`channels` 媒体类型参数不符、可识别的音频容器（包括 FLAC 和 MP4）、空数据或字节数为奇数的 PCM 均会报错。缺失可选格式元数据的响应仍被接受。原始 PCM 字节不能标明采样率或声道数，因此缺少明确元数据时仍依赖厂商按请求格式返回音频；这些检查不能验证声音质量。
+音频响应必须是原始的 24 kHz、单声道、S16LE PCM。媒体类型或明确提供的 `rate`/`channels` 媒体类型参数不符、可识别的音频容器（包括 FLAC 和 MP4）、空数据或字节数为奇数的 PCM 均会报错。HTTP 206 部分响应和中断的响应体均会报错；不会自动重试合成请求。缺失可选格式元数据的响应仍被接受。原始 PCM 字节不能标明采样率或声道数，因此缺少明确元数据时仍依赖厂商按请求格式返回音频；这些检查不能验证声音质量。
 
 渲染器在目标文件旁创建临时文件，成功后才重命名。取消或失败会删除临时输出并保留已有目标文件。父目录必须已存在。先前请求仍可能计费；没有重试、降级、缓存或断点续传。
 

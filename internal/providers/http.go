@@ -62,7 +62,8 @@ func Request(ctx context.Context, client *http.Client, method, endpoint, content
 		return nil, fmt.Errorf("HTTP request failed: %w", cause)
 	}
 	defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
+	// These adapters request complete responses and never send Range headers.
+	if res.StatusCode == http.StatusPartialContent || res.StatusCode < 200 || res.StatusCode >= 300 {
 		return nil, fmt.Errorf("HTTP %d %s", res.StatusCode, http.StatusText(res.StatusCode))
 	}
 	if strings.HasPrefix(req.Header.Get("Accept"), "audio/") {

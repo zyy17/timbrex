@@ -162,6 +162,7 @@ func decode(data []byte) ([]byte, error) {
 			Code *int `json:"status_code"`
 		} `json:"base_resp"`
 		Extra struct {
+			Size    *int    `json:"audio_size"`
 			Rate    *int    `json:"audio_sample_rate"`
 			Channel *int    `json:"audio_channel"`
 			Format  *string `json:"audio_format"`
@@ -191,6 +192,9 @@ func decode(data []byte) ([]byte, error) {
 	pcm, err := hex.DecodeString(res.Data.Audio)
 	if err != nil {
 		return nil, fmt.Errorf("invalid hex audio: %w", err)
+	}
+	if res.Extra.Size != nil && *res.Extra.Size != len(pcm) {
+		return nil, fmt.Errorf("response audio size does not match decoded bytes")
 	}
 	return pcm, nil
 }

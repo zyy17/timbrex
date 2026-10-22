@@ -49,13 +49,17 @@ func TestRejectContradictoryAudioMetadata(t *testing.T) {
 		`{"audio_sample_rate":0}`,
 		`{"audio_channel":0}`,
 		`{"audio_format":""}`,
+		`{"audio_size":100}`,
+		`{"audio_size":2}`,
+		`{"audio_size":0}`,
+		`{"audio_size":-1}`,
 	} {
 		body := fmt.Sprintf(`{"base_resp":{"status_code":0},"data":{"status":2,"audio":"00000000"},"extra_info":%s}`, info)
 		if _, err := decode([]byte(body)); err == nil {
 			t.Errorf("accepted contradictory audio metadata: %s", info)
 		}
 	}
-	for _, info := range []string{`null`, `{}`, `{"audio_sample_rate":24000,"audio_channel":1,"audio_format":"pcm"}`} {
+	for _, info := range []string{`null`, `{}`, `{"audio_size":null}`, `{"audio_size":4}`, `{"audio_sample_rate":24000,"audio_channel":1,"audio_format":"pcm"}`} {
 		body := fmt.Sprintf(`{"base_resp":{"status_code":0},"data":{"status":2,"audio":"00000000"},"extra_info":%s}`, info)
 		pcm, err := decode([]byte(body))
 		if err != nil || len(pcm) != 4 {
