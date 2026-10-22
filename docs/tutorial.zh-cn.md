@@ -41,7 +41,7 @@ strict_tags: true
 [happy|很高兴见到你！] [pause 300ms] [slow|慢慢来。]
 ```
 
-`timbrex: 1` 是冻结的语法版本（[SPEC v0.3.4](spec.zh-cn.md)）。`strict_tags: true` 拒绝未知标签名。front matter 可选。若使用，文件必须以恰好一行 `---` 开头（行尾不能有空格）。
+`timbrex: 1` 是冻结的语法版本（[SPEC v0.3.4](spec.zh-cn.md)）。`strict_tags: true` 拒绝未知标签名。front matter 可选。若使用，必须位于文件开头的两行 `---` 之间。开头和结尾的 `---` 行可以带有尾随空格或制表符。
 
 ## 检查脚本
 
@@ -61,6 +61,8 @@ ok
 ./timbrex check examples/hello.tbx
 ./timbrex check examples/expressive.tbx
 ./timbrex check examples/dialogue.tbx
+./timbrex check examples/gemini.tbx
+./timbrex check examples/fish.tbx
 ```
 
 成功时在标准输出打印 `ok`。警告和信息写入标准错误，仍打印 `ok`。错误会使命令失败。
@@ -103,6 +105,13 @@ providers:
     elevenlabs:
         model: eleven_v3
         endpoint: https://api.elevenlabs.io/v1
+    fish:
+        model: s2.1-pro
+        endpoint: https://api.fish.audio/v1
+    gemini:
+        model: gemini-3.8-flash-tts
+        voice: Kore
+        endpoint: https://generativelanguage.googleapis.com/v1beta
     minimax:
         model: speech-2.8-hd
         voice: English_expressive_narrator
@@ -179,7 +188,7 @@ export OPENAI_API_KEY=your-key
 
 厂商选择顺序：`--provider`，然后是 front matter 的 `provider:`，然后是配置（默认 `stub`）。[examples/dialogue.tbx](../examples/dialogue.tbx) 指定 `provider: openai`。若要对该文件写出本地测试音，传入 `--provider stub`。
 
-其他适配器还有额外要求：ElevenLabs 需要音色 ID，Azure 需要区域或端点，Qwen 需要工作空间端点。见 [厂商接入](providers.zh-cn.md)。
+其他适配器还有额外要求：ElevenLabs 和 Fish 需要音色 ID，Azure 需要区域或端点，Qwen 需要工作空间端点，Gemini 拒绝数值语速。见 [厂商接入](providers.zh-cn.md)。
 
 ## 声明角色
 
@@ -262,11 +271,11 @@ emotion.wav
 
 独占一行的 `[happy]` 是场景状态，下一行旁白会继承它。`[happy|…]` 是局部 span。`[act "…"]` 是严格模式下要求的显式表演形式。
 
-各适配器对这些标签的映射不同。OpenAI 和 Qwen 将其中多数作为指令发送。MiniMax 映射七种情绪。Azure 映射 style。ElevenLabs 在 v3/v4 模型上使用 audio tags。`stub` 忽略表演并写出测试音。面向 HTTP 适配器前见 [能力表](capabilities.zh-cn.md)。
+各适配器对这些标签的映射不同。OpenAI、Qwen 和 Gemini 将其中多数作为指令发送。MiniMax 映射七种情绪。Azure 映射 style。ElevenLabs 在 v3/v4 模型上使用 audio tags。Fish 映射部分 S2 标记。`stub` 忽略表演并写出测试音。面向 HTTP 适配器前见 [能力表](capabilities.zh-cn.md)。
 
 ## 批量合成
 
-没有批量命令。使用 shell 循环。此处必须指定 `--provider stub`，因为 [examples/dialogue.tbx](../examples/dialogue.tbx) 设置了 `provider: openai`。
+没有批量命令。使用 shell 循环。此处必须指定 `--provider stub`，因为 [examples/dialogue.tbx](../examples/dialogue.tbx)、[examples/gemini.tbx](../examples/gemini.tbx) 和 [examples/fish.tbx](../examples/fish.tbx) 指定了真实厂商。
 
 ```bash
 mkdir -p out
@@ -281,6 +290,10 @@ ok
 out/dialogue.wav
 ok
 out/expressive.wav
+ok
+out/fish.wav
+ok
+out/gemini.wav
 ok
 out/hello.wav
 ```
@@ -317,7 +330,7 @@ out/hello.wav
 | `config` | 打印合并后的设置，密钥显示为 `REDACTED` |
 | `stub` | 默认厂商；8 kHz 测试音，不是语音 |
 | 严格模式 | 未知标签报 `V041`；应写成 `[act "…"]` |
-| 厂商（provider） | `stub`、`openai`、`elevenlabs`、`minimax`、`azure` 或 `qwen` |
+| 厂商（provider） | `stub`、`openai`、`elevenlabs`、`minimax`、`azure`、`qwen`、`gemini` 或 `fish` |
 
 ## 另见
 

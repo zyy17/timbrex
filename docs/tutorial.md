@@ -41,7 +41,7 @@ strict_tags: true
 [happy|Good to see you!] [pause 300ms] [slow|Take your time.]
 ```
 
-`timbrex: 1` is the frozen grammar version ([SPEC v0.3.4](spec.md)). `strict_tags: true` rejects unknown tag names. Front matter is optional. If present, the file must start with a line that is exactly `---` (no trailing spaces).
+`timbrex: 1` is the frozen grammar version ([SPEC v0.3.4](spec.md)). `strict_tags: true` rejects unknown tag names. Front matter is optional. If present, it must begin at the start of the file between `---` lines. The opening and closing `---` lines may have trailing spaces or tabs.
 
 ## Check a script
 
@@ -61,6 +61,8 @@ Repository examples:
 ./timbrex check examples/hello.tbx
 ./timbrex check examples/expressive.tbx
 ./timbrex check examples/dialogue.tbx
+./timbrex check examples/gemini.tbx
+./timbrex check examples/fish.tbx
 ```
 
 Success prints `ok` on stdout. Warnings and info go to stderr and still print `ok`. An error fails the command.
@@ -103,6 +105,13 @@ providers:
     elevenlabs:
         model: eleven_v3
         endpoint: https://api.elevenlabs.io/v1
+    fish:
+        model: s2.1-pro
+        endpoint: https://api.fish.audio/v1
+    gemini:
+        model: gemini-3.8-flash-tts
+        voice: Kore
+        endpoint: https://generativelanguage.googleapis.com/v1beta
     minimax:
         model: speech-2.8-hd
         voice: English_expressive_narrator
@@ -179,7 +188,7 @@ On success, stdout is the output path (`speech.wav`). The default model is `gpt-
 
 Provider selection: `--provider`, then front matter `provider:`, then configuration (default `stub`). [examples/dialogue.tbx](../examples/dialogue.tbx) sets `provider: openai`. Pass `--provider stub` to write a local tone from that file.
 
-Other adapters require additional settings: ElevenLabs needs a voice ID; Azure needs a region or endpoint; Qwen needs a workspace endpoint. See [provider setup](providers.md).
+Other adapters require additional settings: ElevenLabs and Fish need a voice ID; Azure needs a region or endpoint; Qwen needs a workspace endpoint; Gemini rejects numeric speed. See [provider setup](providers.md).
 
 ## Declare speakers
 
@@ -262,11 +271,11 @@ emotion.wav
 
 `[happy]` on its own line is scene state. The next narration line inherits it. `[happy|…]` is a local span. `[act "…"]` is the explicit acting form required in strict mode.
 
-Adapters map these tags differently. OpenAI and Qwen send many of them as instructions. MiniMax maps seven emotions. Azure maps styles. ElevenLabs uses audio tags on v3/v4 models. `stub` ignores performance and writes a tone. See [capabilities](capabilities.md) before targeting an HTTP adapter.
+Adapters map these tags differently. OpenAI, Qwen, and Gemini send many of them as instructions. MiniMax maps seven emotions. Azure maps styles. ElevenLabs uses audio tags on v3/v4 models. Fish maps a subset of S2 cues. `stub` ignores performance and writes a tone. See [capabilities](capabilities.md) before targeting an HTTP adapter.
 
 ## Synthesize multiple scripts
 
-There is no batch command. Use a shell loop. `--provider stub` is required here because [examples/dialogue.tbx](../examples/dialogue.tbx) sets `provider: openai`.
+There is no batch command. Use a shell loop. `--provider stub` is required here because [examples/dialogue.tbx](../examples/dialogue.tbx), [examples/gemini.tbx](../examples/gemini.tbx), and [examples/fish.tbx](../examples/fish.tbx) set a real provider.
 
 ```bash
 mkdir -p out
@@ -281,6 +290,10 @@ ok
 out/dialogue.wav
 ok
 out/expressive.wav
+ok
+out/fish.wav
+ok
+out/gemini.wav
 ok
 out/hello.wav
 ```
@@ -317,7 +330,7 @@ Parse errors (such as `V012`) print as `file:line:col: …`. Check failures add 
 | `config` | Print merged settings with keys redacted |
 | `stub` | Default provider; 8 kHz test tone, not speech |
 | strict mode | Unknown tags are `V041`; write `[act "…"]` instead |
-| provider | `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, or `qwen` |
+| provider | `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, `qwen`, `gemini`, or `fish` |
 
 ## See also
 

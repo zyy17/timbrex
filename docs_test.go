@@ -20,7 +20,7 @@ var (
 	fenceLine      = regexp.MustCompile("^(`{3,})([^`]*)$")
 	inlineCode     = regexp.MustCompile("`([^`]*)`")
 	specVersion    = []byte("SPEC v0.3.4")
-	skipBilingual  = map[string]bool{"AGENTS.md": true}
+	skipBilingual  = map[string]bool{"AGENTS.md": true, "REVIEW_ROUNDS.md": true}
 	fenceLanguages = map[string]bool{
 		"go": true, "bash": true, "tbx": true, "yaml": true, "json": true, "text": true,
 	}
