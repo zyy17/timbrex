@@ -8,7 +8,6 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/zyy17/timbrex/internal/ir"
@@ -41,17 +40,7 @@ type input struct {
 var events = map[string]string{"laugh": "[laughing]", "sigh": "[sighing]", "gasp": "[gasp]", "clear-throat": "[clears throat]", "giggle": "[giggles]", "cough": "[cough]", "snort": "[snorts]"}
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	key, err := providers.RequireEnv("DASHSCOPE_API_KEY")
-	if err != nil {
-		return providers.Result{}, err
-	}
-	endpoint, err := providers.RequireEnv("QWEN_ENDPOINT")
-	if err != nil {
-		return providers.Result{}, err
-	}
-	model := providers.First(opt.Model, doc.Model, os.Getenv("QWEN_MODEL"), "qwen-audio-3.1-tts-flash")
-	voice := providers.First(opt.Voice, doc.Voice, os.Getenv("QWEN_VOICE"), "longanhuan_v3.1")
-	segments, err := providers.Plan(doc, p.ID(), voice)
+	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
 	if err != nil {
 		return providers.Result{}, err
 	}
@@ -60,13 +49,14 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		if seg.Pause > 0 {
 			continue
 		}
-		requests[i], err = build(seg, model)
+		requests[i], err = build(seg, opt.Model)
 		if err != nil {
 			return providers.Result{}, fmt.Errorf("qwen: %w", err)
 		}
 	}
+	headers := map[string]string{"Authorization": "Bearer " + opt.APIKey}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		data, err := providers.PostJSON(ctx, p.client, endpoint, map[string]string{"Authorization": "Bearer " + key}, requests[i])
+		data, err := providers.PostJSON(ctx, p.client, opt.Endpoint, headers, requests[i])
 		if err != nil {
 			return nil, err
 		}
@@ -149,5 +139,5 @@ func (p provider) download(ctx context.Context, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("response has no valid audio URL")
 	}
 	// The audio URL is signed; it must never receive the DashScope API key.
-	return providers.Request(ctx, p.client, http.MethodGet, u.String(), "", map[string]string{"Accept": "audio/*, application/octet-stream"}, nil)
+	return providers.Request(ctx, p.client, http.MethodGet, u.String(), "", map[string]string{"Accept": "audio/pcm, application/octet-stream"}, nil)
 }

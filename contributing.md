@@ -30,7 +30,7 @@ Live validation is separate and opt-in. Record the model, voice, region, request
 
 ## Adding a provider
 
-Read the official API documentation first and link it from the adapter and setup guide. Match the actual authentication, request schema, audio format, and completion/error responses. Put the implementation in `internal/providers/<name>`, register from `init`, and blank-import it in the CLI. Keep vendor code independent of parsing and Cobra.
+Read the official API documentation first and link it from the adapter and setup guide. Match the actual authentication, request schema, audio format, and completion/error responses. Put the implementation in `internal/providers/<name>`, register from `init`, and blank-import it in the CLI. Add defaults and environment bindings in `internal/config`; adapters consume resolved options. Keep vendor code independent of configuration loading, parsing, and Cobra.
 
 Document supported models, environment variables, tag mappings, ranges, language hints, and limitations. Reject unrepresentable controls rather than dropping them. Test the full CLI-to-request path as well as malformed responses and failures. Shared code belongs in `internal/providers` only when it has a concrete shared use.
 

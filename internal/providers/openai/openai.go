@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"unicode/utf8"
 
@@ -30,13 +29,7 @@ type request struct {
 }
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	key, err := providers.RequireEnv("OPENAI_API_KEY")
-	if err != nil {
-		return providers.Result{}, err
-	}
-	model := providers.First(opt.Model, doc.Model, os.Getenv("OPENAI_MODEL"), "gpt-4o-mini-tts")
-	voice := providers.First(opt.Voice, doc.Voice, os.Getenv("OPENAI_VOICE"), "coral")
-	segments, err := providers.Plan(doc, p.ID(), voice)
+	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
 	if err != nil {
 		return providers.Result{}, err
 	}
@@ -45,14 +38,18 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		if seg.Pause > 0 {
 			continue
 		}
-		requests[i], err = build(seg, model)
+		requests[i], err = build(seg, opt.Model)
 		if err != nil {
 			return providers.Result{}, fmt.Errorf("openai: %w", err)
 		}
 	}
-	endpoint := providers.First(os.Getenv("OPENAI_BASE_URL"), "https://api.openai.com/v1")
+	endpoint := strings.TrimRight(opt.Endpoint, "/") + "/audio/speech"
+	headers := map[string]string{
+		"Authorization": "Bearer " + opt.APIKey,
+		"Accept":        "audio/pcm, application/octet-stream",
+	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		return providers.PostJSON(ctx, p.client, strings.TrimRight(endpoint, "/")+"/audio/speech", map[string]string{"Authorization": "Bearer " + key, "Accept": "audio/*, application/octet-stream"}, requests[i])
+		return providers.PostJSON(ctx, p.client, endpoint, headers, requests[i])
 	})
 }
 

@@ -9,6 +9,20 @@ import (
 	"testing"
 )
 
+func TestMain(m *testing.M) {
+	for _, entry := range os.Environ() {
+		name, _, _ := strings.Cut(entry, "=")
+		for _, prefix := range []string{"TIMBREX_", "OPENAI_", "ELEVENLABS_", "MINIMAX_", "AZURE_SPEECH_", "QWEN_", "DASHSCOPE_API_KEY"} {
+			if strings.HasPrefix(name, prefix) {
+				if err := os.Unsetenv(name); err != nil {
+					panic(err)
+				}
+			}
+		}
+	}
+	os.Exit(m.Run())
+}
+
 func TestFormatErrorKeepsParseLocation(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "scene.tbx")

@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/zyy17/timbrex/internal/config"
 	"github.com/zyy17/timbrex/internal/parse"
 	"github.com/zyy17/timbrex/internal/providers"
 	_ "github.com/zyy17/timbrex/internal/providers/azure"
@@ -53,6 +54,8 @@ func run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer
 }
 
 func newCommand() *cobra.Command {
+	var configPath string
+	var cfg config.Config
 	cmd := &cobra.Command{
 		Use:           "timbrex",
 		Short:         "compile expressive speech scripts to audio",
@@ -60,9 +63,20 @@ func newCommand() *cobra.Command {
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			switch cmd.Name() {
+			case "check", "synth", "config":
+				var err error
+				cfg, err = config.Load(configPath)
+				return err
+			default:
+				return nil
+			}
+		},
 	}
+	cmd.PersistentFlags().StringVar(&configPath, "config", "", "configuration file (default: ./timbrex.yaml if present)")
 	cmd.SetVersionTemplate("timbrex " + version + "\n")
-	cmd.AddCommand(versionCmd(), checkCmd(), synthCmd())
+	cmd.AddCommand(versionCmd(), checkCmd(&cfg), synthCmd(&cfg), configCmd(&cfg))
 	return cmd
 }
 

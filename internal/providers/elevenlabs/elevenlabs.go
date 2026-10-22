@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"unicode/utf8"
 
@@ -37,13 +36,7 @@ var events = map[string]string{
 }
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	key, err := providers.RequireEnv("ELEVENLABS_API_KEY")
-	if err != nil {
-		return providers.Result{}, err
-	}
-	model := providers.First(opt.Model, doc.Model, os.Getenv("ELEVENLABS_MODEL"), "eleven_v3")
-	voice := providers.First(opt.Voice, doc.Voice, os.Getenv("ELEVENLABS_VOICE_ID"))
-	segments, err := providers.Plan(doc, p.ID(), voice)
+	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
 	if err != nil {
 		return providers.Result{}, err
 	}
@@ -53,17 +46,21 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 			continue
 		}
 		if seg.Voice == "" {
-			return providers.Result{}, fmt.Errorf("elevenlabs: set --voice, ELEVENLABS_VOICE_ID, or cast voices.elevenlabs")
+			return providers.Result{}, fmt.Errorf("elevenlabs: set --voice, providers.elevenlabs.voice, or cast voices.elevenlabs")
 		}
-		requests[i], err = build(seg, model)
+		requests[i], err = build(seg, opt.Model)
 		if err != nil {
 			return providers.Result{}, fmt.Errorf("elevenlabs: %w", err)
 		}
 	}
-	base := providers.First(os.Getenv("ELEVENLABS_BASE_URL"), "https://api.elevenlabs.io/v1")
+	base := strings.TrimRight(opt.Endpoint, "/") + "/text-to-speech/"
+	headers := map[string]string{
+		"xi-api-key": opt.APIKey,
+		"Accept":     "audio/pcm, application/octet-stream",
+	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		endpoint := strings.TrimRight(base, "/") + "/text-to-speech/" + url.PathEscape(segments[i].Voice) + "?output_format=pcm_24000"
-		return providers.PostJSON(ctx, p.client, endpoint, map[string]string{"xi-api-key": key, "Accept": "audio/*, application/octet-stream"}, requests[i])
+		endpoint := base + url.PathEscape(segments[i].Voice) + "?output_format=pcm_24000"
+		return providers.PostJSON(ctx, p.client, endpoint, headers, requests[i])
 	})
 }
 

@@ -25,11 +25,14 @@ Three goals:
 | `internal/check` | AST, vocabulary, diagnostics | Lexing, providers, the CLI |
 | `internal/providers` | IR, the provider interface | Lexing, Cobra |
 | `internal/providers/<name>` | That vendor's API and one `Provider` | The lexer, the parser, Cobra |
-| `internal/cli` | Cobra, wiring parse → lower → provider | Tag grammar details |
+| `internal/config` | koanf, YAML configuration, environment variables, typed settings | AST, IR, provider execution, Cobra |
+| `internal/cli` | Cobra, configuration, wiring parse → lower → provider | Tag grammar details |
 
 Only `internal/cli` may import Cobra. A provider registers itself from `init`. The CLI blank-imports the providers it ships.
 
-Later packages, not in this tree yet: `internal/expand` (dataset templates), `internal/caps` (provider capability files), `internal/config` (`timbrex.yaml`). Do not add them as empty shells.
+Later packages, not in this tree yet: `internal/expand` (dataset templates), `internal/caps` (provider capability files). Do not add them as empty shells.
+
+Load configuration once through the Cobra entry point. Keep environment bindings and defaults in `internal/config`; adapters receive resolved options. Configuration priority is flags, script front matter, environment, the selected YAML file, then defaults. See [configuration](docs/configuration.md).
 
 ## Code style
 
@@ -44,9 +47,10 @@ Later packages, not in this tree yet: `internal/expand` (dataset templates), `in
 - Binary name: `timbrex`. Script extension: `.tbx`. `.timbrex` is an alias for the same language. The CLI reads the path it is given.
 - With `cast: auto`, `check` lists each recognized speaker once.
 - Front matter `narrator:` names the narration speaker. The default is `narrator`.
-- Commands: `version`, `check`, `synth`.
+- Commands: `version`, `check`, `synth`, `config`.
 - `check` parses, resolves tags, and prints `ok` or diagnostics. `--strict-tags` / `--no-strict-tags` override front matter `strict_tags`.
-- `synth` writes audio after the same check. `--provider` wins, then front matter `provider:`, then `stub`.
+- `synth` writes audio after the same check. `--provider` wins, then front matter `provider:`, then configuration (default `stub`).
+- `--config` selects a YAML file; otherwise load `./timbrex.yaml` if present. `config` displays merged settings with credentials redacted. Help and version do not load configuration.
 - `stub` is the fake provider. It writes a WAV tone so the pipeline can be tested. It is not a speech engine.
 - Do not add a real provider until its official documentation has been read and the request matches that documentation.
 
@@ -61,11 +65,12 @@ In:
 - Explicit `[act "…"]` in strict mode. Implicit free-form tags become `act` when strict mode is off
 - Lowering to IR with typed arguments. Stub synthesis and real HTTP providers: ElevenLabs, OpenAI, MiniMax, Azure, and Qwen
 - Cast voice mappings, scene/turn/span planning, local pauses, sequential PCM synthesis into WAV
+- Centralized koanf configuration, environment bindings, and Cobra command execution
 - TextMate grammar in `editors/vscode` for `.tbx`
 
 Out:
 
-- Vendor SDK dependencies, `timbrex fix` / `fmt`, dataset expand, `timbrex.yaml` / `timbrex.lock`
+- Vendor SDK dependencies, `timbrex fix` / `fmt`, dataset expand, `timbrex.lock`
 - Per-tag parameter schemas, registered provider namespaces, tree-sitter
 - General audio mixing, overlap, raw-provider passthrough, and streaming
 

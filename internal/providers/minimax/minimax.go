@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"os"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -55,13 +54,7 @@ var events = map[string]string{
 }
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	key, err := providers.RequireEnv("MINIMAX_API_KEY")
-	if err != nil {
-		return providers.Result{}, err
-	}
-	model := providers.First(opt.Model, doc.Model, os.Getenv("MINIMAX_MODEL"), "speech-2.8-hd")
-	voice := providers.First(opt.Voice, doc.Voice, os.Getenv("MINIMAX_VOICE_ID"), "English_expressive_narrator")
-	segments, err := providers.Plan(doc, p.ID(), voice)
+	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
 	if err != nil {
 		return providers.Result{}, err
 	}
@@ -70,14 +63,15 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		if seg.Pause > 0 {
 			continue
 		}
-		requests[i], err = build(seg, model)
+		requests[i], err = build(seg, opt.Model)
 		if err != nil {
 			return providers.Result{}, fmt.Errorf("minimax: %w", err)
 		}
 	}
-	base := providers.First(os.Getenv("MINIMAX_BASE_URL"), "https://api.minimax.io/v1")
+	endpoint := strings.TrimRight(opt.Endpoint, "/") + "/t2a_v2"
+	headers := map[string]string{"Authorization": "Bearer " + opt.APIKey}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		data, err := providers.PostJSON(ctx, p.client, strings.TrimRight(base, "/")+"/t2a_v2", map[string]string{"Authorization": "Bearer " + key}, requests[i])
+		data, err := providers.PostJSON(ctx, p.client, endpoint, headers, requests[i])
 		if err != nil {
 			return nil, err
 		}

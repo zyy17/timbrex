@@ -30,7 +30,7 @@ go test ./editors/vscode -update
 
 ## 新增厂商
 
-先阅读官方 API 文档，在适配器与接入指南中链接来源。匹配真实认证方式、请求 schema、音频格式和完成/错误响应。实现在 `internal/providers/<name>` 中，通过 `init` 注册，由 CLI 空白导入。厂商代码不应依赖解析器或 Cobra。
+先阅读官方 API 文档，在适配器与接入指南中链接来源。匹配真实认证方式、请求 schema、音频格式和完成/错误响应。实现在 `internal/providers/<name>` 中，通过 `init` 注册，由 CLI 空白导入。在 `internal/config` 添加默认值和环境变量映射，适配器使用解析后的选项。厂商代码不应依赖配置加载、解析器或 Cobra。
 
 记录支持的模型、环境变量、标签映射、数值范围、语言提示和限制。无法表达的控制应报错，不能丢弃。测试完整的 CLI 到请求路径，以及畸形响应和失败情形。只有具有实际共同用途的代码才应放入 `internal/providers`。
 

@@ -13,12 +13,13 @@ import (
 	"github.com/zyy17/timbrex/internal/ir"
 )
 
-// Options selects the source path and the output file.
+// Options contains resolved settings. Providers do not load files or environment variables.
 type Options struct {
-	Path  string
-	Out   string
-	Model string
-	Voice string
+	Out      string
+	Model    string
+	Voice    string
+	APIKey   string
+	Endpoint string
 }
 
 // Result is one successful synthesis.

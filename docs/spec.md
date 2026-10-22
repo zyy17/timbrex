@@ -157,6 +157,6 @@ The renderer concatenates compatible raw PCM segments into one WAV. It does not 
 
 ## 8. Future work, not current behavior
 
-The frozen syntax leaves room for external vocabularies, registered provider namespaces, raw passthrough, capability declarations, config/lock files, and dataset templates outside the speech body. Pronunciation, mixing, fallback planning, streaming, native dialogue, and voice management need separate implementations and tests. The grammar does not include loops or conditionals.
+The frozen syntax leaves room for external vocabularies, registered provider namespaces, raw passthrough, capability declarations, lock files, and dataset templates outside the speech body. External YAML configuration is already implemented; see [configuration](configuration.md). Pronunciation, mixing, fallback planning, streaming, native dialogue, and voice management need separate implementations and tests. The grammar does not include loops or conditionals.
 
 `fix`, `fmt`, `expand`, `compile`, `caps`, `voices`, `tags`, `migrate`, an LSP, and a public Go SDK are not shipped commands or APIs. Old design sketches of these features are not compatibility promises. New work should preserve the simple authoring model and document real behavior in both languages.

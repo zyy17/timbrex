@@ -6,16 +6,16 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/zyy17/timbrex/internal/check"
+	"github.com/zyy17/timbrex/internal/config"
 )
 
-func checkCmd() *cobra.Command {
-	var strictOn, strictOff bool
+func checkCmd(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "check <file>",
 		Short: "parse a script and report errors",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, diags, err := loadScript(args[0], strictOn, strictOff)
+			_, diags, err := loadScript(cmd, args[0], cfg.StrictTags)
 			if err != nil {
 				return err
 			}
@@ -27,6 +27,6 @@ func checkCmd() *cobra.Command {
 			return nil
 		},
 	}
-	addStrictFlags(cmd, &strictOn, &strictOff)
+	addStrictFlags(cmd)
 	return cmd
 }

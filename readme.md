@@ -66,11 +66,14 @@ Read the [language reference](docs/spec.md) and [implemented capability table](d
 
 ```sh
 ./timbrex version
+./timbrex config
 ./timbrex check script.tbx
 ./timbrex synth script.tbx --provider openai --model gpt-4o-mini-tts --voice coral -o script.wav
 ```
 
-Provider selection: `--provider`, then front matter `provider:`, then `stub`. Model and default voice: CLI flag, front matter, provider environment variable, built-in default. A speaker's `cast.<id>.voices.<provider>` takes priority over the default voice. `--voice` supplies a fallback; it does not replace cast mappings.
+Settings take priority in this order: CLI flags, script front matter, environment variables, the selected YAML configuration, built-in defaults. The default provider is `stub`. A speaker's `cast.<id>.voices.<provider>` takes priority over the default voice. `--voice` supplies a fallback; it does not replace cast mappings.
+
+Cobra drives every command. Configuration is loaded once through koanf from `./timbrex.yaml` if present, or the file selected by `--config`. `timbrex config` displays effective file/environment settings with API keys redacted. Start with [examples/timbrex.yaml](examples/timbrex.yaml); the [configuration guide](docs/configuration.md) documents file discovery, environment bindings, and validation.
 
 `check` validates syntax and vocabulary without credentials or network access. `synth` runs the same check, validates the selected adapter's supported controls, and then makes requests. Strict-mode flags override front matter `strict_tags`; the default is non-strict. With `cast: auto`, `check` lists each recognized speaker once.
 
@@ -87,17 +90,18 @@ make fmt
 
 Tests cover parsing, diagnostics, nested scopes, request contracts for every adapter, exact pauses, failure handling, and output preservation. Tests use local HTTP servers, never vendor credentials. See [contributing](contributing.md) and [AGENTS.md](AGENTS.md).
 
-The pipeline is source → lexer → parser/AST → check → lower/IR → provider → WAV. Packages follow those boundaries under `internal/`. Only `internal/cli` knows Cobra; each provider lives in `internal/providers/<name>`. [Editor support](editors/vscode/readme.md) includes a TextMate grammar for VS Code and Cursor.
+The pipeline is source → lexer → parser/AST → check → lower/IR → provider → WAV. Packages follow those boundaries under `internal/`. Only `internal/cli` knows Cobra. `internal/config` owns configuration and environment access; each provider lives in `internal/providers/<name>` and receives resolved settings. [Editor support](editors/vscode/readme.md) includes a TextMate grammar for VS Code and Cursor.
 
 ## Scope and documentation
 
-Implemented: script parsing and checking, speaker voice mappings, scoped controls, sequential synthesis, local pauses, and WAV output. Not implemented: streaming, concurrent dialogue, audio mixing, pronunciation wrappers, raw-provider passthrough, voice cloning, dataset expansion, config/lock files, or `fmt`/`fix` CLI commands. Some corresponding tags are reserved in the vocabulary; synthesis rejects them.
+Implemented: script parsing and checking, centralized configuration, speaker voice mappings, scoped controls, sequential synthesis, local pauses, and WAV output. Not implemented: streaming, concurrent dialogue, audio mixing, pronunciation wrappers, raw-provider passthrough, voice cloning, dataset expansion, lock files, or `fmt`/`fix` CLI commands. Some corresponding tags are reserved in the vocabulary; synthesis rejects them.
 
 English is the primary documentation. Chinese companions carry the same behavior and limitations.
 
 | Document | English | 简体中文 |
 | --- | --- | --- |
 | Language reference | [Language reference](docs/spec.md) | [语言参考](docs/spec.zh-cn.md) |
+| Configuration | [Configuration](docs/configuration.md) | [配置管理](docs/configuration.zh-cn.md) |
 | Credentials and adapters | [Provider setup](docs/providers.md) | [厂商接入](docs/providers.zh-cn.md) |
 | Implemented controls | [Capabilities](docs/capabilities.md) | [能力表](docs/capabilities.zh-cn.md) |
 | Provider research | [Provider research](docs/market_survey.md) | [厂商调研](docs/market_survey.zh-cn.md) |

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/zyy17/timbrex/internal/ir"
@@ -28,30 +27,10 @@ var styles = map[string]string{
 }
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	key, err := providers.RequireEnv("AZURE_SPEECH_KEY")
-	if err != nil {
-		return providers.Result{}, err
-	}
-	if opt.Model != "" || doc.Model != "" {
+	if opt.Model != "" {
 		return providers.Result{}, fmt.Errorf("azure selects its model through the voice name; omit model")
 	}
-	endpoint := os.Getenv("AZURE_SPEECH_ENDPOINT")
-	if endpoint == "" {
-		region, err := providers.RequireEnv("AZURE_SPEECH_REGION")
-		if err != nil {
-			return providers.Result{}, err
-		}
-		for _, c := range region {
-			if c < 'a' || c > 'z' {
-				if c < '0' || c > '9' {
-					return providers.Result{}, fmt.Errorf("invalid AZURE_SPEECH_REGION")
-				}
-			}
-		}
-		endpoint = "https://" + region + ".tts.speech.microsoft.com/cognitiveservices/v1"
-	}
-	voice := providers.First(opt.Voice, doc.Voice, os.Getenv("AZURE_SPEECH_VOICE"), "en-US-JennyNeural")
-	segments, err := providers.Plan(doc, p.ID(), voice)
+	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
 	if err != nil {
 		return providers.Result{}, err
 	}
@@ -66,9 +45,13 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		}
 	}
 	// https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech
-	headers := map[string]string{"Accept": "audio/*, application/octet-stream", "Ocp-Apim-Subscription-Key": key, "X-Microsoft-OutputFormat": "raw-24khz-16bit-mono-pcm"}
+	headers := map[string]string{
+		"Accept":                    "audio/pcm, application/octet-stream",
+		"Ocp-Apim-Subscription-Key": opt.APIKey,
+		"X-Microsoft-OutputFormat":  "raw-24khz-16bit-mono-pcm",
+	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		return providers.Request(ctx, p.client, http.MethodPost, endpoint, "application/ssml+xml", headers, []byte(requests[i]))
+		return providers.Request(ctx, p.client, http.MethodPost, opt.Endpoint, "application/ssml+xml", headers, []byte(requests[i]))
 	})
 }
 

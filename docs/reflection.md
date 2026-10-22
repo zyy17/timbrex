@@ -20,6 +20,8 @@ The current implementation reports unsupported controls rather than silently dis
 
 The pipeline is lexer → parser/AST → checker → lower/IR → provider. The lexer sees text and tokens, the checker sees the vocabulary, and the providers see IR. Cast and configuration become explicit IR fields rather than forcing adapters to read YAML. Typed arguments stay structured during lowering.
 
+Cobra owns command execution. A single `internal/config` package uses koanf to load file and environment settings, while the CLI applies script and flag overrides. Adapters receive resolved options. Defaults, environment bindings, and configuration validation stay together; there is no global configuration singleton.
+
 Provider planning resolves scene, turn, and nested span state before network I/O. Each adapter builds its requests before rendering begins. A small shared renderer joins matching PCM segments and local silence. It does not try to be a general audio workstation. Sequential calls trade some continuity and latency for a straightforward implementation; these limitations belong in the usage docs.
 
 ## Keep evidence close to claims

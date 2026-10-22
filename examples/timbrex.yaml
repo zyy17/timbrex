@@ -1,0 +1,21 @@
+provider: stub
+strict_tags: true
+
+# Keep API keys in the documented environment variables.
+providers:
+  openai:
+    model: gpt-4o-mini-tts
+    voice: coral
+  elevenlabs:
+    model: eleven_v3
+    voice: YOUR_VOICE_ID
+  minimax:
+    model: speech-2.8-hd
+    voice: English_expressive_narrator
+  azure:
+    region: eastus
+    voice: en-US-JennyNeural
+  qwen:
+    model: qwen-audio-3.1-tts-flash
+    voice: longanhuan_v3.1
+    endpoint: https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer

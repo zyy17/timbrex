@@ -3,29 +3,11 @@ package providers
 import (
 	"fmt"
 	"math"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/zyy17/timbrex/internal/ir"
 )
-
-func First(values ...string) string {
-	for _, v := range values {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
-func RequireEnv(name string) (string, error) {
-	v := os.Getenv(name)
-	if strings.TrimSpace(v) == "" {
-		return "", fmt.Errorf("set %s to use this provider", name)
-	}
-	return v, nil
-}
 
 func Value(n ir.Node) (string, error) {
 	if len(n.Args) != 1 || n.Args[0].Key != "" || n.Args[0].Raw == "" || n.Note != "" {

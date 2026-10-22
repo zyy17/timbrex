@@ -66,11 +66,14 @@ chen: [slow|I've got something to tell you.]
 
 ```sh
 ./timbrex version
+./timbrex config
 ./timbrex check script.tbx
 ./timbrex synth script.tbx --provider openai --model gpt-4o-mini-tts --voice coral -o script.wav
 ```
 
-厂商优先级：`--provider`、front matter 的 `provider:`、`stub`。模型和默认音色优先级：CLI 参数、front matter、厂商环境变量、内置默认值。角色的 `cast.<id>.voices.<provider>` 优先于默认音色。`--voice` 提供兜底音色，不覆盖角色映射。
+设置的优先级依次为：CLI 参数、脚本 front matter、环境变量、选中的 YAML 配置、内置默认值。默认厂商为 `stub`。角色的 `cast.<id>.voices.<provider>` 优先于默认音色。`--voice` 提供兜底音色，不覆盖角色映射。
+
+所有命令由 Cobra 驱动。配置通过 koanf 统一加载一次，读取存在的 `./timbrex.yaml`，或由 `--config` 指定的文件。`timbrex config` 展示文件和环境变量合并后的有效设置，API key 会隐藏。可从 [examples/timbrex.yaml](examples/timbrex.yaml) 开始；[配置指南](docs/configuration.zh-cn.md)说明文件查找、环境变量映射和校验规则。
 
 `check` 验证语法和词表，不需要凭证或网络。`synth` 先执行相同检查，再验证适配器支持的控制，最后发出请求。严格模式参数覆盖 front matter 的 `strict_tags`，默认非严格。使用 `cast: auto` 时，`check` 将每个识别出的角色列出一次。
 
@@ -87,17 +90,18 @@ make fmt
 
 测试覆盖解析、诊断、嵌套作用域、各适配器请求契约、精确停顿、失败处理和输出保留。测试只使用本地 HTTP 服务，不读取厂商凭证。参见[参与贡献](contributing.zh-cn.md)和 [AGENTS.md](AGENTS.md)。
 
-处理流程为：源码 → lexer → parser/AST → check → lower/IR → provider → WAV。`internal/` 下的包遵循这些边界，只有 `internal/cli` 依赖 Cobra，各厂商位于 `internal/providers/<name>`。[编辑器支持](editors/vscode/readme.zh-cn.md)提供 VS Code 和 Cursor 使用的 TextMate 语法。
+处理流程为：源码 → lexer → parser/AST → check → lower/IR → provider → WAV。`internal/` 下的包遵循这些边界，只有 `internal/cli` 依赖 Cobra。`internal/config` 负责配置及环境变量访问，各厂商位于 `internal/providers/<name>`，接收解析后的设置。[编辑器支持](editors/vscode/readme.zh-cn.md)提供 VS Code 和 Cursor 使用的 TextMate 语法。
 
 ## 范围与文档
 
-已实现：脚本解析和检查、角色音色映射、控制作用域、顺序合成、本地停顿和 WAV 输出。尚未实现：流式输出、并发对话、音频混音、发音包装标签、厂商原生内容透传、音色克隆、数据集展开、配置与锁文件，以及 CLI 的 `fmt`/`fix` 命令。词表保留了部分相关标签，但合成时会拒绝它们。
+已实现：脚本解析和检查、统一配置管理、角色音色映射、控制作用域、顺序合成、本地停顿和 WAV 输出。尚未实现：流式输出、并发对话、音频混音、发音包装标签、厂商原生内容透传、音色克隆、数据集展开、锁文件，以及 CLI 的 `fmt`/`fix` 命令。词表保留了部分相关标签，但合成时会拒绝它们。
 
 英文为主文档，中文版本描述相同的行为和限制。
 
 | 文档 | English | 简体中文 |
 | --- | --- | --- |
 | 语言参考 | [Language reference](docs/spec.md) | [语言参考](docs/spec.zh-cn.md) |
+| 配置管理 | [Configuration](docs/configuration.md) | [配置管理](docs/configuration.zh-cn.md) |
 | 凭证和适配器 | [Provider setup](docs/providers.md) | [厂商接入](docs/providers.zh-cn.md) |
 | 已实现控制 | [Capabilities](docs/capabilities.md) | [能力表](docs/capabilities.zh-cn.md) |
 | 厂商调研 | [Provider research](docs/market_survey.md) | [厂商调研](docs/market_survey.zh-cn.md) |

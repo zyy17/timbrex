@@ -6,7 +6,7 @@ Timbrex uses synchronous HTTP APIs directly. The adapters are based on the offic
 
 ## Configuration
 
-Set secrets in your shell or secret manager. Timbrex reads environment variables; it does **not** load `.env` files. Never put keys in `.tbx` files or commit them.
+Settings are loaded centrally from YAML and environment variables; see [configuration](configuration.md). Prefer credentials in your shell or secret manager. Timbrex does **not** load `.env` files. Never put keys in `.tbx` files or commit them. The table below describes environment-based setup; equivalent `providers.<id>` file fields are also supported.
 
 | Provider ID | Required environment | Default model | Default voice |
 | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ Optional environment defaults:
 | Azure | — | `AZURE_SPEECH_VOICE` | `AZURE_SPEECH_ENDPOINT` (full request URL), otherwise `AZURE_SPEECH_REGION` |
 | Qwen | `QWEN_MODEL` | `QWEN_VOICE` | `QWEN_ENDPOINT` (required full request URL) |
 
-`--model` and `--voice` override front matter, then environment defaults. Cast voice mappings override the default voice. A `[voice "vendor-id"|text]` span selects a voice directly; `[as lin|text]` uses Lin's mapping, falling back to the default if no mapping is available. Changing provider does not translate a model or voice ID belonging to another vendor.
+`--model` and `--voice` override front matter, which overrides environment settings, which override YAML configuration and built-in defaults. Cast voice mappings override the default voice. A `[voice "vendor-id"|text]` span selects a voice directly; `[as lin|text]` uses Lin's mapping, falling back to the default if no mapping is available. Changing provider does not translate a model or voice ID belonging to another vendor.
 
 Endpoint overrides are intended for your chosen regional service or a trusted compatible gateway. API credentials are sent to that endpoint. Use HTTPS for remote services. HTTP is accepted for local testing. Requests do not follow redirects.
 

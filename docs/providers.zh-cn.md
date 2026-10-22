@@ -6,7 +6,7 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 
 ## 配置
 
-通过 shell 或密钥管理器设置凭证。Timbrex 读取环境变量，**不会**加载 `.env` 文件。不要把密钥写入 `.tbx` 文件或提交到仓库。
+设置从 YAML 和环境变量集中加载，详见[配置管理](configuration.zh-cn.md)。建议通过 shell 或密钥管理器设置凭证。Timbrex **不会**加载 `.env` 文件。不要把密钥写入 `.tbx` 文件或提交到仓库。下表描述环境变量配置方式，也支持等价的 `providers.<id>` 文件字段。
 
 | Provider ID | 必需环境变量 | 默认模型 | 默认音色 |
 | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 | Azure | — | `AZURE_SPEECH_VOICE` | `AZURE_SPEECH_ENDPOINT`（完整请求 URL），否则使用 `AZURE_SPEECH_REGION` |
 | Qwen | `QWEN_MODEL` | `QWEN_VOICE` | `QWEN_ENDPOINT`（必填完整请求 URL） |
 
-`--model` 和 `--voice` 覆盖 front matter，后者覆盖环境变量默认值。cast 音色映射优先于默认音色。`[voice "vendor-id"|text]` 直接选择音色；`[as lin|text]` 使用 Lin 的映射，没有映射时回退到默认音色。切换厂商不会自动转换其他厂商的模型或音色 ID。
+`--model` 和 `--voice` 覆盖 front matter，后者覆盖环境变量，环境变量覆盖 YAML 配置和内置默认值。cast 音色映射优先于默认音色。`[voice "vendor-id"|text]` 直接选择音色；`[as lin|text]` 使用 Lin 的映射，没有映射时回退到默认音色。切换厂商不会自动转换其他厂商的模型或音色 ID。
 
 端点覆盖用于你选择的区域服务或可信兼容网关，API 凭证会发送至该端点。远程服务应使用 HTTPS；HTTP 用于本地测试。请求不会跟随重定向。
 
