@@ -93,6 +93,18 @@ func TestDecode(t *testing.T) {
 	if err != nil || !bytes.Equal(got, []byte{1, 0, 2, 0}) {
 		t.Fatalf("%x %v", got, err)
 	}
+	for _, metadata := range []string{
+		`"audioTranscription":{"text":"Hello"},`,
+		`"partMetadata":{"source":"speech"},`,
+		`"thoughtSignature":"c2lnbmF0dXJl","thought":false,`,
+		`"speechMetadata":{"style":"cheerful"},`,
+	} {
+		withMetadata := bytes.Replace(good, []byte(`"inlineData":`), []byte(metadata+`"inlineData":`), 1)
+		pcm, err := decode(withMetadata)
+		if err != nil || !bytes.Equal(pcm, []byte{1, 0, 2, 0}) {
+			t.Fatalf("metadata rejected: %v", err)
+		}
+	}
 	for name, b := range map[string][]byte{
 		"malformed": []byte(`{"candidates":"FAKE-SECRET"}`), "empty": []byte(`{}`), "null": []byte(`null`),
 		"blocked":             append([]byte(`{"promptFeedback":{"blockReason":"SAFETY"},`), good[1:]...),
@@ -101,6 +113,8 @@ func TestDecode(t *testing.T) {
 		"missing completion":  bytes.Replace(good, []byte(`"finishReason":"STOP"`), []byte(`"unused":"STOP"`), 1),
 		"wrong mime":          bytes.Replace(good, []byte("audio/wav"), []byte("audio/l16"), 1),
 		"extra part":          bytes.Replace(good, []byte(`"parts":[`), []byte(`"parts":[{"text":"FAKE-SECRET"},`), 1),
+		"thought audio":       bytes.Replace(good, []byte(`"inlineData":`), []byte(`"thought":true,"inlineData":`), 1),
+		"unknown payload":     bytes.Replace(good, []byte(`"inlineData":`), []byte(`"futurePayload":{},"inlineData":`), 1),
 		"union":               bytes.Replace(good, []byte(`"inlineData":`), []byte(`"text":"FAKE-SECRET","inlineData":`), 1),
 		"multiple candidates": bytes.Replace(good, []byte(`"candidates":[`), []byte(`"candidates":[{},`), 1),
 		"safety rating":       bytes.Replace(good, []byte(`"finishReason":"STOP"`), []byte(`"finishReason":"STOP","safetyRatings":[{"blocked":true}]`), 1),

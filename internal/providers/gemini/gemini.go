@@ -168,8 +168,23 @@ func decode(data []byte) ([]byte, error) {
 			return nil, fmt.Errorf("gemini output was blocked")
 		}
 	}
-	if len(candidate.Content.Parts) != 1 || len(candidate.Content.Parts[0]) != 1 {
+	if len(candidate.Content.Parts) != 1 {
 		return nil, fmt.Errorf("gemini response needs one inline audio part")
+	}
+	var thought bool
+	if value, ok := candidate.Content.Parts[0]["thought"]; ok {
+		if err := json.Unmarshal(value, &thought); err != nil || thought {
+			return nil, fmt.Errorf("gemini response contains thought audio")
+		}
+	}
+	// Part metadata may accompany its data union. Reject other payloads while
+	// retaining the documented metadata fields on an inline audio response.
+	for field := range candidate.Content.Parts[0] {
+		switch field {
+		case "inlineData", "thought", "thoughtSignature", "partMetadata", "mediaResolution", "mediaProcessing", "audioTranscription", "speechMetadata", "videoMetadata":
+		default:
+			return nil, fmt.Errorf("gemini response contains an unsupported audio part field")
+		}
 	}
 	var audio struct {
 		MIMEType string `json:"mimeType"`
