@@ -2,6 +2,7 @@ package config
 
 var providerDefaults = map[string]Provider{
 	"stub":   {},
+	"fish":   {Model: "s2.1-pro", Endpoint: "https://api.fish.audio/v1"},
 	"gemini": {Model: "gemini-3.8-flash-tts", Voice: "Kore", Endpoint: "https://generativelanguage.googleapis.com/v1beta"},
 	"openai": {
 		Model: "gpt-4o-mini-tts", Voice: "coral",
@@ -19,6 +20,10 @@ var providerDefaults = map[string]Provider{
 }
 
 var envKeys = map[string]string{
+	"FISH_API_KEY":          "providers.fish.api_key",
+	"FISH_MODEL":            "providers.fish.model",
+	"FISH_VOICE_ID":         "providers.fish.voice",
+	"FISH_BASE_URL":         "providers.fish.endpoint",
 	"GEMINI_API_KEY":        "providers.gemini.api_key",
 	"GEMINI_MODEL":          "providers.gemini.model",
 	"GEMINI_VOICE":          "providers.gemini.voice",

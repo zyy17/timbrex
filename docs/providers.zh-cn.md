@@ -16,6 +16,7 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 | `azure` | `AZURE_SPEECH_KEY`，以及区域或端点 | 由音色决定 | `en-US-JennyNeural` |
 | `qwen` | `DASHSCOPE_API_KEY`、`QWEN_ENDPOINT` | `qwen-audio-3.1-tts-flash` | `longanhuan_v3.1` |
 | `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` | `Kore` |
+| `fish` | `FISH_API_KEY`，音色/reference ID | `s2.1-pro` | 无；通过 `FISH_VOICE_ID`、`--voice`、front matter 或角色映射设置 |
 | `stub` | 无 | 无 | 无；测试音 |
 
 可选的环境变量默认值：
@@ -28,8 +29,9 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 | Azure | — | `AZURE_SPEECH_VOICE` | `AZURE_SPEECH_ENDPOINT`（完整请求 URL），否则使用 `AZURE_SPEECH_REGION` |
 | Qwen | `QWEN_MODEL` | `QWEN_VOICE` | `QWEN_ENDPOINT`（必填完整请求 URL） |
 | Gemini | `GEMINI_MODEL` | `GEMINI_VOICE` | `GEMINI_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`) |
+| Fish | `FISH_MODEL` | `FISH_VOICE_ID` | `FISH_BASE_URL` (`https://api.fish.audio/v1`) |
 
-`--model` 和 `--voice` 覆盖 front matter，后者覆盖环境变量，环境变量覆盖 YAML 配置和内置默认值。cast 音色映射优先于默认音色。`[voice "vendor-id"|text]` 直接选择音色；`[as lin|text]` 使用 Lin 的映射，没有映射时回退到默认音色。切换厂商不会自动转换其他厂商的模型或音色 ID。
+`--model` 和 `--voice` 覆盖 front matter，后者覆盖环境变量，环境变量覆盖 YAML 配置和内置默认值。cast 音色映射优先于默认音色。`[voice "vendor-id"|text]` 直接选择音色。`[as lin|text]` 使用 Lin 的映射；已知说话人没有映射时仍使用默认音色，未知目标会报错。切换厂商不会自动转换其他厂商的模型或音色 ID。
 
 端点覆盖用于你选择的区域服务或可信兼容网关，API 凭证会发送至该端点。远程服务应使用 HTTPS；HTTP 用于本地测试。请求不会跟随重定向。
 
@@ -128,3 +130,18 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 请求明确指定 `AUDIO_WAV`、`INLINE` 和 24000 Hz。响应必须恰好包含一个 `STOP` 候选和一个内联 `audio/wav` part，且输入/输出未被拦截。额外 part、多个候选、无效 JSON/base64 和 API 错误对象均失败。共用解码器要求完整 RIFF 长度、PCM1、单声道、24 kHz、16-bit、对齐 2、字节率 48000；未知长度 WAV、重复音频块和其他编码会失败，额外 RIFF 元数据块可接受。64 MiB HTTP 限制包含 JSON/base64 开销。本适配器先提取 WAV 内的 PCM，再交给共用渲染器；前述原始 PCM 限制适用于其他适配器。
 
 参考：[当前 TTS 指南](https://ai.google.dev/gemini-api/docs/speech-generation)、[GenerateContent schema](https://ai.google.dev/api/generate-content)、[模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)。离线样例验证所选 schema 和拒绝行为，尚未进行真实账号或声学验证。
+
+## Fish Audio
+
+```sh
+# 须已设置 FISH_API_KEY 和属于你自己的 FISH_VOICE_ID。
+./timbrex synth examples/fish.tbx -o fish.wav
+```
+
+使用 bearer 认证、`model: s2.1-pro` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。初版仅支持 `s2.1-pro`；由于服务端会对未知模型请求头静默回退，未知及其他模型均在本地拒绝。没有默认账号音色。请用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定你有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；角色音色按片段串行合成。
+
+语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入；自由表演指令、数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
+
+请求指定 `format: wav` 和 `sample_rate: 24000`。有界解码器遍历 RIFF chunk，不直接删除固定 44 字节头；只接受完整的 PCM1、单声道、24 kHz、16-bit WAV，且对齐、字节率和长度必须一致。成功 HTTP 响应内的 JSON 错误、截断/未知长度 WAV、重复音频块和其他格式均失败。本适配器先提取 WAV 内的 PCM 再渲染；前述原始 PCM 限制适用于其他适配器。有效 WAV 不能证明模型读出了每个字。官方 HTTP 错误包括 400、401、402、403、404、429 和 5xx；失败时不重试，诊断也不包含响应正文。
+
+参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，流式哨兵长度会明确拒绝而不是猜测。

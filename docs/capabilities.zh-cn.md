@@ -4,23 +4,23 @@
 
 此表描述 Timbrex 当前适配器，不代表厂商提供的全部能力。**参数**表示数值 API 字段或 SSML 控制；**指令**表示期望的表演，模型可能近似理解；**不支持**表示用于语音片段时会在本地报错。音色和模型限制仍然适用。这些映射有离线契约测试，尚无真实声音验证。
 
-| 控制 | OpenAI | ElevenLabs | MiniMax | Azure | Qwen | Gemini |
-| --- | --- | --- | --- | --- | --- | --- |
-| 文本与 cast 音色 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 |
-| `pause`、`silence`、`break`、非负 `gap` | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 |
-| `speed`、`fast`、`slow` | 参数：0.25–4 倍 | 参数：0.7–1.2 倍；v4/v4 Turbo 不支持 | 参数：0.5–2 倍 | SSML：0.5–2 倍 | 参数：0.5–2 倍 | `fast`/`slow` 为指令；数值不支持 |
-| `pitch` | 不支持 | 不支持 | 整数 −12…+12 半音 | SSML −12…约 +7.01955 半音 | 参数 −12…+12 半音 | 不支持 |
-| `volume` | 不支持 | 不支持 | 参数 −60…+20 dB | SSML −60…+20 dB | 参数 −60…约 +6.02 dB | 不支持 |
-| 标准情绪 | 指令 | Audio-tag 指令 | 七种映射情绪 | 映射到 style | 指令 | 指令 |
-| 情绪强度，如 `happy 0.8` | 文本指令 | 文本指令 | 不支持 | 不支持 | 文本指令 | 文本指令 |
-| `whisper` / `shout` | 指令 | Audio tags | 仅 2.6 支持耳语，不支持喊叫 | 依赖音色的 style | 指令 | 指令 |
-| `act`、`accent`、`dialect`、自定义 `emotion` | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 | 指令 |
-| `style`、`role` | 指令 | Audio-tag 指令 | 不支持 | SSML；role 需要 style | 指令 | 指令 |
-| `emph` | 指令 | Audio-tag 指令 | 不支持 | 依赖音色的强调 | 指令 | 指令 |
-| `laugh`、`cry`、`sigh` 的 **span** | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 | 指令 |
-| 独立非语言事件 | 不支持 | 部分事件 | 2.8 下的部分事件 | 不支持 | 部分事件 | 部分事件 |
-| `lang` span / front matter | 指令 | 语言代码 | Language boost | SSML locale | 语言提示 | 原生语言代码 |
-| `voice`、`as` span；`reset` | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 |
+| 控制 | OpenAI | ElevenLabs | MiniMax | Azure | Qwen | Gemini | Fish |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 文本与 cast 音色 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 |
+| `speed`、`fast`、`slow` | 参数：0.25–4 倍 | 参数：0.7–1.2 倍；v4/v4 Turbo 不支持 | 参数：0.5–2 倍 | SSML：0.5–2 倍 | 参数：0.5–2 倍 | `fast`/`slow` 为指令；数值不支持 | 参数：0.5–2 倍 |
+| `pitch` | 不支持 | 不支持 | 整数 −12…+12 半音 | SSML −12…约 +7.01955 半音 | 参数 −12…+12 半音 | 不支持 | 不支持 |
+| `volume` | 不支持 | 不支持 | 参数 −60…+20 dB | SSML −60…+20 dB | 参数 −60…约 +6.02 dB | 不支持 | 参数 −60…+20 dB（本地范围） |
+| 标准情绪 | 指令 | Audio-tag 指令 | 七种映射情绪 | 映射到 style | 指令 | 指令 | 部分 S2 标记 |
+| 情绪强度，如 `happy 0.8` | 文本指令 | 文本指令 | 不支持 | 不支持 | 文本指令 | 文本指令 | 不支持 |
+| `whisper` / `shout` | 指令 | Audio tags | 仅 2.6 支持耳语，不支持喊叫 | 依赖音色的 style | 指令 | 指令 | S2 标记 |
+| `act`、`accent`、`dialect`、自定义 `emotion` | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 | 指令 | 不支持 |
+| `style`、`role` | 指令 | Audio-tag 指令 | 不支持 | SSML；role 需要 style | 指令 | 指令 | 不支持 |
+| `emph` | 指令 | Audio-tag 指令 | 不支持 | 依赖音色的强调 | 指令 | 指令 | S2 标记 |
+| `laugh`、`cry`、`sigh` 的 **span** | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 | 指令 | 不支持 |
+| 独立非语言事件 | 不支持 | 部分事件 | 2.8 下的部分事件 | 不支持 | 部分事件 | 部分事件 | 部分事件 |
+| `lang` span / front matter | 指令 | 语言代码 | Language boost | SSML locale | 语言提示 | 原生语言代码 | 不支持 |
+| `voice`、`as` span；`reset` | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 |
 
 OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`。`eleven_v4` 和 `eleven_v4_turbo` 不支持语速设置，因此会拒绝显式语速控制；其他模型的适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见[厂商接入](providers.zh-cn.md)。
 
@@ -43,7 +43,7 @@ ElevenLabs 事件：`laugh`、`sigh`、`gasp`、`clear-throat`、`giggle`、`cou
 
 ## 字面量文本
 
-转义保护 Timbrex 语法，但不能关闭厂商的原生标记。为防止字面量文本变成意外指令，ElevenLabs 和 Qwen 拒绝台词中的 ASCII `[`、`]`。ElevenLabs 也拒绝表演指令中的方括号、旧模型中的字面量 `<break>` 标签，以及 `eleven_flash_v2` 和 `eleven_turbo_v2` 中的 `<phoneme>` 标签。数学比较及无关的类似标签词语仍被接受。
+转义保护 Timbrex 语法，但不能关闭厂商的原生标记。为防止字面量文本变成意外指令，ElevenLabs、Qwen 和 Fish 拒绝台词中的 ASCII `[`、`]`。Fish 还拒绝原生说话人 token 前缀 `<|`。ElevenLabs 也拒绝表演指令中的方括号、旧模型中的字面量 `<break>` 标签，以及 `eleven_flash_v2` 和 `eleven_turbo_v2` 中的 `<phoneme>` 标签。数学比较及无关的类似标签词语仍被接受。
 
 MiniMax 拒绝 `(laughs)` 等已识别的原生事件字符串，以及停顿前缀 `<#`。其他圆括号会原样传递，但服务可能将括号内的拼音、IPA 或粤拼解释为发音控制；适配器无法识别所有此类形式。需要保留这些符号为文字时，可以使用 `（ ）`、`［ ］` 等 Unicode 替代字符，或换用其他厂商。
 
@@ -62,3 +62,11 @@ Stub 忽略表演语义，输出 8 kHz 测试音，不能验证厂商能力或�
 `gemini-3.8-flash-tts` 适配器支持文本、预置角色音色、共用 voice/as/reset 作用域和本地停顿。标准情绪（含数值强度）、`act`、`style`、`role`、`accent`、`dialect`、自定义 `emotion`、`whisper`、`shout`、`emph` 及 laugh/cry/sigh span 会转换为 `speechMetadata.style` 中的**指令**。`fast` 和 `slow` 请求更快/更慢的语音，不承诺精确倍率。数值 speed、pitch 和 volume **不支持**。`lang` 是原生语言代码参数，允许的子集见接入说明。
 
 独立事件映射为 `laugh→<laugh>`、`sigh→<sigh>`、`cough→<cough>`、`breath→<breath>`、`gasp→<gasp>`；事件参数/注释及其他事件不支持。原生标记请求表演效果，不保证精确的独立声音。文本中的字面 ASCII `<`、`>` 会被保守拒绝，以避免原生标记解释；需要保留字面含义时请用 Unicode 替代。指令与台词分开传递。前述保留但未实现的功能同样适用。
+
+## Fish Audio
+
+`s2.1-pro` 适配器支持文本、显式音色 reference ID、共用 voice/as/reset 作用域和本地停顿。数值语速是**参数**（0.5–2 倍）；`fast`/`slow` 分别使用 1.2/0.8 倍。音量是 **dB 参数**，采用本地 −60…+20 范围。音高、显式语言/口音、表演/style/role 指令、数值情绪强度和 laugh/cry/sigh span **不支持**。
+
+原生 S2 标记映射为 `happy→[happy]`、`sad→[sad]`、`angry→[angry]`、`fear→[scared]`、`surprise→[surprised]`、`disgust→[disgusted]`、`calm→[calm]`、`excited→[excited]`、`whisper→[whispering]`、`shout→[shouting]`、`emph→[emphasis]`；其他情绪不支持。事件映射为 `laugh→[laughing]`、`chuckle→[chuckling]`、`sigh→[sighing]`、`groan→[groaning]`、`pant→[panting]`、`gasp→[gasping]`、`yawn→[yawning]`、`snore→[snoring]`、`clear-throat→[clear throat]`。标记/事件的参数和注释不支持。这些是请求的表演效果，不保证精确独立声音或声学数值。
+
+字面 ASCII `[`/`]` 及原生说话人 token 前缀 `<|` 会被拒绝，以防意外控制。普通圆括号仍作为文本，不生成旧 S1 圆括号标记。前述保留但未实现的功能同样适用。

@@ -16,6 +16,7 @@ Settings are loaded centrally from YAML and environment variables; see [configur
 | `azure` | `AZURE_SPEECH_KEY`, and region or endpoint | Selected by voice | `en-US-JennyNeural` |
 | `qwen` | `DASHSCOPE_API_KEY`, `QWEN_ENDPOINT` | `qwen-audio-3.1-tts-flash` | `longanhuan_v3.1` |
 | `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` | `Kore` |
+| `fish` | `FISH_API_KEY`, voice/reference ID | `s2.1-pro` | None; set `FISH_VOICE_ID`, `--voice`, front matter, or cast mapping |
 | `stub` | None | None | None; test tone |
 
 Optional environment defaults:
@@ -28,8 +29,9 @@ Optional environment defaults:
 | Azure | — | `AZURE_SPEECH_VOICE` | `AZURE_SPEECH_ENDPOINT` (full request URL), otherwise `AZURE_SPEECH_REGION` |
 | Qwen | `QWEN_MODEL` | `QWEN_VOICE` | `QWEN_ENDPOINT` (required full request URL) |
 | Gemini | `GEMINI_MODEL` | `GEMINI_VOICE` | `GEMINI_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`) |
+| Fish | `FISH_MODEL` | `FISH_VOICE_ID` | `FISH_BASE_URL` (`https://api.fish.audio/v1`) |
 
-`--model` and `--voice` override front matter, which overrides environment settings, which override YAML configuration and built-in defaults. Cast voice mappings override the default voice. A `[voice "vendor-id"|text]` span selects a voice directly; `[as lin|text]` uses Lin's mapping, falling back to the default if no mapping is available. Changing provider does not translate a model or voice ID belonging to another vendor.
+`--model` and `--voice` override front matter, which overrides environment settings, which override YAML configuration and built-in defaults. Cast voice mappings override the default voice. A `[voice "vendor-id"|text]` span selects a voice directly. `[as lin|text]` uses Lin's mapping; a known speaker without a mapping still uses the default voice, and an unknown target is an error. Changing provider does not translate a model or voice ID belonging to another vendor.
 
 Endpoint overrides are intended for your chosen regional service or a trusted compatible gateway. API credentials are sent to that endpoint. Use HTTPS for remote services. HTTP is accepted for local testing. Requests do not follow redirects.
 
@@ -128,3 +130,18 @@ Spoken text and `speechMetadata.style` are separate. `fast`/`slow`, acting, emot
 Requests explicitly select `AUDIO_WAV`, `INLINE` and 24000 Hz. A response must contain exactly one `STOP` candidate and one inline `audio/wav` part, without prompt/output blocking. Unexpected parts, multiple candidates, malformed JSON/base64 and API error objects fail. The shared decoder requires complete RIFF lengths, PCM1, mono, 24 kHz, 16-bit, alignment 2 and byte rate 48000; unknown-size WAV, duplicate audio chunks and other encodings fail. Extra RIFF metadata chunks are allowed. The 64 MiB HTTP limit includes JSON/base64 overhead. This adapter unwraps WAV before the shared renderer; the raw-PCM restrictions above apply to the other adapters.
 
 References: [current TTS guide](https://ai.google.dev/gemini-api/docs/speech-generation), [GenerateContent schema](https://ai.google.dev/api/generate-content), [model and limits](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts). Offline fixtures verify the selected schema and rejection behavior; no real account or acoustic verification has been performed.
+
+## Fish Audio
+
+```sh
+# FISH_API_KEY and FISH_VOICE_ID must already be set to your own resources.
+./timbrex synth examples/fish.tbx -o fish.wav
+```
+
+Calls `POST https://api.fish.audio/v1/tts` with bearer authentication, the `model: s2.1-pro` header, JSON and an explicit single-speaker `reference_id`. This initial adapter supports only `s2.1-pro`; unknown and other models fail locally because the service silently falls back for unrecognized model headers. No account voice is chosen by default. Use `FISH_VOICE_ID`, `--voice`, front matter or a `fish` cast mapping for a voice you can access. The adapter does not upload reference audio, create clones, or use native multi-speaker requests; cast voices are synthesized sequentially.
+
+Speed maps to the documented 0.5–2 multiplier and volume is passed in dB. Volume has a local −60…+20 dB bound, not a claimed vendor limit. Loudness normalization is explicitly enabled. Text normalization is explicitly disabled to avoid the API's additional number/date/unit rewriting. Speech pronunciation is still model-dependent. Explicit `lang` fails: Fish's `language` field only affects normalization/timestamp alignment and cannot select spoken language or accent. Selected S2 emotion and event cues use square brackets; free-form acting, numeric emotion intensity, pitch and unsupported controls fail before any HTTP call. Text including generated cues has a local 4096-character bound, not a claimed vendor maximum.
+
+Requests specify `format: wav` and `sample_rate: 24000`. The bounded decoder walks RIFF chunks instead of dropping a fixed 44-byte header, and accepts only complete PCM1, mono, 24 kHz, 16-bit WAV with matching alignment, byte rate and sizes. JSON errors in a successful HTTP response, truncated/unknown-length WAV, duplicate audio chunks and other formats fail. This adapter unwraps WAV before rendering; the raw-PCM restrictions above apply to the other adapters. A valid WAV does not prove the model recited every word. Official HTTP errors include 400, 401, 402, 403, 404, 429, and 5xx; they fail without retry, and response bodies stay out of diagnostics.
+
+References: [TTS endpoint](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech), [OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json), [errors](https://docs.fish.audio/api-reference/errors), [model choice](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model), [S2 emotion and event cues](https://docs.fish.audio/developer-guide/core-features/emotions). Offline fixtures cover requests and rejection paths. Live account access, complete-WAV interoperability and acoustic behavior remain unverified; streaming sentinel sizes are deliberately rejected rather than guessed.

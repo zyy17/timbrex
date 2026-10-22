@@ -22,3 +22,6 @@ providers:
   gemini:
     model: gemini-3.8-flash-tts
     voice: Kore
+  fish:
+    model: s2.1-pro
+    voice: YOUR_FISH_REFERENCE_ID

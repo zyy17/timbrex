@@ -4,23 +4,23 @@
 
 This table describes Timbrex's current adapters, not everything the vendors offer. **Parameter** means a numeric API field or SSML control. **Instruction** means a requested performance that the model may interpret approximately. **Unsupported** means a local error when used by a speech segment. Voice/model restrictions still apply; these mappings have offline contract coverage, not live acoustic verification.
 
-| Control | OpenAI | ElevenLabs | MiniMax | Azure | Qwen | Gemini |
-| --- | --- | --- | --- | --- | --- | --- |
-| Text and cast voices | Yes | Yes | Yes | Yes | Yes | Yes |
-| `pause`, `silence`, `break`, nonnegative `gap` | Local silence | Local silence | Local silence | Local silence | Local silence | Local silence |
-| `speed`, `fast`, `slow` | Parameter: 0.25–4× | Parameter: 0.7–1.2×; unsupported on v4/v4 Turbo | Parameter: 0.5–2× | SSML: 0.5–2× | Parameter: 0.5–2× | Instruction for `fast`/`slow`; numeric unsupported |
-| `pitch` | Unsupported | Unsupported | Integer −12…+12 st | SSML −12…about +7.01955 st | Parameter −12…+12 st | Unsupported |
-| `volume` | Unsupported | Unsupported | Parameter −60…+20 dB | SSML −60…+20 dB | Parameter −60…about +6.02 dB | Unsupported |
-| Standard emotions | Instruction | Audio-tag instruction | Seven mapped emotions | Mapped styles | Instruction | Instruction |
-| Emotion intensity, e.g. `happy 0.8` | Text instruction | Text instruction | Unsupported | Unsupported | Text instruction | Text instruction |
-| `whisper` / `shout` | Instruction | Audio tags | Whisper on 2.6 only; no shout | Voice-dependent styles | Instruction | Instruction |
-| `act`, `accent`, `dialect`, custom `emotion` | Instruction | Audio-tag instruction | Unsupported | Unsupported | Instruction | Instruction |
-| `style`, `role` | Instruction | Audio-tag instruction | Unsupported | SSML; role requires style | Instruction | Instruction |
-| `emph` | Instruction | Audio-tag instruction | Unsupported | Voice-dependent emphasis | Instruction | Instruction |
-| `laugh`, `cry`, `sigh` **spans** | Instruction | Audio-tag instruction | Unsupported | Unsupported | Instruction | Instruction |
-| Standalone nonverbal events | Unsupported | Selected events | Selected events on 2.8 | Unsupported | Selected events | Selected events |
-| `lang` span / front matter | Instruction | Language code | Language boost | SSML locale | Language hint | Native language-code |
-| `voice`, `as` spans; `reset` | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner |
+| Control | OpenAI | ElevenLabs | MiniMax | Azure | Qwen | Gemini | Fish |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Text and cast voices | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence | Local silence | Local silence | Local silence | Local silence | Local silence | Local silence |
+| `speed`, `fast`, `slow` | Parameter: 0.25–4× | Parameter: 0.7–1.2×; unsupported on v4/v4 Turbo | Parameter: 0.5–2× | SSML: 0.5–2× | Parameter: 0.5–2× | Instruction for `fast`/`slow`; numeric unsupported | Parameter: 0.5–2× |
+| `pitch` | Unsupported | Unsupported | Integer −12…+12 st | SSML −12…about +7.01955 st | Parameter −12…+12 st | Unsupported | Unsupported |
+| `volume` | Unsupported | Unsupported | Parameter −60…+20 dB | SSML −60…+20 dB | Parameter −60…about +6.02 dB | Unsupported | Parameter −60…+20 dB (local bound) |
+| Standard emotions | Instruction | Audio-tag instruction | Seven mapped emotions | Mapped styles | Instruction | Instruction | Selected S2 cues |
+| Emotion intensity, e.g. `happy 0.8` | Text instruction | Text instruction | Unsupported | Unsupported | Text instruction | Text instruction | Unsupported |
+| `whisper` / `shout` | Instruction | Audio tags | Whisper on 2.6 only; no shout | Voice-dependent styles | Instruction | Instruction | S2 cues |
+| `act`, `accent`, `dialect`, custom `emotion` | Instruction | Audio-tag instruction | Unsupported | Unsupported | Instruction | Instruction | Unsupported |
+| `style`, `role` | Instruction | Audio-tag instruction | Unsupported | SSML; role requires style | Instruction | Instruction | Unsupported |
+| `emph` | Instruction | Audio-tag instruction | Unsupported | Voice-dependent emphasis | Instruction | Instruction | S2 cue |
+| `laugh`, `cry`, `sigh` **spans** | Instruction | Audio-tag instruction | Unsupported | Unsupported | Instruction | Instruction | Unsupported |
+| Standalone nonverbal events | Unsupported | Selected events | Selected events on 2.8 | Unsupported | Selected events | Selected events | Selected events |
+| `lang` span / front matter | Instruction | Language code | Language boost | SSML locale | Language hint | Native language-code | Unsupported |
+| `voice`, `as` spans; `reset` | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner |
 
 OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. Explicit speed controls are rejected on `eleven_v4` and `eleven_v4_turbo`, which do not support the speed setting. For other models, the adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](providers.md).
 
@@ -43,7 +43,7 @@ Volume converts dB to a linear amplitude ratio with `10^(dB/20)`. MiniMax receiv
 
 ## Literal text
 
-Escaping protects Timbrex syntax, but does not disable a vendor's native markup. To avoid turning literal text into unintended instructions, ElevenLabs and Qwen reject literal ASCII `[` or `]` in spoken text. ElevenLabs also rejects brackets inside acting instructions, literal `<break>` tags on older models, and `<phoneme>` tags on `eleven_flash_v2` and `eleven_turbo_v2`. Mathematical comparisons and unrelated tag-like words remain accepted.
+Escaping protects Timbrex syntax, but does not disable a vendor's native markup. To avoid turning literal text into unintended instructions, ElevenLabs, Qwen, and Fish reject literal ASCII `[` or `]` in spoken text. Fish also rejects the native speaker-token prefix `<|`. ElevenLabs also rejects brackets inside acting instructions, literal `<break>` tags on older models, and `<phoneme>` tags on `eleven_flash_v2` and `eleven_turbo_v2`. Mathematical comparisons and unrelated tag-like words remain accepted.
 
 MiniMax rejects its recognized native event strings, such as `(laughs)`, and its pause prefix `<#`. Other parentheses are passed through, but the service can interpret parenthesized Pinyin, IPA, or Jyutping as pronunciation controls; the adapter does not recognize every such form. Use Unicode alternatives such as `（ ）` and `［ ］`, or another provider, when those marks must remain text.
 
@@ -62,3 +62,11 @@ The stub ignores performance semantics and writes an 8 kHz test tone. It cannot 
 The `gemini-3.8-flash-tts` adapter supports text, prebuilt cast voices, shared voice/as/reset scopes and local pauses. Standard emotions (including numeric intensity), `act`, `style`, `role`, `accent`, `dialect`, custom `emotion`, `whisper`, `shout`, `emph`, and laugh/cry/sigh spans become **instructions** in `speechMetadata.style`. `fast` and `slow` request faster/slower speech without an exact multiplier. Numeric speed, pitch and volume are **unsupported**. `lang` is a native language-code parameter with the restricted list documented in setup.
 
 Standalone events map `laugh→<laugh>`, `sigh→<sigh>`, `cough→<cough>`, `breath→<breath>`, and `gasp→<gasp>`; arguments/notes and other events are unsupported. Native cues request a performance, not an exact isolated sound. Literal ASCII `<` and `>` in text are conservatively rejected to avoid native cue interpretation; use Unicode alternatives when they must remain text. Instructions stay separate from the transcript. The reserved unsupported features above also apply.
+
+## Fish Audio
+
+The `s2.1-pro` adapter supports text, explicit voice reference IDs, shared voice/as/reset scopes and local pauses. Numeric speed is a **parameter** (0.5–2×); `fast`/`slow` use 1.2×/0.8×. Volume is a **dB parameter** within the adapter's −60…+20 bound. Pitch, explicit language/accents, acting/style/role instructions, numeric emotion intensity and laugh/cry/sigh spans are **unsupported**.
+
+Native S2 cues map `happy→[happy]`, `sad→[sad]`, `angry→[angry]`, `fear→[scared]`, `surprise→[surprised]`, `disgust→[disgusted]`, `calm→[calm]`, `excited→[excited]`, `whisper→[whispering]`, `shout→[shouting]`, and `emph→[emphasis]`. Other emotions are unsupported. Events map `laugh→[laughing]`, `chuckle→[chuckling]`, `sigh→[sighing]`, `groan→[groaning]`, `pant→[panting]`, `gasp→[gasping]`, `yawn→[yawning]`, `snore→[snoring]`, and `clear-throat→[clear throat]`. Cue/event arguments and notes are unsupported. These are requested performances, not guaranteed isolated sounds or measured acoustic values.
+
+Literal ASCII `[`/`]` and the native speaker-token prefix `<|` are rejected to prevent accidental controls. Ordinary parentheses remain text; the legacy S1 parenthesized cue syntax is not generated. The reserved unsupported features above also apply.

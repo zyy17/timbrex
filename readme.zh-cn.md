@@ -2,7 +2,7 @@
 
 [English](readme.md)
 
-**用一个小巧的 DSL 生成富有表现力的语音。** 写下台词及其表演方式，通过 ElevenLabs、OpenAI、MiniMax、Azure Speech、Qwen 或 Gemini TTS 生成音频。
+**用一个小巧的 DSL 生成富有表现力的语音。** 写下台词及其表演方式，通过 ElevenLabs、OpenAI、MiniMax、Azure Speech、Qwen、Gemini TTS 或 Fish Audio 生成音频。
 
 ```tbx
 [happy|很高兴见到你！] [pause 300ms] [slow|慢慢来。]
@@ -24,7 +24,7 @@ make build
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
-上面的示例演示原有适配器；Gemini 不支持数值语速，因此提供了专用[示例](examples/gemini.tbx)。ElevenLabs 还需要你的音色 ID，Qwen 需要工作空间端点。各服务的配置见[厂商接入](docs/providers.zh-cn.md)。
+上面的示例演示原有适配器；Gemini 不支持数值语速，因此提供了专用[示例](examples/gemini.tbx)。Fish Audio 提供专用[示例](examples/fish.tbx)，并要求使用你的音色 reference ID。ElevenLabs 还需要你的音色 ID，Qwen 需要工作空间端点。各服务的配置见[厂商接入](docs/providers.zh-cn.md)。
 
 无需凭证或网络请求，也可以体验编译流程：
 
