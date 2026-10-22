@@ -86,6 +86,8 @@ Calls `POST https://{region}.tts.speech.microsoft.com/cognitiveservices/v1` with
 
 Style, role, and emphasis support depend on the selected voice. Azure may ignore a style that a voice does not support; Timbrex does not yet query voice capabilities. The adapter allows one style per segment and rejects conflicting styles. `[role Boy]` needs a style in the same scope. The root SSML language uses a recognizable language-region prefix in the voice name. An explicit `lang` that differs from that locale is emitted inside `voice` as `<lang xml:lang="…">`, as required for multilingual language/accent overrides; the selected voice must support the target language. A custom voice without a locale prefix uses explicit `lang` as the root default.
 
+Azure REST truncates audio at ten minutes, potentially with HTTP 200. Timbrex rejects a segment at or above 28,800,000 bytes (ten minutes of the requested 24 kHz mono S16LE PCM) rather than treating it as complete; split long speech into shorter paragraphs. A genuinely complete segment of exactly ten minutes is also rejected because raw PCM has no completion marker. This boundary check cannot prove that shorter audio contains every requested word.
+
 References: [REST API](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech), [voice, style, role, and prosody](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice).
 
 ## Qwen
