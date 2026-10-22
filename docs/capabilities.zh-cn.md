@@ -1,6 +1,6 @@
 # 已实现的厂商能力
 
-[English](CAPABILITIES.md) · [配置与官方参考](PROVIDERS.zh-CN.md)
+[English](capabilities.md) · [配置与官方参考](providers.zh-cn.md)
 
 此表描述 Timbrex 当前适配器，不代表厂商提供的全部能力。**参数**表示数值 API 字段或 SSML 控制；**指令**表示期望的表演，模型可能近似理解；**不支持**表示用于语音片段时会在本地报错。音色和模型限制仍然适用。这些映射有离线契约测试，尚无真实声音验证。
 
@@ -22,7 +22,7 @@
 | `lang` span / front matter | 指令 | 语言代码 | Language boost | SSML locale | 语言提示 |
 | `voice`、`as` span；`reset` | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 |
 
-OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`；适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见[厂商接入](PROVIDERS.zh-CN.md)。
+OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`；适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见[厂商接入](providers.zh-cn.md)。
 
 ## 具体映射
 

@@ -1,6 +1,6 @@
 # Design rationale
 
-[简体中文](REFLECTION.zh-CN.md)
+[简体中文](reflection.zh-cn.md)
 
 Timbrex exists to make expressive speech easy to write and read. A script should show the dialogue, its speakers, and its performance without requiring the author to learn every vendor's request format.
 

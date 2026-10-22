@@ -1,6 +1,6 @@
 # Implemented provider capabilities
 
-[简体中文](CAPABILITIES.zh-CN.md) · [Setup and official references](PROVIDERS.md)
+[简体中文](capabilities.zh-cn.md) · [Setup and official references](providers.md)
 
 This table describes Timbrex's current adapters, not everything the vendors offer. **Parameter** means a numeric API field or SSML control. **Instruction** means a requested performance that the model may interpret approximately. **Unsupported** means a local error when used by a speech segment. Voice/model restrictions still apply; these mappings have offline contract coverage, not live acoustic verification.
 
@@ -22,7 +22,7 @@ This table describes Timbrex's current adapters, not everything the vendors offe
 | `lang` span / front matter | Instruction | Language code | Language boost | SSML locale | Language hint |
 | `voice`, `as` spans; `reset` | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner |
 
-OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. The adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](PROVIDERS.md).
+OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. The adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](providers.md).
 
 ## Exact mappings
 

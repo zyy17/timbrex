@@ -1,6 +1,6 @@
 # Timbrex
 
-[简体中文](README.zh-CN.md)
+[简体中文](readme.zh-cn.md)
 
 **A small DSL for expressive text-to-speech.** Write what to say and how to say it, then generate audio through ElevenLabs, OpenAI, MiniMax, Azure Speech, or Qwen.
 
@@ -24,7 +24,7 @@ make build
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
-The example above works with each adapter's default model and a suitable voice. ElevenLabs additionally requires your voice ID; Qwen requires a workspace endpoint. See [provider setup](docs/PROVIDERS.md) for all five services.
+The example above works with each adapter's default model and a suitable voice. ElevenLabs additionally requires your voice ID; Qwen requires a workspace endpoint. See [provider setup](docs/providers.md) for all five services.
 
 To try the compiler without credentials or a network request:
 
@@ -60,7 +60,7 @@ chen: [slow|I've got something to tell you.]
 - `//` at the start of a line is a comment. Blank lines separate turns.
 - Prefer `[act "holding back tears"]` for free-form acting. `--strict-tags` rejects unknown names; `--no-strict-tags` allows implicit acting such as `[thoughtfully]`.
 
-Read the [language reference](docs/SPEC.md) and [implemented capability table](docs/CAPABILITIES.md). A recognized tag is not necessarily synthesizable by every provider. Unsupported controls fail instead of silently disappearing.
+Read the [language reference](docs/spec.md) and [implemented capability table](docs/capabilities.md). A recognized tag is not necessarily synthesizable by every provider. Unsupported controls fail instead of silently disappearing.
 
 ## Commands and output
 
@@ -85,9 +85,9 @@ make tidy    # verifies module files without changing them
 make fmt
 ```
 
-Tests cover parsing, diagnostics, nested scopes, request contracts for every adapter, exact pauses, failure handling, and output preservation. Tests use local HTTP servers, never vendor credentials. See [contributing](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
+Tests cover parsing, diagnostics, nested scopes, request contracts for every adapter, exact pauses, failure handling, and output preservation. Tests use local HTTP servers, never vendor credentials. See [contributing](contributing.md) and [AGENTS.md](AGENTS.md).
 
-The pipeline is source → lexer → parser/AST → check → lower/IR → provider → WAV. Packages follow those boundaries under `internal/`. Only `internal/cli` knows Cobra; each provider lives in `internal/providers/<name>`. [Editor support](editors/vscode/README.md) includes a TextMate grammar for VS Code and Cursor.
+The pipeline is source → lexer → parser/AST → check → lower/IR → provider → WAV. Packages follow those boundaries under `internal/`. Only `internal/cli` knows Cobra; each provider lives in `internal/providers/<name>`. [Editor support](editors/vscode/readme.md) includes a TextMate grammar for VS Code and Cursor.
 
 ## Scope and documentation
 
@@ -97,11 +97,11 @@ English is the primary documentation. Chinese companions carry the same behavior
 
 | Document | English | 简体中文 |
 | --- | --- | --- |
-| Language reference | [SPEC](docs/SPEC.md) | [语言参考](docs/SPEC.zh-CN.md) |
-| Credentials and adapters | [PROVIDERS](docs/PROVIDERS.md) | [厂商接入](docs/PROVIDERS.zh-CN.md) |
-| Implemented controls | [CAPABILITIES](docs/CAPABILITIES.md) | [能力表](docs/CAPABILITIES.zh-CN.md) |
-| Provider research | [MARKET_SURVEY](docs/MARKET_SURVEY.md) | [厂商调研](docs/MARKET_SURVEY.zh-CN.md) |
-| Design rationale | [REFLECTION](docs/REFLECTION.md) | [设计思路](docs/REFLECTION.zh-CN.md) |
-| Contributing | [CONTRIBUTING](CONTRIBUTING.md) | [参与贡献](CONTRIBUTING.zh-CN.md) |
+| Language reference | [Language reference](docs/spec.md) | [语言参考](docs/spec.zh-cn.md) |
+| Credentials and adapters | [Provider setup](docs/providers.md) | [厂商接入](docs/providers.zh-cn.md) |
+| Implemented controls | [Capabilities](docs/capabilities.md) | [能力表](docs/capabilities.zh-cn.md) |
+| Provider research | [Provider research](docs/market_survey.md) | [厂商调研](docs/market_survey.zh-cn.md) |
+| Design rationale | [Design rationale](docs/reflection.md) | [设计思路](docs/reflection.zh-cn.md) |
+| Contributing | [Contributing](contributing.md) | [参与贡献](contributing.zh-cn.md) |
 
-MIT licensed. See [LICENSE](LICENSE).
+MIT licensed. See [MIT license](license).

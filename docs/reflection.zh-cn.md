@@ -1,6 +1,6 @@
 # 设计思路
 
-[English](REFLECTION.md)
+[English](reflection.md)
 
 Timbrex 的目的，是让富有表现力的语音易于编写和阅读。脚本应直接呈现台词、角色和表演方式，无需作者学习每家厂商的请求格式。
 

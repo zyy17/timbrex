@@ -1,8 +1,8 @@
 # Contributing to Timbrex
 
-[简体中文](CONTRIBUTING.zh-CN.md)
+[简体中文](contributing.zh-cn.md)
 
-Timbrex aims to be a small, understandable DSL for expressive TTS. Start with the [language reference](docs/SPEC.md) and [repository rules](AGENTS.md). The grammar is frozen; extend vocabulary and adapters without adding new syntax.
+Timbrex aims to be a small, understandable DSL for expressive TTS. Start with the [language reference](docs/spec.md) and [repository rules](AGENTS.md). The grammar is frozen; extend vocabulary and adapters without adding new syntax.
 
 ## Before opening a change
 
@@ -36,6 +36,6 @@ Document supported models, environment variables, tag mappings, ranges, language
 
 ## Documentation and review
 
-Update English and `.zh-CN.md` companions in the same change. Keep examples executable and distinguish implemented features, approximations, and plans. Cite primary sources for vendor-specific behavior; avoid unsupported price, licensing, quality, or deprecation claims.
+Use lowercase documentation filenames; `AGENTS.md` keeps its name for tool discovery. Update English and `.zh-cn.md` companions in the same change. Keep examples executable and distinguish implemented features, approximations, and plans. Cite primary sources for vendor-specific behavior; avoid unsupported price, licensing, quality, or deprecation claims.
 
-Use short, idiomatic Go with clear package boundaries. Only `internal/cli` imports Cobra. Prefer existing patterns over new abstractions. Use English identifiers, errors, help text, comments, and Conventional Commit messages. Keep commits focused, include validation results, and never commit keys or `.env` files. Contributions are covered by the repository's [MIT license](LICENSE).
+Use short, idiomatic Go with clear package boundaries. Only `internal/cli` imports Cobra. Prefer existing patterns over new abstractions. Use English identifiers, errors, help text, comments, and Conventional Commit messages. Keep commits focused, include validation results, and never commit keys or `.env` files. Contributions are covered by the repository's [MIT license](license).

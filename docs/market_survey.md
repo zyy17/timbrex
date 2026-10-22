@@ -1,6 +1,6 @@
 # Provider integration research
 
-[简体中文](MARKET_SURVEY.zh-CN.md)
+[简体中文](market_survey.zh-cn.md)
 
 Review date: **2026-10-22**. This document records API design differences relevant to Timbrex. It is not a quality benchmark, price comparison, or legal assessment. No live listening study was performed. Model availability and service terms must be checked with the vendor when deploying.
 
@@ -16,7 +16,7 @@ All five provide a path to compatible PCM, allowing a small sequential WAV rende
 
 Three questions remain for live evaluation: whether each documented request works for the target account and region; how reliably each model follows expressive controls; and how audible segment boundaries are. A useful evaluation should record exact model/voice IDs, source scripts, requested parameters, date, failures, and listening criteria. It should distinguish API acceptance from performance quality.
 
-Voice cloning, native multi-speaker generation, streaming, alignment, and sound-effect generation may be separate vendor products. Their existence does not mean Timbrex integrates them. See [current capabilities](CAPABILITIES.md) and [setup](PROVIDERS.md) for implemented behavior.
+Voice cloning, native multi-speaker generation, streaming, alignment, and sound-effect generation may be separate vendor products. Their existence does not mean Timbrex integrates them. See [current capabilities](capabilities.md) and [setup](providers.md) for implemented behavior.
 
 ## Related open-source projects
 

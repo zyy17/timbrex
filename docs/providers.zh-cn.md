@@ -1,6 +1,6 @@
 # 厂商接入
 
-[English](PROVIDERS.md) · [支持的控制](CAPABILITIES.zh-CN.md)
+[English](providers.md) · [支持的控制](capabilities.zh-cn.md)
 
 Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，核对日期为 **2026-10-22**。离线测试验证请求和响应契约，尚未验证真实账号兼容性或声音质量。凭证必须属于端点所在区域，并具有所选模型和音色的权限。
 

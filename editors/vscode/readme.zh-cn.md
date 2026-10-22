@@ -1,6 +1,6 @@
 # VS Code 与 Cursor 的 Timbrex 支持
 
-[English](README.md)
+[English](readme.md)
 
 为 `.tbx` 和 `.timbrex` 提供语法高亮。语言 ID 为 `timbrex`，scope 为 `source.tbx`。扩展只提供高亮，不提供补全、验证或 LSP。请运行 `timbrex check` 验证脚本。
 

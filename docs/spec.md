@@ -1,8 +1,8 @@
 # Timbrex language reference
 
-[简体中文](SPEC.zh-CN.md) · [Provider capabilities](CAPABILITIES.md)
+[简体中文](spec.zh-cn.md) · [Provider capabilities](capabilities.md)
 
-Grammar version: **`timbrex: 1`**, the frozen v0.3.4 surface. This reference separates language rules from current synthesis support. It supersedes earlier prose that described planned commands as available. No new syntax is introduced here.
+Grammar version: **`timbrex: 1`**. The syntax is frozen. This reference describes language rules and identifies current synthesis support separately.
 
 ## 1. Text and tags
 
@@ -67,7 +67,7 @@ A suffix belongs to a number only if it ends the token: `10stone` is a word. Quo
 
 Outside quoted arguments, `[[` and `\[` produce a literal `[`. `]]` and `\]` produce a literal `]`. Backslash can also escape `|`, `\`, and `:`. Other backslashes are literal. Inside two or more open tags, consecutive `]` close nested tags; use `\]` for a literal closing bracket there. Thus `[whisper|say [pause 1s]]` closes both tags.
 
-A line whose first non-space characters are `//` is a comment outside tags. Inline `//`, `#`, and HTML comments are spoken text. Parentheses and angle brackets are plain language text, but some providers reserve them for native markup; see [capabilities](CAPABILITIES.md#literal-text).
+A line whose first non-space characters are `//` is a comment outside tags. Inline `//`, `#`, and HTML comments are spoken text. Parentheses and angle brackets are plain language text, but some providers reserve them for native markup; see [capabilities](capabilities.md#literal-text).
 
 Raw fences start with three backticks and an info string whose first word is an ASCII identifier, followed by an opaque info tail. The parser currently validates only the first word. They end at a line containing only three backticks and optional whitespace. Their contents are not parsed as Timbrex. All current real adapters reject fences; parsing them does not imply passthrough support.
 
@@ -145,7 +145,7 @@ cast:
 
 Supported keys are `timbrex`, `provider`, `model`, `voice`, `lang`, `strict_tags`, `narrator`, and `cast`. `cast` is either `auto` or a map of IDs with optional `name` and `voices`. If supplied, `timbrex` must be `1`. Unknown YAML keys are errors, including misspelled cast fields; future configuration is not silently accepted.
 
-Precedence is documented in [README](../README.md#commands-and-output). Voice IDs and models are vendor-specific. `lang` is a hint interpreted by the selected adapter; unsupported hints may fail. Azure chooses models through voice names and rejects `model:`. Keep credentials in environment variables, never in scripts.
+Precedence is documented in [README](../readme.md#commands-and-output). Voice IDs and models are vendor-specific. `lang` is a hint interpreted by the selected adapter; unsupported hints may fail. Azure chooses models through voice names and rejects `model:`. Keep credentials in environment variables, never in scripts.
 
 ## 7. Synthesis contract
 
@@ -153,7 +153,7 @@ Precedence is documented in [README](../README.md#commands-and-output). Voice ID
 
 Pauses (`pause`, `silence`, `break`, and a nonnegative `gap`) are local silence. Default pause is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations range from 0 to 1 minute per pause. `fast` is 1.2× and `slow` is 0.8×. `speed 120%` means 1.2×, not an increase of 120%. Pitch uses semitones and volume uses dB; supported ranges depend on the adapter. Emotion intensities are interpreted as text only where documented, not as calibrated measurements.
 
-The renderer concatenates compatible raw PCM segments into one WAV. It does not mix, overlap, resample, normalize, or crossfade. There is no implicit pause between turns. Use explicit pauses for timing. [Provider setup](PROVIDERS.md) and [capabilities](CAPABILITIES.md) describe the exact current mappings and limits.
+The renderer concatenates compatible raw PCM segments into one WAV. It does not mix, overlap, resample, normalize, or crossfade. There is no implicit pause between turns. Use explicit pauses for timing. [Provider setup](providers.md) and [capabilities](capabilities.md) describe the exact current mappings and limits.
 
 ## 8. Future work, not current behavior
 

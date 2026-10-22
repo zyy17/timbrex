@@ -1,6 +1,6 @@
 # Timbrex
 
-[English](README.md)
+[English](readme.md)
 
 **用一个小巧的 DSL 生成富有表现力的语音。** 写下台词及其表演方式，通过 ElevenLabs、OpenAI、MiniMax、Azure Speech 或 Qwen 生成音频。
 
@@ -24,7 +24,7 @@ make build
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
-上面的示例使用各适配器的默认模型及合适的音色即可运行。ElevenLabs 还需要你的音色 ID，Qwen 需要工作空间端点。五个服务的配置见[厂商接入](docs/PROVIDERS.zh-CN.md)。
+上面的示例使用各适配器的默认模型及合适的音色即可运行。ElevenLabs 还需要你的音色 ID，Qwen 需要工作空间端点。五个服务的配置见[厂商接入](docs/providers.zh-cn.md)。
 
 无需凭证或网络请求，也可以体验编译流程：
 
@@ -60,7 +60,7 @@ chen: [slow|I've got something to tell you.]
 - 行首 `//` 表示注释，空行分隔发言。
 - 自由表演指令优先写成 `[act "holding back tears"]`。`--strict-tags` 拒绝未知标签名；`--no-strict-tags` 允许 `[thoughtfully]` 这样的隐式表演指令。
 
-详见[语言参考](docs/SPEC.zh-CN.md)和[已实现能力表](docs/CAPABILITIES.zh-CN.md)。词表认识一个标签，不代表所有厂商都能合成它。不支持的控制会报错，不会静默丢弃。
+详见[语言参考](docs/spec.zh-cn.md)和[已实现能力表](docs/capabilities.zh-cn.md)。词表认识一个标签，不代表所有厂商都能合成它。不支持的控制会报错，不会静默丢弃。
 
 ## 命令与输出
 
@@ -85,9 +85,9 @@ make tidy    # 验证模块文件，不修改它们
 make fmt
 ```
 
-测试覆盖解析、诊断、嵌套作用域、各适配器请求契约、精确停顿、失败处理和输出保留。测试只使用本地 HTTP 服务，不读取厂商凭证。参见[参与贡献](CONTRIBUTING.zh-CN.md)和 [AGENTS.md](AGENTS.md)。
+测试覆盖解析、诊断、嵌套作用域、各适配器请求契约、精确停顿、失败处理和输出保留。测试只使用本地 HTTP 服务，不读取厂商凭证。参见[参与贡献](contributing.zh-cn.md)和 [AGENTS.md](AGENTS.md)。
 
-处理流程为：源码 → lexer → parser/AST → check → lower/IR → provider → WAV。`internal/` 下的包遵循这些边界，只有 `internal/cli` 依赖 Cobra，各厂商位于 `internal/providers/<name>`。[编辑器支持](editors/vscode/README.zh-CN.md)提供 VS Code 和 Cursor 使用的 TextMate 语法。
+处理流程为：源码 → lexer → parser/AST → check → lower/IR → provider → WAV。`internal/` 下的包遵循这些边界，只有 `internal/cli` 依赖 Cobra，各厂商位于 `internal/providers/<name>`。[编辑器支持](editors/vscode/readme.zh-cn.md)提供 VS Code 和 Cursor 使用的 TextMate 语法。
 
 ## 范围与文档
 
@@ -97,11 +97,11 @@ make fmt
 
 | 文档 | English | 简体中文 |
 | --- | --- | --- |
-| 语言参考 | [SPEC](docs/SPEC.md) | [语言参考](docs/SPEC.zh-CN.md) |
-| 凭证和适配器 | [PROVIDERS](docs/PROVIDERS.md) | [厂商接入](docs/PROVIDERS.zh-CN.md) |
-| 已实现控制 | [CAPABILITIES](docs/CAPABILITIES.md) | [能力表](docs/CAPABILITIES.zh-CN.md) |
-| 厂商调研 | [MARKET_SURVEY](docs/MARKET_SURVEY.md) | [厂商调研](docs/MARKET_SURVEY.zh-CN.md) |
-| 设计思路 | [REFLECTION](docs/REFLECTION.md) | [设计思路](docs/REFLECTION.zh-CN.md) |
-| 参与贡献 | [CONTRIBUTING](CONTRIBUTING.md) | [参与贡献](CONTRIBUTING.zh-CN.md) |
+| 语言参考 | [Language reference](docs/spec.md) | [语言参考](docs/spec.zh-cn.md) |
+| 凭证和适配器 | [Provider setup](docs/providers.md) | [厂商接入](docs/providers.zh-cn.md) |
+| 已实现控制 | [Capabilities](docs/capabilities.md) | [能力表](docs/capabilities.zh-cn.md) |
+| 厂商调研 | [Provider research](docs/market_survey.md) | [厂商调研](docs/market_survey.zh-cn.md) |
+| 设计思路 | [Design rationale](docs/reflection.md) | [设计思路](docs/reflection.zh-cn.md) |
+| 参与贡献 | [Contributing](contributing.md) | [参与贡献](contributing.zh-cn.md) |
 
-采用 MIT 许可证，详见 [LICENSE](LICENSE)。
+采用 MIT 许可证，详见 [MIT license](license)。

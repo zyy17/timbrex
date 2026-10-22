@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Rules for humans and coding agents working on Timbrex. Prefer this file over history when they disagree. Design and usage live in [README.md](README.md) and [docs/SPEC.md](docs/SPEC.md). Do not paste chat logs into the docs.
+Rules for humans and coding agents working on Timbrex. Prefer this file over history when they disagree. Design and usage live in [readme.md](readme.md) and [docs/spec.md](docs/spec.md). Do not paste chat logs into the docs.
 
 ## What this project is
 
@@ -69,11 +69,12 @@ Out:
 - Per-tag parameter schemas, registered provider namespaces, tree-sitter
 - General audio mixing, overlap, raw-provider passthrough, and streaming
 
-Provider request contracts are tested offline. Do not claim live compatibility or acoustic quality without recording a real account validation. Unsupported controls must fail before synthesis requests rather than silently disappear. Provider details and setup live in [docs/PROVIDERS.md](docs/PROVIDERS.md); update its Chinese companion with it.
+Provider request contracts are tested offline. Do not claim live compatibility or acoustic quality without recording a real account validation. Unsupported controls must fail before synthesis requests rather than silently disappear. Provider details and setup live in [docs/providers.md](docs/providers.md); update its Chinese companion with it.
 
 ## Language
 
-- Docs may be bilingual. English is the primary text (`README.md`, `docs/SPEC.md`). A Chinese companion uses the `.zh-CN.md` suffix and must say the same thing.
+- Docs may be bilingual. English is the primary text (`readme.md`, `docs/spec.md`). A Chinese companion uses the `.zh-cn.md` suffix and must say the same thing.
+- Use lowercase documentation filenames. Keep `AGENTS.md` as named for tool discovery.
 - Identifiers, package names, comments, CLI help, and CLI errors are English.
 - Commit messages are English Conventional Commits.
 
@@ -81,7 +82,7 @@ Provider request contracts are tested offline. Do not claim live compatibility o
 
 - Design and usage. No conversation transcripts.
 - Keep README honest when behavior changes. Update the Chinese companion in the same change when the English text changes.
-- [docs/SPEC.md](docs/SPEC.md) is the language target. The code may lag it; say so in the README rather than pretending a command exists.
+- [docs/spec.md](docs/spec.md) is the language target. The code may lag it; say so in the README rather than pretending a command exists.
 
 ## Git
 
