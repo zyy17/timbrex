@@ -68,6 +68,7 @@ func TestLanguageOverrideInsideVoice(t *testing.T) {
 		{"de-DE-KatjaNeural", "", "de-DE", ""},
 		{"en-US-GuyNeural", "en-US", "en-US", ""},
 		{"custom-voice", "fr-FR", "fr-FR", ""},
+		{"my-custom-voice", "fr-FR", "fr-FR", ""},
 	} {
 		t.Run(tc.voice+tc.lang, func(t *testing.T) {
 			ssml, err := build(providers.Segment{Voice: tc.voice, Lang: tc.lang, Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello & goodbye"}}, Controls: []ir.Node{{Name: "speed", Args: []ir.Arg{{Raw: "1.2", Kind: "number"}}}}})
