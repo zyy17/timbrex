@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -22,6 +23,32 @@ import (
 func fixtureWAV() []byte {
 	b, _ := hex.DecodeString("524946462800000057415645666d74201000000001000100c05d000080bb000002001000646174610400000001000200")
 	return b
+}
+func TestRequestJSONMatchesOfficialFields(t *testing.T) {
+	r, err := build(providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello"}}}, "s2.1-pro")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var obj map[string]any
+	if err := json.Unmarshal(data, &obj); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"language", "references", "temperature", "top_p", "latency"} {
+		if _, ok := obj[key]; ok {
+			t.Fatalf("unexpected field %s: %s", key, data)
+		}
+	}
+	if obj["text"] != "Hello" || obj["reference_id"] != "test-reference" || obj["format"] != "wav" || obj["sample_rate"] != float64(24000) || obj["normalize"] != false {
+		t.Fatalf("body=%s", data)
+	}
+	prosody, _ := obj["prosody"].(map[string]any)
+	if prosody["speed"] != float64(1) || prosody["volume"] != float64(0) || prosody["normalize_loudness"] != true {
+		t.Fatalf("prosody=%v", prosody)
+	}
 }
 func TestBuildContract(t *testing.T) {
 	seg := providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello (world) "}, {Kind: ir.Event, Name: "sigh"}}, Controls: []ir.Node{{Name: "happy"}, {Name: "whisper"}, {Name: "speed", Args: []ir.Arg{{Raw: "125%", Kind: "percent"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "-6dB", Kind: "decibel"}}}}}
