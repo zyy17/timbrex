@@ -43,8 +43,26 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		"X-Microsoft-OutputFormat":  "raw-24khz-16bit-mono-pcm",
 	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		return providers.Request(ctx, p.client, http.MethodPost, opt.Endpoint, "application/ssml+xml", headers, []byte(requests[i]))
+		pcm, err := providers.Request(ctx, p.client, http.MethodPost, opt.Endpoint, "application/ssml+xml", headers, []byte(requests[i]))
+		if err != nil {
+			return nil, err
+		}
+		if err := azurePCMComplete(len(pcm)); err != nil {
+			return nil, err
+		}
+		return pcm, nil
 	})
+}
+
+// Azure REST returns HTTP 200 and truncates audio at ten minutes.
+// https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech
+const maxAzurePCMBytes = 10 * 60 * providers.SampleRate * 2
+
+func azurePCMComplete(n int) error {
+	if n >= maxAzurePCMBytes {
+		return fmt.Errorf("audio reaches Azure's 10-minute limit and may be truncated; split the segment")
+	}
+	return nil
 }
 
 func build(seg providers.Segment) (string, error) {

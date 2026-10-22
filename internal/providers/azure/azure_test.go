@@ -1,7 +1,13 @@
 package azure
 
 import (
+	"bytes"
+	"context"
 	"encoding/xml"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -98,5 +104,39 @@ func TestLanguageOverrideInsideVoice(t *testing.T) {
 				t.Fatalf("lost controlled speech: %s", ssml)
 			}
 		})
+	}
+}
+
+func TestAzurePCMDurationBoundary(t *testing.T) {
+	if err := azurePCMComplete(maxAzurePCMBytes - 2); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []int{maxAzurePCMBytes, maxAzurePCMBytes + 2} {
+		if err := azurePCMComplete(n); err == nil || !strings.Contains(err.Error(), "10-minute") {
+			t.Fatalf("n=%d err=%v", n, err)
+		}
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestAzureTenMinuteResponsePreservesOutput(t *testing.T) {
+	p := provider{client: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewReader(make([]byte, maxAzurePCMBytes)))}, nil
+	})}}
+	out := filepath.Join(t.TempDir(), "out.wav")
+	if err := os.WriteFile(out, []byte("KEEP"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	doc := &ir.Document{Utterances: []ir.Utterance{{Speaker: "narrator", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}}}
+	_, err := p.Synthesize(context.Background(), doc, providers.Options{Out: out, Voice: "en-US-GuyNeural", Endpoint: "https://example.invalid"})
+	if err == nil || !strings.Contains(err.Error(), "10-minute") {
+		t.Fatalf("err = %v", err)
+	}
+	data, err := os.ReadFile(out)
+	if err != nil || string(data) != "KEEP" {
+		t.Fatalf("output = %q err=%v", data, err)
 	}
 }
