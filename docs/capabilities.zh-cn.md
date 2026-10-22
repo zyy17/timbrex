@@ -4,23 +4,23 @@
 
 此表描述 Timbrex 当前适配器，不代表厂商提供的全部能力。**参数**表示数值 API 字段或 SSML 控制；**指令**表示期望的表演，模型可能近似理解；**不支持**表示用于语音片段时会在本地报错。音色和模型限制仍然适用。这些映射有离线契约测试，尚无真实声音验证。
 
-| 控制 | OpenAI | ElevenLabs | MiniMax | Azure | Qwen |
-| --- | --- | --- | --- | --- | --- |
-| 文本与 cast 音色 | 支持 | 支持 | 支持 | 支持 | 支持 |
-| `pause`、`silence`、`break`、非负 `gap` | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 |
-| `speed`、`fast`、`slow` | 参数：0.25–4 倍 | 参数：0.7–1.2 倍；v4/v4 Turbo 不支持 | 参数：0.5–2 倍 | SSML：0.5–2 倍 | 参数：0.5–2 倍 |
-| `pitch` | 不支持 | 不支持 | 整数 −12…+12 半音 | SSML −12…约 +7.01955 半音 | 参数 −12…+12 半音 |
-| `volume` | 不支持 | 不支持 | 参数 −60…+20 dB | SSML −60…+20 dB | 参数 −60…约 +6.02 dB |
-| 标准情绪 | 指令 | Audio-tag 指令 | 七种映射情绪 | 映射到 style | 指令 |
-| 情绪强度，如 `happy 0.8` | 文本指令 | 文本指令 | 不支持 | 不支持 | 文本指令 |
-| `whisper` / `shout` | 指令 | Audio tags | 仅 2.6 支持耳语，不支持喊叫 | 依赖音色的 style | 指令 |
-| `act`、`accent`、`dialect`、自定义 `emotion` | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 |
-| `style`、`role` | 指令 | Audio-tag 指令 | 不支持 | SSML；role 需要 style | 指令 |
-| `emph` | 指令 | Audio-tag 指令 | 不支持 | 依赖音色的强调 | 指令 |
-| `laugh`、`cry`、`sigh` 的 **span** | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 |
-| 独立非语言事件 | 不支持 | 部分事件 | 2.8 下的部分事件 | 不支持 | 部分事件 |
-| `lang` span / front matter | 指令 | 语言代码 | Language boost | SSML locale | 语言提示 |
-| `voice`、`as` span；`reset` | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 |
+| 控制 | OpenAI | ElevenLabs | MiniMax | Azure | Qwen | Gemini |
+| --- | --- | --- | --- | --- | --- | --- |
+| 文本与 cast 音色 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 |
+| `speed`、`fast`、`slow` | 参数：0.25–4 倍 | 参数：0.7–1.2 倍；v4/v4 Turbo 不支持 | 参数：0.5–2 倍 | SSML：0.5–2 倍 | 参数：0.5–2 倍 | `fast`/`slow` 为指令；数值不支持 |
+| `pitch` | 不支持 | 不支持 | 整数 −12…+12 半音 | SSML −12…约 +7.01955 半音 | 参数 −12…+12 半音 | 不支持 |
+| `volume` | 不支持 | 不支持 | 参数 −60…+20 dB | SSML −60…+20 dB | 参数 −60…约 +6.02 dB | 不支持 |
+| 标准情绪 | 指令 | Audio-tag 指令 | 七种映射情绪 | 映射到 style | 指令 | 指令 |
+| 情绪强度，如 `happy 0.8` | 文本指令 | 文本指令 | 不支持 | 不支持 | 文本指令 | 文本指令 |
+| `whisper` / `shout` | 指令 | Audio tags | 仅 2.6 支持耳语，不支持喊叫 | 依赖音色的 style | 指令 | 指令 |
+| `act`、`accent`、`dialect`、自定义 `emotion` | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 | 指令 |
+| `style`、`role` | 指令 | Audio-tag 指令 | 不支持 | SSML；role 需要 style | 指令 | 指令 |
+| `emph` | 指令 | Audio-tag 指令 | 不支持 | 依赖音色的强调 | 指令 | 指令 |
+| `laugh`、`cry`、`sigh` 的 **span** | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 | 指令 |
+| 独立非语言事件 | 不支持 | 部分事件 | 2.8 下的部分事件 | 不支持 | 部分事件 | 部分事件 |
+| `lang` span / front matter | 指令 | 语言代码 | Language boost | SSML locale | 语言提示 | 原生语言代码 |
+| `voice`、`as` span；`reset` | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 |
 
 OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`。`eleven_v4` 和 `eleven_v4_turbo` 不支持语速设置，因此会拒绝显式语速控制；其他模型的适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见[厂商接入](providers.zh-cn.md)。
 

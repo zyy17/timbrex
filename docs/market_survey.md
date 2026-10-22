@@ -11,8 +11,9 @@ Review date: **2026-10-22**. This document records API design differences releva
 | [MiniMax](https://platform.minimax.io/docs/api-reference/speech-t2a-http) | Voice settings, discrete emotions, PCM/hex response, model-specific interjections | Map a finite supported subset and check both HTTP and API completion status |
 | [Azure Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice) | SSML voice, prosody, style, and role with voice-dependent support | Escape XML and distinguish supported syntax from actual voice capabilities |
 | [Qwen-Audio-TTS](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api) | Workspace endpoint, instruction and numeric controls, downloadable audio | Require the correct workspace endpoint and separate authenticated synthesis from signed downloads |
+| [Gemini TTS](https://ai.google.dev/gemini-api/docs/speech-generation) | Structured `speech_metadata.style`, inline vocal tags, WAV or raw PCM | Keep turn-level style out of the transcript; unwrap WAV before the shared PCM renderer |
 
-All five provide a path to compatible PCM, allowing a small sequential WAV renderer without compressed-audio concatenation or a transcoding dependency. This is an implementation choice, not a claim that the vendors' other audio formats are unsuitable.
+These adapters provide a path to compatible PCM, allowing a small sequential WAV renderer without compressed-audio concatenation or a transcoding dependency. This is an implementation choice, not a claim that the vendors' other audio formats are unsuitable.
 
 Three questions remain for live evaluation: whether each documented request works for the target account and region; how reliably each model follows expressive controls; and how audible segment boundaries are. A useful evaluation should record exact model/voice IDs, source scripts, requested parameters, date, failures, and listening criteria. It should distinguish API acceptance from performance quality.
 
