@@ -51,7 +51,15 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		"X-Microsoft-OutputFormat":  "raw-24khz-16bit-mono-pcm",
 	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		return providers.Request(ctx, p.client, http.MethodPost, opt.Endpoint, "application/ssml+xml", headers, []byte(requests[i]))
+		pcm, err := providers.Request(ctx, p.client, http.MethodPost, opt.Endpoint, "application/ssml+xml", headers, []byte(requests[i]))
+		if err != nil {
+			return nil, err
+		}
+		// Azure truncates longer results at ten minutes without an HTTP error.
+		if len(pcm) >= 10*60*providers.SampleRate*2 {
+			return nil, fmt.Errorf("audio reaches Azure's 10-minute limit and may be truncated; split the segment")
+		}
+		return pcm, nil
 	})
 }
 

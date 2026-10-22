@@ -1,7 +1,14 @@
 package azure
 
 import (
+	"bytes"
+	"context"
 	"encoding/xml"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -58,5 +65,52 @@ func TestRejectConflictingStylesAndUnsupportedTags(t *testing.T) {
 	ssml, err := build(providers.Segment{Voice: "en-US-JennyNeural", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}, Controls: []ir.Node{{Name: "pitch", Args: []ir.Arg{{Raw: "+2st", Kind: "semitone"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "0dB", Kind: "decibel"}}}}})
 	if err != nil || !strings.Contains(ssml, `pitch="+2st"`) || !strings.Contains(ssml, `volume="+0.0000%"`) {
 		t.Fatalf("%s: %v", ssml, err)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestResponseAtDurationLimitPreservesOutput(t *testing.T) {
+	const cutoff = 10 * 60 * 24000 * 2
+	for _, size := range []int{cutoff - 2, cutoff, cutoff + 2} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			calls := 0
+			p := provider{client: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				calls++
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewReader(make([]byte, size)))}, nil
+			})}}
+			out := filepath.Join(t.TempDir(), "out.wav")
+			if err := os.WriteFile(out, []byte("KEEP"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			doc := &ir.Document{Utterances: []ir.Utterance{{Speaker: "narrator", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}}}
+			_, err := p.Synthesize(context.Background(), doc, providers.Options{Out: out, Voice: "en-US-GuyNeural", Endpoint: "https://example.invalid"})
+			if size < cutoff {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), "10-minute") {
+				t.Errorf("error=%v", err)
+			}
+			data, err := os.ReadFile(out)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if size >= cutoff && string(data) != "KEEP" {
+				t.Errorf("replaced output with %d bytes", len(data))
+			}
+			if size < cutoff && len(data) != 44+size {
+				t.Errorf("WAV size=%d", len(data))
+			}
+			if calls != 1 {
+				t.Errorf("requests=%d", calls)
+			}
+			partials, err := filepath.Glob(filepath.Join(filepath.Dir(out), ".timbrex-*.partial"))
+			if err != nil || len(partials) != 0 {
+				t.Errorf("temporary files=%v error=%v", partials, err)
+			}
+		})
 	}
 }
