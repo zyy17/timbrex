@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"strings"
+	"regexp"
 
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/providers"
@@ -19,6 +19,8 @@ func init() { providers.Register(provider{}) }
 type provider struct{ client *http.Client }
 
 func (provider) ID() string { return "azure" }
+
+var voiceLocale = regexp.MustCompile(`^([a-z]{2,3}-(?:[A-Z]{2}|[0-9]{3}))-`)
 
 var styles = map[string]string{
 	"happy": "cheerful", "sad": "sad", "angry": "angry", "fear": "fearful",
@@ -102,12 +104,13 @@ func build(seg providers.Segment) (string, error) {
 		text = `<mstts:express-as` + attrs + `>` + text + `</mstts:express-as>`
 	}
 	lang := seg.Lang
-	if lang == "" {
-		parts := strings.Split(seg.Voice, "-")
-		if len(parts) < 3 {
-			return "", fmt.Errorf("set lang for voice %q", seg.Voice)
-		}
-		lang = parts[0] + "-" + parts[1]
+	if match := voiceLocale.FindStringSubmatch(seg.Voice); match != nil {
+		lang = match[1]
+	} else if lang == "" {
+		return "", fmt.Errorf("set lang for voice %q", seg.Voice)
+	}
+	if seg.Lang != "" && seg.Lang != lang {
+		text = `<lang xml:lang="` + escape(seg.Lang) + `">` + text + `</lang>`
 	}
 	ssml := `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="` + escape(lang) + `"><voice name="` + escape(seg.Voice) + `">` + text + `</voice></speak>`
 	if len(ssml) > 64000 {
