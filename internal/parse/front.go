@@ -72,7 +72,8 @@ func decodeFront(data []byte, value any) error {
 }
 
 func splitFront(file, src string) (ast.Front, string, error) {
-	if !strings.HasPrefix(src, "---\n") {
+	src, ok := yamlFrontMatterSource(src)
+	if !ok {
 		return ast.Front{}, src, nil
 	}
 	var doc frontDoc
@@ -119,4 +120,24 @@ func splitFront(file, src string) (ast.Front, string, error) {
 		}
 	}
 	return front, body, nil
+}
+
+// yamlFrontMatterSource reports whether src starts with a YAML fence.
+// The opening --- line may have trailing spaces or tabs, matching the
+// TextMate grammar. Other trailing characters keep the file as body text.
+func yamlFrontMatterSource(src string) (string, bool) {
+	if !strings.HasPrefix(src, "---") {
+		return src, false
+	}
+	i := 3
+	for i < len(src) && (src[i] == ' ' || src[i] == '\t') {
+		i++
+	}
+	if i >= len(src) || src[i] != '\n' {
+		return src, false
+	}
+	if i == 3 {
+		return src, true
+	}
+	return "---\n" + src[i+1:], true
 }
