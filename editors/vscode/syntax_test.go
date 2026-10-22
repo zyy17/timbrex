@@ -97,3 +97,13 @@ func TestGrammarNestedTagClose(t *testing.T) {
 		t.Fatal("tag content does not include #tag-nested")
 	}
 }
+
+func TestGrammarNamedArgumentKeysMatchIdent(t *testing.T) {
+	raw, err := os.ReadFile("syntaxes/tbx.tmLanguage.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(raw, []byte(`([A-Za-z][A-Za-z0-9_.-]*)(=)`)) {
+		t.Fatal("named-argument keys must use the parser ident, not a leading underscore")
+	}
+}

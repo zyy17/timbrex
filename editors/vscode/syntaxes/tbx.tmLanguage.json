@@ -130,7 +130,7 @@
               "name": "punctuation.separator.key-value.tbx"
             }
           },
-          "match": "([A-Za-z_][A-Za-z0-9_.-]*)(=)"
+          "match": "([A-Za-z][A-Za-z0-9_.-]*)(=)"
         },
         {
           "match": "[+-]?(?:\\d+\\.\\d+|\\d+)(?:ms|min|st|dB|%|s)?(?![A-Za-z0-9_.-])",

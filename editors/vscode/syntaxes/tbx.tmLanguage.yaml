@@ -1,6 +1,6 @@
 # TextMate grammar for Timbrex (.tbx), grammar version timbrex: 1.
 # Shared by VS Code, Cursor, Sublime Text, and other TextMate editors.
-# Tokens follow SPEC v0.3.4. This file does not know the cast list, so any
+# Tokens follow grammar version timbrex: 1. This file does not know the cast list, so any
 # column-0 ident: is colored as a speaker. The compiler still requires cast.
 scopeName: source.tbx
 fileTypes:
@@ -119,7 +119,7 @@ repository:
     patterns:
       - include: "#string"
       - include: "#escape"
-      - match: '([A-Za-z_][A-Za-z0-9_.-]*)(=)'
+      - match: '([A-Za-z][A-Za-z0-9_.-]*)(=)'
         captures:
           "1": {name: entity.other.attribute-name.tbx}
           "2": {name: punctuation.separator.key-value.tbx}
