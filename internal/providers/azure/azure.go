@@ -112,12 +112,14 @@ func build(seg providers.Segment) (string, error) {
 		text = `<mstts:express-as` + attrs + `>` + text + `</mstts:express-as>`
 	}
 	lang := seg.Lang
-	if lang == "" {
-		parts := strings.Split(seg.Voice, "-")
-		if len(parts) < 3 {
-			return "", fmt.Errorf("set lang for voice %q", seg.Voice)
-		}
+	parts := strings.Split(seg.Voice, "-")
+	if len(parts) >= 3 {
 		lang = parts[0] + "-" + parts[1]
+	} else if lang == "" {
+		return "", fmt.Errorf("set lang for voice %q", seg.Voice)
+	}
+	if seg.Lang != "" && seg.Lang != lang {
+		text = `<lang xml:lang="` + escape(seg.Lang) + `">` + text + `</lang>`
 	}
 	ssml := `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="` + escape(lang) + `"><voice name="` + escape(seg.Voice) + `">` + text + `</voice></speak>`
 	if len(ssml) > 64000 {

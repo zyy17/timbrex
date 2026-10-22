@@ -60,3 +60,41 @@ func TestRejectConflictingStylesAndUnsupportedTags(t *testing.T) {
 		t.Fatalf("%s: %v", ssml, err)
 	}
 }
+
+func TestLanguageOverrideInsideVoice(t *testing.T) {
+	for _, tc := range []struct{ voice, lang, root, target string }{
+		{"en-US-AndrewMultilingualNeural", "en-GB", "en-US", "en-GB"},
+		{"en-US-Ava:DragonHDLatestNeural", "de-DE", "en-US", "de-DE"},
+		{"de-DE-KatjaNeural", "", "de-DE", ""},
+		{"en-US-GuyNeural", "en-US", "en-US", ""},
+		{"custom-voice", "fr-FR", "fr-FR", ""},
+	} {
+		t.Run(tc.voice+tc.lang, func(t *testing.T) {
+			ssml, err := build(providers.Segment{Voice: tc.voice, Lang: tc.lang, Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello & goodbye"}}, Controls: []ir.Node{{Name: "speed", Args: []ir.Arg{{Raw: "1.2", Kind: "number"}}}}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var doc struct {
+				Lang  string `xml:"http://www.w3.org/XML/1998/namespace lang,attr"`
+				Voice struct {
+					Lang struct {
+						Locale  string `xml:"http://www.w3.org/XML/1998/namespace lang,attr"`
+						Prosody struct {
+							Rate string `xml:"rate,attr"`
+							Text string `xml:",chardata"`
+						} `xml:"prosody"`
+					} `xml:"lang"`
+				} `xml:"voice"`
+			}
+			if err := xml.Unmarshal([]byte(ssml), &doc); err != nil {
+				t.Fatal(err)
+			}
+			if doc.Lang != tc.root || doc.Voice.Lang.Locale != tc.target {
+				t.Fatalf("language mapping = %s", ssml)
+			}
+			if tc.target != "" && (doc.Voice.Lang.Prosody.Rate != "1.2" || doc.Voice.Lang.Prosody.Text != "Hello & goodbye") {
+				t.Fatalf("lost controlled speech: %s", ssml)
+			}
+		})
+	}
+}
