@@ -40,6 +40,10 @@ Endpoint overrides are intended for your chosen regional service or a trusted co
 
 Calls `POST https://api.openai.com/v1/audio/speech` with bearer authentication and `response_format: pcm`. Acting is sent separately in `instructions`; spoken text stays in `input`. Input and instructions are each limited to 4096 characters by the adapter. `tts-1` and `tts-1-hd` can synthesize plain text with speed control, but reject acting and language instructions.
 
+The [GPT-4o Mini TTS model](https://developers.openai.com/api/docs/models/gpt-4o-mini-tts) also has a 2000-input-token limit. The local character limit is not a token count; Timbrex does not tokenize this model's input or promise that accepted text/instructions fit its token budget. Split long segments and keep instructions concise.
+
+OpenAI marks GPT-4o Mini TTS as deprecated. Its [lifecycle notice](https://developers.openai.com/api/docs/deprecations#2026-10-01-text-to-speech-models) schedules `tts-1`, `tts-1-hd`, and the dated GPT-4o Mini TTS snapshots for removal on 2027-01-06. The recommended Realtime replacement requires a different API implementation; changing `OPENAI_MODEL` alone does not migrate this adapter.
+
 References: [Create speech](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create), [TTS guide](https://developers.openai.com/api/docs/guides/text-to-speech). Follow the provider's disclosure requirements when publishing AI-generated speech.
 
 ## ElevenLabs
@@ -50,6 +54,8 @@ References: [Create speech](https://developers.openai.com/api/reference/resource
 ```
 
 Calls `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=pcm_24000` with `xi-api-key`. The adapter emits native audio tags for `eleven_v3`, `eleven_v4`, and `eleven_v4_turbo`; the two v4 models reject explicit `speed`, `fast`, and `slow` because they do not support the speed setting. Other model IDs accept plain speech and speed but reject acting tags and nonverbal events. A conservative 5000-character adapter limit includes generated tags. Language hints use the primary language subtag; `eleven_multilingual_v2` rejects explicit `lang` because it does not accept `language_code`.
+
+Eleven v3 speed support is described inconsistently across official product and tooling documentation. Its current mapping is retained pending real-account validation; accepting the setting locally does not establish that it changes generated speech.
 
 References: [Create speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert), [audio tags](https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4), [speed control](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech). Audio tags describe desired performance; they are not guaranteed sound effects.
 

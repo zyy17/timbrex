@@ -47,6 +47,8 @@ ElevenLabs 事件：`laugh`、`sigh`、`gasp`、`clear-throat`、`giggle`、`cou
 
 MiniMax 拒绝 `(laughs)` 等已识别的原生事件字符串，以及停顿前缀 `<#`。其他圆括号会原样传递，但服务可能将括号内的拼音、IPA 或粤拼解释为发音控制；适配器无法识别所有此类形式。需要保留这些符号为文字时，可以使用 `（ ）`、`［ ］` 等 Unicode 替代字符，或换用其他厂商。
 
+Eleven v4 还会将[斜杠包围的 IPA](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#ipa-with-eleven-v4) 解释为发音指引。包含斜杠的文本会原样传递；适配器不会一概拒绝斜杠，也不保证所有原生音标形式都保持字面语义。
+
 Azure 对文本和属性进行 XML 转义，OpenAI 将台词和指令放在不同字段。这避免了编译器生成的结构注入，但不保证生成模型逐字朗读每个符号。
 
 ## 已保留，尚未实现

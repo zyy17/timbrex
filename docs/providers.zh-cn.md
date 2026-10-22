@@ -40,6 +40,10 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 
 使用 bearer 认证调用 `POST https://api.openai.com/v1/audio/speech`，设置 `response_format: pcm`。表演要求放在独立的 `instructions` 中，台词保留在 `input`。适配器分别限制台词和指令不超过 4096 字符。`tts-1`、`tts-1-hd` 可合成纯文本并控制语速，但拒绝表演和语言指令。
 
+[GPT-4o Mini TTS 模型](https://developers.openai.com/api/docs/models/gpt-4o-mini-tts) 还有 2000 个输入 token 的限制。本地字符限制不等于 token 计数；Timbrex 不会对该模型输入进行分词，也不保证已接受的文本和指令符合其 token 预算。请拆分长片段并保持指令简洁。
+
+OpenAI 已将 GPT-4o Mini TTS 标为弃用。[生命周期公告](https://developers.openai.com/api/docs/deprecations#2026-10-01-text-to-speech-models) 计划于 2027-01-06 下线 `tts-1`、`tts-1-hd` 和带日期的 GPT-4o Mini TTS 快照。推荐的 Realtime 替代方案需要不同的 API 实现；仅更改 `OPENAI_MODEL` 不能完成适配器迁移。
+
 参考：[Create speech](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)、[TTS 指南](https://developers.openai.com/api/docs/guides/text-to-speech)。发布 AI 生成语音时应遵守厂商的披露要求。
 
 ## ElevenLabs
@@ -50,6 +54,8 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 ```
 
 使用 `xi-api-key` 调用 `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=pcm_24000`。适配器为 `eleven_v3`、`eleven_v4`、`eleven_v4_turbo` 生成原生 audio tags；两个 v4 模型不支持语速设置，因此会拒绝显式 `speed`、`fast` 和 `slow`。其他模型 ID 支持纯文本与语速，但拒绝表演标签和非语言事件。适配器采用保守的 5000 字符限制，包含生成的标签。语言提示使用主要语言子标签；`eleven_multilingual_v2` 不接受 `language_code`，因此拒绝显式 `lang`。
+
+Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致。目前保留原映射，等待真实账户验证；本地接受该设置不代表已确认它会改变生成语音。
 
 参考：[Create speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)、[audio tags](https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4)、[语速控制](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech)。Audio tags 描述期望的表演，不保证生成指定音效。
 
