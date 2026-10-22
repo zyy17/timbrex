@@ -56,3 +56,9 @@ Azure XML-escapes text and attributes. OpenAI sends speech and instructions in s
 All real adapters currently reject pronunciation wrappers (`ipa`, `pinyin`, `sub`, `say`, and related tags), audio files/effects/music, `overlap`, `cut`, `duration`, `rate`, `oral`, `emovec`, markers, voice conversion, and raw fences. There is no automatic fallback or silent dropping of unsupported controls. Named tag arguments are parsed but have no adapter mappings yet.
 
 The stub ignores performance semantics and writes an 8 kHz test tone. It cannot validate provider capabilities or speech quality. `check` recognizes the full vocabulary but does not select an adapter, validate its parameter ranges, or make requests.
+
+## Gemini TTS
+
+The `gemini-3.8-flash-tts` adapter supports text, prebuilt cast voices, shared voice/as/reset scopes and local pauses. Standard emotions (including numeric intensity), `act`, `style`, `role`, `accent`, `dialect`, custom `emotion`, `whisper`, `shout`, `emph`, and laugh/cry/sigh spans become **instructions** in `speechMetadata.style`. `fast` and `slow` request faster/slower speech without an exact multiplier. Numeric speed, pitch and volume are **unsupported**. `lang` is a native language-code parameter with the restricted list documented in setup.
+
+Standalone events map `laugh→<laugh>`, `sigh→<sigh>`, `cough→<cough>`, `breath→<breath>`, and `gasp→<gasp>`; arguments/notes and other events are unsupported. Native cues request a performance, not an exact isolated sound. Literal ASCII `<` and `>` in text are conservatively rejected to avoid native cue interpretation; use Unicode alternatives when they must remain text. Instructions stay separate from the transcript. The reserved unsupported features above also apply.

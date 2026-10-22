@@ -1,7 +1,8 @@
 package config
 
 var providerDefaults = map[string]Provider{
-	"stub": {},
+	"stub":   {},
+	"gemini": {Model: "gemini-3.8-flash-tts", Voice: "Kore", Endpoint: "https://generativelanguage.googleapis.com/v1beta"},
 	"openai": {
 		Model: "gpt-4o-mini-tts", Voice: "coral",
 		Endpoint: "https://api.openai.com/v1",
@@ -18,6 +19,10 @@ var providerDefaults = map[string]Provider{
 }
 
 var envKeys = map[string]string{
+	"GEMINI_API_KEY":        "providers.gemini.api_key",
+	"GEMINI_MODEL":          "providers.gemini.model",
+	"GEMINI_VOICE":          "providers.gemini.voice",
+	"GEMINI_BASE_URL":       "providers.gemini.endpoint",
 	"TIMBREX_PROVIDER":      "provider",
 	"TIMBREX_STRICT_TAGS":   "strict_tags",
 	"OPENAI_API_KEY":        "providers.openai.api_key",

@@ -19,3 +19,6 @@ providers:
     model: qwen-audio-3.1-tts-flash
     voice: longanhuan_v3.1
     endpoint: https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer
+  gemini:
+    model: gemini-3.8-flash-tts
+    voice: Kore

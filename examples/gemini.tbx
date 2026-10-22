@@ -1,0 +1,10 @@
+---
+provider: gemini
+model: gemini-3.8-flash-tts
+strict_tags: true
+cast:
+  guide: {voices: {gemini: Kore}}
+  guest: {voices: {gemini: Puck}}
+---
+guide: [happy] Welcome. [pause 300ms] [whisper|Listen carefully.]
+guest: [slow] What a quiet place. [sigh]

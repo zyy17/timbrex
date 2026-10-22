@@ -17,6 +17,7 @@ import (
 	"github.com/zyy17/timbrex/internal/providers"
 	_ "github.com/zyy17/timbrex/internal/providers/azure"
 	_ "github.com/zyy17/timbrex/internal/providers/elevenlabs"
+	_ "github.com/zyy17/timbrex/internal/providers/gemini"
 	_ "github.com/zyy17/timbrex/internal/providers/minimax"
 	_ "github.com/zyy17/timbrex/internal/providers/openai"
 	_ "github.com/zyy17/timbrex/internal/providers/qwen"

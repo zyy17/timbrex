@@ -15,6 +15,7 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 | `minimax` | `MINIMAX_API_KEY` | `speech-2.8-hd` | `English_expressive_narrator` |
 | `azure` | `AZURE_SPEECH_KEY`，以及区域或端点 | 由音色决定 | `en-US-JennyNeural` |
 | `qwen` | `DASHSCOPE_API_KEY`、`QWEN_ENDPOINT` | `qwen-audio-3.1-tts-flash` | `longanhuan_v3.1` |
+| `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` | `Kore` |
 | `stub` | 无 | 无 | 无；测试音 |
 
 可选的环境变量默认值：
@@ -26,6 +27,7 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 | MiniMax | `MINIMAX_MODEL` | `MINIMAX_VOICE_ID` | `MINIMAX_BASE_URL`（含 `/v1` 的基础 URL） |
 | Azure | — | `AZURE_SPEECH_VOICE` | `AZURE_SPEECH_ENDPOINT`（完整请求 URL），否则使用 `AZURE_SPEECH_REGION` |
 | Qwen | `QWEN_MODEL` | `QWEN_VOICE` | `QWEN_ENDPOINT`（必填完整请求 URL） |
+| Gemini | `GEMINI_MODEL` | `GEMINI_VOICE` | `GEMINI_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`) |
 
 `--model` 和 `--voice` 覆盖 front matter，后者覆盖环境变量，环境变量覆盖 YAML 配置和内置默认值。cast 音色映射优先于默认音色。`[voice "vendor-id"|text]` 直接选择音色；`[as lin|text]` 使用 Lin 的映射，没有映射时回退到默认音色。切换厂商不会自动转换其他厂商的模型或音色 ID。
 
@@ -109,3 +111,18 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 渲染器在目标文件旁创建临时文件，成功后才重命名。取消或失败会删除临时输出并保留已有目标文件。父目录必须已存在。先前请求仍可能计费；没有重试、降级、缓存或断点续传。
 
 排错时请对照官方文档检查模型、音色、区域和密钥权限。离线测试通过只证明实现的契约，不证明服务可用性或语音质量。长文本应自行分段，Timbrex 不会按厂商 token 限制自动切块。
+
+## Gemini TTS
+
+```sh
+# 须已设置 GEMINI_API_KEY。
+./timbrex synth examples/gemini.tbx -o gemini.wav
+```
+
+使用 **Google Gemini API**，不是 Google Cloud Text-to-Speech 或 Interactions：通过 `x-goog-api-key` 调用 `POST /v1beta/models/gemini-3.8-flash-tts:generateContent`。初版仅支持该模型及官方列出的 30 个预置音色，默认 `Kore`。自定义/复制音色、创建音色、流式模式和旧模型 schema 不在本适配器范围内。角色音色按片段串行合成，不使用原生对话合成。
+
+台词和 `speechMetadata.style` 分开传递。`fast`/`slow`、表演、情绪和发声控制是近似风格指令；数值 `speed`、`pitch` 和 `volume` 会被拒绝。部分事件映射到原生尖括号标记。显式 `lang` 映射到 `speechConfig.languageCode`，只接受 API 参考列出的 BCP-47 代码（如 `en-US`、`cmn-CN`，不接受 `en`、`zh-CN`）；未指定时由模型自动识别。台词加风格总计限制为 4096 个 Unicode 字符，仅作为本地资源上限，**不是** token 计数；服务端 8192-token 输入预算仍适用。
+
+请求明确指定 `AUDIO_WAV`、`INLINE` 和 24000 Hz。响应必须恰好包含一个 `STOP` 候选和一个内联 `audio/wav` part，且输入/输出未被拦截。额外 part、多个候选、无效 JSON/base64 和 API 错误对象均失败。共用解码器要求完整 RIFF 长度、PCM1、单声道、24 kHz、16-bit、对齐 2、字节率 48000；未知长度 WAV、重复音频块和其他编码会失败，额外 RIFF 元数据块可接受。64 MiB HTTP 限制包含 JSON/base64 开销。本适配器先提取 WAV 内的 PCM，再交给共用渲染器；前述原始 PCM 限制适用于其他适配器。
+
+参考：[当前 TTS 指南](https://ai.google.dev/gemini-api/docs/speech-generation)、[GenerateContent schema](https://ai.google.dev/api/generate-content)、[模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)。离线样例验证所选 schema 和拒绝行为，尚未进行真实账号或声学验证。

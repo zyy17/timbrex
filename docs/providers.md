@@ -15,6 +15,7 @@ Settings are loaded centrally from YAML and environment variables; see [configur
 | `minimax` | `MINIMAX_API_KEY` | `speech-2.8-hd` | `English_expressive_narrator` |
 | `azure` | `AZURE_SPEECH_KEY`, and region or endpoint | Selected by voice | `en-US-JennyNeural` |
 | `qwen` | `DASHSCOPE_API_KEY`, `QWEN_ENDPOINT` | `qwen-audio-3.1-tts-flash` | `longanhuan_v3.1` |
+| `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` | `Kore` |
 | `stub` | None | None | None; test tone |
 
 Optional environment defaults:
@@ -26,6 +27,7 @@ Optional environment defaults:
 | MiniMax | `MINIMAX_MODEL` | `MINIMAX_VOICE_ID` | `MINIMAX_BASE_URL` (base URL including `/v1`) |
 | Azure | — | `AZURE_SPEECH_VOICE` | `AZURE_SPEECH_ENDPOINT` (full request URL), otherwise `AZURE_SPEECH_REGION` |
 | Qwen | `QWEN_MODEL` | `QWEN_VOICE` | `QWEN_ENDPOINT` (required full request URL) |
+| Gemini | `GEMINI_MODEL` | `GEMINI_VOICE` | `GEMINI_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`) |
 
 `--model` and `--voice` override front matter, which overrides environment settings, which override YAML configuration and built-in defaults. Cast voice mappings override the default voice. A `[voice "vendor-id"|text]` span selects a voice directly; `[as lin|text]` uses Lin's mapping, falling back to the default if no mapping is available. Changing provider does not translate a model or voice ID belonging to another vendor.
 
@@ -109,3 +111,18 @@ Audio responses must contain raw 24 kHz mono S16LE PCM. Conflicting media types 
 The renderer uses a temporary file beside the destination and renames it only after success. Cancellation or failure removes temporary output and preserves an existing destination. The parent directory must exist. Earlier requests may already have incurred charges; there is no retry, fallback, cache, or resumable rendering.
 
 For troubleshooting, check the selected model, voice, region, and key permissions against the linked vendor docs. A successful offline test establishes the implemented contract, not service availability or speech quality. Long input should be split into paragraphs; Timbrex does not automatically chunk it to vendor token limits.
+
+## Gemini TTS
+
+```sh
+# GEMINI_API_KEY must already be set.
+./timbrex synth examples/gemini.tbx -o gemini.wav
+```
+
+Uses the **Google Gemini API**, not Google Cloud Text-to-Speech or Interactions: `POST /v1beta/models/gemini-3.8-flash-tts:generateContent` with `x-goog-api-key`. The initial adapter supports only this model and the 30 documented prebuilt voices; the default is `Kore`. Custom/replicated voices, voice creation, streaming and legacy model schemas are outside this adapter's scope. Cast voices are synthesized sequentially, not through native conversational synthesis.
+
+Spoken text and `speechMetadata.style` are separate. `fast`/`slow`, acting, emotions and delivery controls are approximate style instructions; numeric `speed`, `pitch` and `volume` are rejected. Selected events use native angle-bracket cues. Explicit `lang` maps to `speechConfig.languageCode` and must be one of the API reference's supported BCP-47 codes (for example `en-US` or `cmn-CN`, not `en` or `zh-CN`); without it the model detects language. The adapter limits text plus style to 4096 Unicode characters as a local resource bound. This is **not** token counting; the service's 8192-token input budget still applies.
+
+Requests explicitly select `AUDIO_WAV`, `INLINE` and 24000 Hz. A response must contain exactly one `STOP` candidate and one inline `audio/wav` part, without prompt/output blocking. Unexpected parts, multiple candidates, malformed JSON/base64 and API error objects fail. The shared decoder requires complete RIFF lengths, PCM1, mono, 24 kHz, 16-bit, alignment 2 and byte rate 48000; unknown-size WAV, duplicate audio chunks and other encodings fail. Extra RIFF metadata chunks are allowed. The 64 MiB HTTP limit includes JSON/base64 overhead. This adapter unwraps WAV before the shared renderer; the raw-PCM restrictions above apply to the other adapters.
+
+References: [current TTS guide](https://ai.google.dev/gemini-api/docs/speech-generation), [GenerateContent schema](https://ai.google.dev/api/generate-content), [model and limits](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts). Offline fixtures verify the selected schema and rejection behavior; no real account or acoustic verification has been performed.
