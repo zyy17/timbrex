@@ -9,7 +9,7 @@ import (
 )
 
 func TestRenderFailurePreservesExistingOutput(t *testing.T) {
-	for _, mode := range []string{"request", "odd", "empty", "cancel", "wav", "mp3", "ogg"} {
+	for _, mode := range []string{"request", "odd", "empty", "cancel", "wav", "mp3", "ogg", "flac", "mp4"} {
 		t.Run(mode, func(t *testing.T) {
 			dir := t.TempDir()
 			path := filepath.Join(dir, "out.wav")
@@ -33,6 +33,10 @@ func TestRenderFailurePreservesExistingOutput(t *testing.T) {
 					return []byte("ID3\x04\x00\x00\x00\x00\x00\x00"), nil
 				case "ogg":
 					return []byte("OggS\x00\x00\x00\x00"), nil
+				case "flac":
+					return append([]byte("fLaC\x80\x00\x00\x22"), make([]byte, 34)...), nil
+				case "mp4":
+					return []byte("\x00\x00\x00\x18ftypM4A \x00\x00\x00\x00M4A mp42"), nil
 				case "cancel":
 					cancel()
 					return []byte{1, 0}, nil

@@ -10,6 +10,7 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -86,14 +87,28 @@ func checkPCMContentType(header string) error {
 	if header == "" {
 		return nil
 	}
-	kind, _, err := mime.ParseMediaType(header)
+	kind, params, err := mime.ParseMediaType(header)
 	if err != nil {
 		return fmt.Errorf("invalid audio Content-Type")
 	}
 	switch kind {
 	case "audio/pcm", "audio/x-pcm", "audio/raw", "application/octet-stream":
-		return nil
 	default:
 		return fmt.Errorf("expected raw PCM response, got %s", kind)
 	}
+	for _, field := range []struct {
+		name string
+		want int
+	}{
+		{"rate", SampleRate},
+		{"channels", 1},
+	} {
+		if value, ok := params[field.name]; ok {
+			got, err := strconv.Atoi(value)
+			if err != nil || got != field.want {
+				return fmt.Errorf("expected PCM %s=%d", field.name, field.want)
+			}
+		}
+	}
+	return nil
 }

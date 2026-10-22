@@ -159,20 +159,34 @@ func decode(data []byte) ([]byte, error) {
 			Status int    `json:"status"`
 		} `json:"data"`
 		Base *struct {
-			Code int `json:"status_code"`
+			Code *int `json:"status_code"`
 		} `json:"base_resp"`
+		Extra struct {
+			Rate    *int    `json:"audio_sample_rate"`
+			Channel *int    `json:"audio_channel"`
+			Format  *string `json:"audio_format"`
+		} `json:"extra_info"`
 	}
 	if err := json.Unmarshal(data, &res); err != nil {
 		return nil, fmt.Errorf("decode response: %w", err)
 	}
-	if res.Base == nil {
-		return nil, fmt.Errorf("response is missing base_resp")
+	if res.Base == nil || res.Base.Code == nil {
+		return nil, fmt.Errorf("response is missing base_resp.status_code")
 	}
-	if res.Base.Code != 0 {
-		return nil, fmt.Errorf("API status_code %d", res.Base.Code)
+	if *res.Base.Code != 0 {
+		return nil, fmt.Errorf("API status_code %d", *res.Base.Code)
 	}
 	if res.Data.Status != 2 || res.Data.Audio == "" {
 		return nil, fmt.Errorf("response has no completed audio")
+	}
+	if res.Extra.Rate != nil && *res.Extra.Rate != providers.SampleRate {
+		return nil, fmt.Errorf("response audio sample rate must be %d Hz", providers.SampleRate)
+	}
+	if res.Extra.Channel != nil && *res.Extra.Channel != 1 {
+		return nil, fmt.Errorf("response audio must be mono")
+	}
+	if res.Extra.Format != nil && *res.Extra.Format != "pcm" {
+		return nil, fmt.Errorf("response audio format must be pcm")
 	}
 	pcm, err := hex.DecodeString(res.Data.Audio)
 	if err != nil {

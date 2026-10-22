@@ -71,3 +71,29 @@ func TestHTTPCancellation(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestPCMContentTypeParameters(t *testing.T) {
+	for _, tt := range []struct {
+		header string
+		valid  bool
+	}{
+		{"", true},
+		{"audio/pcm", true},
+		{"application/octet-stream", true},
+		{"audio/pcm; rate=24000; channels=1", true},
+		{"audio/pcm; rate=24000", true},
+		{"audio/pcm; channels=1", true},
+		{"audio/x-pcm; rate=16000", false},
+		{"audio/pcm; rate=48000", false},
+		{"audio/raw; channels=2", false},
+		{"application/octet-stream; rate=44100; channels=2", false},
+		{"audio/pcm; rate=unknown", false},
+	} {
+		t.Run(tt.header, func(t *testing.T) {
+			err := checkPCMContentType(tt.header)
+			if (err == nil) != tt.valid {
+				t.Fatalf("valid=%t, error=%v", tt.valid, err)
+			}
+		})
+	}
+}
