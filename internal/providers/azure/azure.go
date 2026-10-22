@@ -30,19 +30,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if opt.Model != "" {
 		return providers.Result{}, fmt.Errorf("azure selects its model through the voice name; omit model")
 	}
-	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
+	segments, requests, err := providers.Prepare(doc, p.ID(), opt.Voice, build)
 	if err != nil {
 		return providers.Result{}, err
-	}
-	requests := make([]string, len(segments))
-	for i, seg := range segments {
-		if seg.Pause > 0 {
-			continue
-		}
-		requests[i], err = build(seg)
-		if err != nil {
-			return providers.Result{}, fmt.Errorf("azure: %w", err)
-		}
 	}
 	// https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech
 	headers := map[string]string{

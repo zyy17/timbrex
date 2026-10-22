@@ -42,22 +42,14 @@ var (
 )
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
+	segments, requests, err := providers.Prepare(doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) {
+		if seg.Voice == "" {
+			return request{}, fmt.Errorf("set --voice, providers.elevenlabs.voice, or cast voices.elevenlabs")
+		}
+		return build(seg, opt.Model)
+	})
 	if err != nil {
 		return providers.Result{}, err
-	}
-	requests := make([]request, len(segments))
-	for i, seg := range segments {
-		if seg.Pause > 0 {
-			continue
-		}
-		if seg.Voice == "" {
-			return providers.Result{}, fmt.Errorf("elevenlabs: set --voice, providers.elevenlabs.voice, or cast voices.elevenlabs")
-		}
-		requests[i], err = build(seg, opt.Model)
-		if err != nil {
-			return providers.Result{}, fmt.Errorf("elevenlabs: %w", err)
-		}
 	}
 	base := strings.TrimRight(opt.Endpoint, "/") + "/text-to-speech/"
 	headers := map[string]string{
