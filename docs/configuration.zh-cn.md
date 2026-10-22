@@ -8,7 +8,7 @@
 
 默认情况下，`check`、`synth` 和 `config` 会读取**当前工作目录**下存在的 `timbrex.yaml`。不会搜索脚本所在目录、父目录或用户主目录。显式 `--config` 改为选择指定的一个文件；该文件不存在时会报错。
 
-```sh
+```bash
 cp examples/timbrex.yaml timbrex.yaml
 ./timbrex config
 ./timbrex --config examples/timbrex.yaml check examples/expressive.tbx

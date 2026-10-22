@@ -20,10 +20,10 @@ A tag header ends at the first unescaped `|` or `]` outside a quoted argument. D
 | Form | Meaning |
 | --- | --- |
 | `[happy]` within a turn | Set emotion for the remaining turn |
-| `[happy|words]` | Set emotion only for these words |
+| `[happy\|words]` | Set emotion only for these words |
 | `[happy]` on its own line | Set scene emotion for subsequent turns |
 | `[pause 500ms]` | Insert an event here |
-| `[whisper|Hello]` on its own line | Speak the span as narration |
+| `[whisper\|Hello]` on its own line | Speak the span as narration |
 
 A **scene line** contains only tags without spans, plus optional whitespace. Events on a scene line happen between turns. A scene state persists until replaced or reset.
 
@@ -87,12 +87,12 @@ The parser recognizes the shape `ns:tag`, but no provider namespaces or external
 
 | Code | Current diagnostic |
 | --- | --- |
-| V012 | Unclosed tag |
-| V013 | Invalid BBCode-style closing tag |
-| V041 | Unregistered tag in strict mode |
-| W040 | Unknown single-word non-strict tag close to a registered name, with a suggestion |
-| W103 | Cast display name used instead of its speaker ID |
-| I050 | Non-ASCII free-form acting text |
+| `V012` | Unclosed tag |
+| `V013` | Invalid BBCode-style closing tag |
+| `V041` | Unregistered tag in strict mode |
+| `W040` | Unknown single-word non-strict tag close to a registered name, with a suggestion |
+| `W103` | Cast display name used instead of its speaker ID |
+| `I050` | Non-ASCII free-form acting text |
 
 Suggestions use edit distance at most 2. `[paus]` suggests `[pause]`; `[laff]` has no suggestion for `[laugh]` (distance 3). Warnings and information do not fail `check`; errors do. Other parse and position errors can be reported without a diagnostic code. There is no automatic translation or spelling repair.
 
@@ -104,7 +104,7 @@ The vocabulary declares four kinds:
 | --- | --- |
 | State | A point tag lasts to the end of the turn, or persists from a scene line; a span applies locally |
 | Event | Occurs at its position; only designated events allow accompanying-speech spans |
-| Wrap | Requires content: `[lang en-US|Hello]` |
+| Wrap | Requires content: `[lang en-US\|Hello]` |
 | Turn | Only at the beginning of a turn, or on a scene line |
 
 Inner controls replace outer controls of the same feature. Different features coexist when the provider can represent them. The shared planner groups `speed/fast/slow`, `voice/as`, `whisper/shout`, and the emotions into their respective features. Leaving a span restores its enclosing state. Each new turn starts from scene state.

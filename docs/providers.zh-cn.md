@@ -37,7 +37,7 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 
 ## OpenAI
 
-```sh
+```bash
 # 先设置 OPENAI_API_KEY。
 ./timbrex synth examples/expressive.tbx --provider openai --voice coral -o openai.wav
 ```
@@ -52,7 +52,7 @@ OpenAI 已将 GPT-4o Mini TTS 标为弃用。[生命周期公告](https://develo
 
 ## ElevenLabs
 
-```sh
+```bash
 # 先设置 ELEVENLABS_API_KEY 和 ELEVENLABS_VOICE_ID。
 ./timbrex synth examples/expressive.tbx --provider elevenlabs -o elevenlabs.wav
 ```
@@ -65,7 +65,7 @@ Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致
 
 ## MiniMax
 
-```sh
+```bash
 # 先设置 MINIMAX_API_KEY。
 ./timbrex synth examples/expressive.tbx --provider minimax -o minimax.wav
 ```
@@ -78,7 +78,7 @@ Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致
 
 ## Azure Speech
 
-```sh
+```bash
 # 先设置 AZURE_SPEECH_KEY。
 export AZURE_SPEECH_REGION=eastus
 ./timbrex synth examples/expressive.tbx --provider azure --voice en-US-JennyNeural -o azure.wav
@@ -94,7 +94,7 @@ Azure REST 会在十分钟处截断音频，且可能仍返回 HTTP 200。片段
 
 ## Qwen
 
-```sh
+```bash
 # 先设置 DASHSCOPE_API_KEY，并替换工作空间占位符。
 export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer'
 ./timbrex synth examples/expressive.tbx --provider qwen -o qwen.wav

@@ -8,7 +8,7 @@ Syntax highlighting for `.tbx` and `.timbrex`. Tokens follow SPEC v0.3.4. The la
 
 From the repository root, launch an extension development window:
 
-```sh
+```bash
 code --extensionDevelopmentPath="$PWD/editors/vscode" "$PWD/examples/expressive.tbx"
 # Or use Cursor's CLI:
 cursor --extensionDevelopmentPath="$PWD/editors/vscode" "$PWD/examples/expressive.tbx"
@@ -22,7 +22,7 @@ Authoring source: [syntaxes/tbx.tmLanguage.yaml](syntaxes/tbx.tmLanguage.yaml). 
 
 After editing YAML, regenerate from the repository root:
 
-```sh
+```bash
 go test ./editors/vscode -update
 ```
 

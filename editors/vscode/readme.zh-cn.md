@@ -8,7 +8,7 @@
 
 在仓库根目录启动扩展开发窗口：
 
-```sh
+```bash
 code --extensionDevelopmentPath="$PWD/editors/vscode" "$PWD/examples/expressive.tbx"
 # 也可以使用 Cursor CLI：
 cursor --extensionDevelopmentPath="$PWD/editors/vscode" "$PWD/examples/expressive.tbx"
@@ -22,7 +22,7 @@ cursor --extensionDevelopmentPath="$PWD/editors/vscode" "$PWD/examples/expressiv
 
 修改 YAML 后，在仓库根目录重新生成：
 
-```sh
+```bash
 go test ./editors/vscode -update
 ```
 

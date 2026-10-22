@@ -14,7 +14,7 @@ Timbrex 的目标是保持小巧、好读的富表现力 TTS DSL。请先阅读 
 
 使用 `go.mod` 中的 Go 版本和 golangci-lint **v2.14.0**。CI 在 Linux 和 macOS 上运行。
 
-```sh
+```bash
 make test
 make lint
 make tidy
@@ -22,7 +22,7 @@ make tidy
 
 默认测试必须离线。用 `httptest` 验证厂商契约，常规测试不能要求凭证或产生费用。行为修复应补充回归测试和有意义的边界测试。修改 TextMate YAML 源文件后，重新生成随包交付的 JSON：
 
-```sh
+```bash
 go test ./editors/vscode -update
 ```
 

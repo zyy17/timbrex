@@ -14,7 +14,7 @@ Timbrex 是一套用英文 ASCII 标签标注表演的语音脚本语言。`.tbx
 
 需要 Go 1.27，与 [go.mod](go.mod) 一致。
 
-```sh
+```bash
 git clone https://github.com/zyy17/timbrex.git
 cd timbrex
 make build
@@ -25,7 +25,7 @@ make build
 
 ## 快速开始
 
-```sh
+```bash
 ./timbrex check examples/expressive.tbx
 ./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
 # 先设置 OPENAI_API_KEY。

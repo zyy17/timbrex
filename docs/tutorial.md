@@ -8,7 +8,7 @@ This walkthrough installs Timbrex, writes a `.tbx` script, checks it, inspects s
 
 Requires Go 1.27 ([go.mod](../go.mod)).
 
-```sh
+```bash
 git clone https://github.com/zyy17/timbrex.git
 cd timbrex
 make build
@@ -47,7 +47,7 @@ strict_tags: true
 
 `check` parses the file, resolves tags, and prints diagnostics. It does not need credentials or a network.
 
-```sh
+```bash
 ./timbrex check hello.tbx
 ```
 
@@ -57,7 +57,7 @@ ok
 
 Checked-in examples:
 
-```sh
+```bash
 ./timbrex check examples/hello.tbx
 ./timbrex check examples/expressive.tbx
 ./timbrex check examples/dialogue.tbx
@@ -67,7 +67,7 @@ Each prints `ok` on stdout. Warnings and info go to stderr and still allow `ok`.
 
 Unknown names become free-form acting unless strict mode is on. `--strict-tags` / `--no-strict-tags` override front matter and configuration.
 
-```sh
+```bash
 ./timbrex check hello.tbx --strict-tags
 ```
 
@@ -88,7 +88,7 @@ Write free-form acting explicitly: `[act "thoughtfully"]`.
 
 Timbrex has no `compile` or `inspect` command. Use `check` for the language, and `config` for merged file and environment settings (API keys become `REDACTED`). `config` does not read a script or apply `synth` flags.
 
-```sh
+```bash
 ./timbrex config
 ```
 
@@ -138,20 +138,20 @@ Coded diagnostics you will see while learning:
 
 | Code | Severity | Meaning |
 | --- | --- | --- |
-| V012 | error | Unclosed tag |
-| V013 | error | `[/name]` is invalid; spans use `[name\|...]` |
-| V041 | error | Unregistered tag in strict mode |
-| W040 | warning | Unknown single-word tag close to a registered name |
-| W103 | warning | Cast display name used as a speaker prefix |
-| I050 | info | Non-ASCII free-form acting text |
+| `V012` | error | Unclosed tag |
+| `V013` | error | `[/name]` is invalid; spans use `[name\|...]` |
+| `V041` | error | Unregistered tag in strict mode |
+| `W040` | warning | Unknown single-word tag close to a registered name |
+| `W103` | warning | Cast display name used as a speaker prefix |
+| `I050` | info | Non-ASCII free-form acting text |
 
-Parse errors (such as V012) print as `file:line:col: …`. Check failures add `error: check failed`.
+Parse errors (such as `V012`) print as `file:line:col: …`. Check failures add `error: check failed`.
 
 ## 5. Synthesize with stub
 
 `stub` is the default provider. It writes a short 8 kHz tone from the script's rune count. It is not a speech engine. Use it to exercise the pipeline without a key.
 
-```sh
+```bash
 ./timbrex synth hello.tbx --provider stub -o tone.wav
 ```
 
@@ -163,7 +163,7 @@ The printed line is the output path. `-o` / `--out` must end in `.wav`. If you o
 
 The same command works on the repository examples:
 
-```sh
+```bash
 ./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
 ```
 
@@ -177,7 +177,7 @@ tone.wav
 
 HTTP adapters need credentials. OpenAI is the smallest extra setup: one environment variable. Without it, `synth` fails before any request:
 
-```sh
+```bash
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
@@ -185,7 +185,7 @@ HTTP adapters need credentials. OpenAI is the smallest extra setup: one environm
 error: set providers.openai.api_key or its documented environment variable
 ```
 
-```sh
+```bash
 export OPENAI_API_KEY=your-key
 ./timbrex synth examples/expressive.tbx --provider openai --voice coral -o speech.wav
 ```
@@ -215,7 +215,7 @@ lin: You came! [pause 300ms] [whisper|Come inside.]
 chen: [slow|I've got something to tell you.]
 ```
 
-```sh
+```bash
 ./timbrex check examples/dialogue.tbx
 ./timbrex synth examples/dialogue.tbx --provider stub -o dialogue.wav
 ```
@@ -225,7 +225,7 @@ ok
 dialogue.wav
 ```
 
-`cast.<id>.voices.<provider>` selects that speaker's voice. `--voice` is a fallback; it does not replace cast mappings. A display name is not a speaker alias. `Lin:` in the body stays narration and may warn W103.
+`cast.<id>.voices.<provider>` selects that speaker's voice. `--voice` is a fallback; it does not replace cast mappings. A display name is not a speaker alias. `Lin:` in the body stays narration and may warn `W103`.
 
 ## 8. Pauses
 
@@ -239,7 +239,7 @@ strict_tags: true
 Wait. [pause 500ms] Now go. [pause short] One more beat.
 ```
 
-```sh
+```bash
 ./timbrex check pauses.tbx
 ./timbrex synth pauses.tbx --provider stub -o pauses.wav
 ```
@@ -265,7 +265,7 @@ strict_tags: true
 [act "holding back tears"|I'm fine.]
 ```
 
-```sh
+```bash
 ./timbrex check emotion.tbx --strict-tags
 ./timbrex synth emotion.tbx --provider stub -o emotion.wav
 ```
@@ -283,7 +283,7 @@ What a provider does with those tags differs. OpenAI and Qwen send many of them 
 
 There is no batch command. A shell loop is enough. `--provider stub` is required here because [examples/dialogue.tbx](../examples/dialogue.tbx) sets `provider: openai`.
 
-```sh
+```bash
 mkdir -p out
 for f in examples/*.tbx; do
   ./timbrex check "$f"
@@ -318,7 +318,7 @@ out/hello.wav
 | `synth` | Same check, then write a WAV |
 | `config` | Print merged settings with keys redacted |
 | `stub` | Default provider; 8 kHz test tone, no speech |
-| strict mode | Unknown tags are V041; write `[act "…"]` instead |
+| strict mode | Unknown tags are `V041`; write `[act "…"]` instead |
 | provider | `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, or `qwen` |
 
 ## Next

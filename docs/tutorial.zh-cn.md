@@ -8,7 +8,7 @@
 
 需要 Go 1.27，与 [go.mod](../go.mod) 一致。
 
-```sh
+```bash
 git clone https://github.com/zyy17/timbrex.git
 cd timbrex
 make build
@@ -47,7 +47,7 @@ strict_tags: true
 
 `check` 解析文件、核对标签并打印诊断。不需要凭证或网络。
 
-```sh
+```bash
 ./timbrex check hello.tbx
 ```
 
@@ -57,7 +57,7 @@ ok
 
 仓库中的示例：
 
-```sh
+```bash
 ./timbrex check examples/hello.tbx
 ./timbrex check examples/expressive.tbx
 ./timbrex check examples/dialogue.tbx
@@ -67,7 +67,7 @@ ok
 
 未知标签名会变成自由表演指令，除非开启严格模式。`--strict-tags` / `--no-strict-tags` 覆盖 front matter 和配置。
 
-```sh
+```bash
 ./timbrex check hello.tbx --strict-tags
 ```
 
@@ -88,7 +88,7 @@ error: check failed
 
 Timbrex 没有 `compile` 或 `inspect` 命令。语言用 `check` 检查，文件与环境变量的合并结果用 `config` 查看（API key 显示为 `REDACTED`）。`config` 不读脚本，也不应用 `synth` 参数。
 
-```sh
+```bash
 ./timbrex config
 ```
 
@@ -138,20 +138,20 @@ ok
 
 | 代码 | 级别 | 含义 |
 | --- | --- | --- |
-| V012 | error | 标签未闭合 |
-| V013 | error | `[/name]` 不合法；span 写作 `[name\|...]` |
-| V041 | error | 严格模式下未注册的标签 |
-| W040 | warning | 接近注册名称的未知单词标签 |
-| W103 | warning | 把 cast 显示名称当成了角色前缀 |
-| I050 | info | 非 ASCII 自由表演文本 |
+| `V012` | error | 标签未闭合 |
+| `V013` | error | `[/name]` 不合法；span 写作 `[name\|...]` |
+| `V041` | error | 严格模式下未注册的标签 |
+| `W040` | warning | 接近注册名称的未知单词标签 |
+| `W103` | warning | 把 cast 显示名称当成了角色前缀 |
+| `I050` | info | 非 ASCII 自由表演文本 |
 
-解析错误（如 V012）打印为 `file:line:col: …`。检查失败会再打印 `error: check failed`。
+解析错误（如 `V012`）打印为 `file:line:col: …`。检查失败会再打印 `error: check failed`。
 
 ## 5. 用 stub 合成
 
 `stub` 是默认厂商。它按脚本文字的 rune 数写出一小段 8 kHz 测试音，不是语音引擎。用来在没有密钥的情况下跑通流水线。
 
-```sh
+```bash
 ./timbrex synth hello.tbx --provider stub -o tone.wav
 ```
 
@@ -163,7 +163,7 @@ tone.wav
 
 仓库示例同样可用：
 
-```sh
+```bash
 ./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
 ```
 
@@ -177,7 +177,7 @@ tone.wav
 
 HTTP 适配器需要凭证。OpenAI 额外配置最少：一个环境变量。未设置时，`synth` 会在发请求前失败：
 
-```sh
+```bash
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
@@ -185,7 +185,7 @@ HTTP 适配器需要凭证。OpenAI 额外配置最少：一个环境变量。�
 error: set providers.openai.api_key or its documented environment variable
 ```
 
-```sh
+```bash
 export OPENAI_API_KEY=your-key
 ./timbrex synth examples/expressive.tbx --provider openai --voice coral -o speech.wav
 ```
@@ -215,7 +215,7 @@ lin: 你来了！[pause 300ms] [whisper|进来吧。]
 chen: [slow|我有事要告诉你。]
 ```
 
-```sh
+```bash
 ./timbrex check examples/dialogue.tbx
 ./timbrex synth examples/dialogue.tbx --provider stub -o dialogue.wav
 ```
@@ -225,7 +225,7 @@ ok
 dialogue.wav
 ```
 
-`cast.<id>.voices.<provider>` 为该角色选择音色。`--voice` 是兜底，不覆盖 cast 映射。显示名称不是角色别名。正文里的 `Lin:` 仍是旁白，并可能触发 W103。
+`cast.<id>.voices.<provider>` 为该角色选择音色。`--voice` 是兜底，不覆盖 cast 映射。显示名称不是角色别名。正文里的 `Lin:` 仍是旁白，并可能触发 `W103`。
 
 ## 8. 停顿
 
@@ -239,7 +239,7 @@ strict_tags: true
 等一下。[pause 500ms] 现在走。[pause short] 再停一拍。
 ```
 
-```sh
+```bash
 ./timbrex check pauses.tbx
 ./timbrex synth pauses.tbx --provider stub -o pauses.wav
 ```
@@ -265,7 +265,7 @@ strict_tags: true
 [act "holding back tears"|我没事。]
 ```
 
-```sh
+```bash
 ./timbrex check emotion.tbx --strict-tags
 ./timbrex synth emotion.tbx --provider stub -o emotion.wav
 ```
@@ -283,7 +283,7 @@ emotion.wav
 
 没有批量命令，用 shell 循环即可。这里必须加 `--provider stub`，因为 [examples/dialogue.tbx](../examples/dialogue.tbx) 写了 `provider: openai`。
 
-```sh
+```bash
 mkdir -p out
 for f in examples/*.tbx; do
   ./timbrex check "$f"
@@ -318,7 +318,7 @@ out/hello.wav
 | `synth` | 先做同样的检查，再写出 WAV |
 | `config` | 打印合并后的设置，密钥显示为 `REDACTED` |
 | `stub` | 默认厂商；8 kHz 测试音，不是语音 |
-| 严格模式 | 未知标签报 V041；应写成 `[act "…"]` |
+| 严格模式 | 未知标签报 `V041`；应写成 `[act "…"]` |
 | 厂商（provider） | `stub`、`openai`、`elevenlabs`、`minimax`、`azure` 或 `qwen` |
 
 ## 下一步

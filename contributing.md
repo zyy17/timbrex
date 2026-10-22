@@ -14,7 +14,7 @@ Discuss substantial syntax, architecture, or compatibility changes in an issue b
 
 Use the Go version in `go.mod` and golangci-lint **v2.14.0**. CI runs on Linux and macOS.
 
-```sh
+```bash
 make test
 make lint
 make tidy
@@ -22,7 +22,7 @@ make tidy
 
 Tests must be offline by default. Use `httptest` for vendor contracts; never require credentials or spend money in the normal test suite. Add regression coverage for behavioral fixes and meaningful boundary cases. If changing the TextMate YAML source, regenerate its packaged JSON with:
 
-```sh
+```bash
 go test ./editors/vscode -update
 ```
 
