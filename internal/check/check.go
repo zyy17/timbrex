@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -204,6 +205,10 @@ func (c *checker) one(n *ast.Node, atStart, scene bool) {
 	if spec.Kind == vocab.Turn && !scene && !atStart {
 		c.error(n, "", `tag "`+spec.Name+`" must be at the start of a turn`)
 	}
+	switch spec.Name {
+	case "pause", "silence", "break", "gap":
+		c.pauseArgs(n)
+	}
 }
 
 // resolve reports V013 for a closing tag and returns true so later rules
@@ -307,6 +312,35 @@ func hasNonASCII(s string) bool {
 		}
 	}
 	return false
+}
+
+func (c *checker) pauseArgs(n *ast.Node) {
+	if len(n.Args) == 0 && n.Note == "" {
+		return
+	}
+	if len(n.Args) != 1 || n.Args[0].Key != "" || n.Args[0].Raw == "" || n.Note != "" {
+		c.error(n, "", "["+n.Name+"] needs one positional value")
+		return
+	}
+	arg := n.Args[0]
+	if arg.Kind == "word" {
+		switch arg.Raw {
+		case "short", "medium", "long":
+			return
+		}
+	}
+	if arg.Kind != "duration" {
+		c.error(n, "", "["+n.Name+"] needs an unquoted duration in ms, s, or min, or short/medium/long")
+		return
+	}
+	v := arg.Raw
+	if strings.HasSuffix(v, "min") {
+		v = strings.TrimSuffix(v, "min") + "m"
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil || d < 0 || d > time.Minute {
+		c.error(n, "", "["+n.Name+"] needs a duration from 0ms to 1min")
+	}
 }
 
 func closing(raw string) (string, bool) {

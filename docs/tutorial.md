@@ -223,7 +223,7 @@ dialogue.wav
 
 ## Insert pauses
 
-`pause`, `silence`, `break`, and a nonnegative `gap` become local silence during `synth`. They are not sent to the vendor. Default pause is 250 ms. `short`, `medium`, and `long` are 250 ms, 500 ms, and 1 s. Explicit durations use `ms`, `s`, or `min`, from `0ms` to `1min`. `0ms` is accepted and produces no samples.
+`pause`, `silence`, `break`, and a nonnegative `gap` become local silence in the shared PCM renderer used by HTTP adapters. They are not sent to the vendor. `stub` does not insert silence; it writes one tone from rune count. Default pause is 250 ms. `short`, `medium`, and `long` are 250 ms, 500 ms, and 1 s. Explicit durations use `ms`, `s`, or `min`, from `0ms` to `1min`. Write zero as `0ms`. `[pause 0]` is a number, not a duration, and `check` rejects it.
 
 ```tbx
 ---

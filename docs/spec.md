@@ -65,9 +65,9 @@ Arguments are separated by spaces or tabs. Positional values and `key=value` are
 | Quoted string | `"holding back tears"`, `"轻轻地"` |
 | Named argument | `intensity=0.5` |
 
-A suffix belongs to a number only if it ends the token: `10stone` is a word. Quoted values support `\"` and `\\`. A registered tag may accept trailing words as a note; the current note-enabled tags are `act` and nonverbal events. The checker does not yet enforce per-tag argument types or ranges. Each real adapter validates the parameters it implements before making requests; named arguments are not currently implemented by these adapters.
+A suffix belongs to a number only if it ends the token: `10stone` is a word. Quoted values support `\"` and `\\`. A registered tag may accept trailing words as a note; the current note-enabled tags are `act` and nonverbal events. The checker validates duration kinds for `pause`, `silence`, `break`, and `gap` (the shared planner's pause tags). It does not yet enforce other per-tag argument types or ranges. Each real adapter validates the parameters it implements before making requests; named arguments are not currently implemented by these adapters.
 
-Numeric synthesis controls require unquoted values of the matching kind. For example, use `speed 1.2`, not `speed "1.2"` or `speed 1e0`. Pauses accept the duration units `ms`, `s`, and `min`; Go-specific forms such as `1m` and `1s250ms` are words, not durations. Write zero duration as `0ms`.
+Numeric synthesis controls require unquoted values of the matching kind. For example, use `speed 1.2`, not `speed "1.2"` or `speed 1e0`. Pauses accept the duration units `ms`, `s`, and `min`; Go-specific forms such as `1m` and `1s250ms` are words, not durations. Write zero duration as `0ms`. A bare `0` is a number and is rejected.
 
 Outside quoted arguments, `[[` and `\[` produce a literal `[`. `]]` and `\]` produce a literal `]`. Backslash can also escape `|`, `\`, and `:`. Other backslashes are literal. Inside two or more open tags, consecutive `]` close nested tags; use `\]` for a literal closing bracket there. Thus `[whisper|say [pause 1s]]` closes both tags.
 
@@ -155,7 +155,7 @@ Precedence is documented in [configuration](configuration.md). Voice IDs and mod
 
 `check` validates the language and vocabulary. `synth` additionally validates the current adapter's mapping, then renders sequentially. Unsupported controls, raw fences, and invalid parameter values used by a speech segment fail before the first paid request. State that is overridden before any speech has no audible effect.
 
-Pauses (`pause`, `silence`, `break`, and a nonnegative `gap`) are local silence. Default pause is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations range from 0 to 1 minute per pause. `0ms` is accepted and produces no samples. `fast` is 1.2× and `slow` is 0.8×. `speed 120%` means 1.2×, not an increase of 120%. Pitch uses semitones and volume uses dB; supported ranges depend on the adapter. Emotion intensities are interpreted as text only where documented, not as calibrated measurements.
+Pauses (`pause`, `silence`, `break`, and a nonnegative `gap`) are local silence in the shared PCM renderer used by HTTP adapters. Default pause is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations range from 0 to 1 minute per pause. `0ms` is accepted and produces no samples. `stub` writes one 8 kHz tone from rune count and does not insert those pauses. `fast` is 1.2× and `slow` is 0.8×. `speed 120%` means 1.2×, not an increase of 120%. Pitch uses semitones and volume uses dB; supported ranges depend on the adapter. Emotion intensities are interpreted as text only where documented, not as calibrated measurements.
 
 The renderer concatenates compatible raw PCM segments into one WAV. It does not mix, overlap, resample, normalize, or crossfade. There is no implicit pause between turns. Use explicit pauses for timing. [Provider setup](providers.md) and [capabilities](capabilities.md) describe the exact current mappings and limits.
 

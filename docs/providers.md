@@ -129,7 +129,7 @@ Spoken text and `speechMetadata.style` are separate. `fast`/`slow`, acting, emot
 
 Requests explicitly select `AUDIO_WAV`, `INLINE` and 24000 Hz. A response must contain exactly one `STOP` candidate and one inline `audio/wav` part, without prompt/output blocking. Unexpected parts, multiple candidates, malformed JSON/base64 and API error objects fail. The shared decoder requires complete RIFF lengths, PCM1, mono, 24 kHz, 16-bit, alignment 2 and byte rate 48000; unknown-size WAV, duplicate audio chunks and other encodings fail. Extra RIFF metadata chunks are allowed. The 64 MiB HTTP limit includes JSON/base64 overhead. This adapter unwraps WAV before the shared renderer; the raw-PCM restrictions above apply to the other adapters.
 
-References: [current TTS guide](https://ai.google.dev/gemini-api/docs/speech-generation), [GenerateContent schema](https://ai.google.dev/api/generate-content), [model and limits](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts). Offline fixtures verify the selected schema and rejection behavior; no real account or acoustic verification has been performed.
+References: [GenerateContent TTS guide](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation), [GenerateContent schema](https://ai.google.dev/api/generate-content), [model and limits](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts). The [current product TTS guide](https://ai.google.dev/gemini-api/docs/speech-generation) leads with the Interactions API, which this adapter does not call. Offline fixtures verify the selected schema and rejection behavior; no real account or acoustic verification has been performed.
 
 ## Fish Audio
 
