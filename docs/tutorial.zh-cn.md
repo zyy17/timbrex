@@ -223,7 +223,7 @@ dialogue.wav
 
 ## 插入停顿
 
-`pause`、`silence`、`break` 和非负的 `gap` 在 `synth` 时生成本地静音，不会发送给厂商。默认停顿为 250 ms。`short`、`medium`、`long` 分别为 250 ms、500 ms、1 s。显式时长使用 `ms`、`s` 或 `min`，范围为 `0ms` 到 `1min`。`0ms` 会被接受，但不产生采样。
+`pause`、`silence`、`break` 和非负的 `gap` 由 HTTP 适配器使用的共享 PCM 渲染器生成本地静音，不会发送给厂商。`stub` 不插入静音，只按字符数写一段测试音。默认停顿为 250 ms。`short`、`medium`、`long` 分别为 250 ms、500 ms、1 s。显式时长使用 `ms`、`s` 或 `min`，范围为 `0ms` 到 `1min`。零时长写为 `0ms`。`[pause 0]` 是数字而不是时长，`check` 会拒绝。
 
 ```tbx
 ---

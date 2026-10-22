@@ -55,7 +55,7 @@ Azure XML-escapes text and attributes. OpenAI sends speech and instructions in s
 
 All real adapters currently reject pronunciation wrappers (`ipa`, `pinyin`, `sub`, `say`, and related tags), audio files/effects/music, `overlap`, `cut`, `duration`, `rate`, `oral`, `emovec`, markers, voice conversion, and raw fences. There is no automatic fallback or silent dropping of unsupported controls. Named tag arguments are parsed but have no adapter mappings yet.
 
-The stub ignores performance semantics and writes an 8 kHz test tone. It cannot validate provider capabilities or speech quality. `check` recognizes the full vocabulary but does not select an adapter, validate its parameter ranges, or make requests.
+The stub ignores performance semantics and writes an 8 kHz test tone. It cannot validate provider capabilities or speech quality, and it does not insert local pauses. `check` recognizes the full vocabulary and validates pause/silence/break/gap duration kinds used by the shared planner. It does not select an adapter, validate adapter-specific ranges, or make requests.
 
 ## Gemini TTS
 

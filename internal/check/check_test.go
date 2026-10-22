@@ -107,6 +107,32 @@ func TestWrapNeedsContent(t *testing.T) {
 	}
 }
 
+func TestPauseDurationKinds(t *testing.T) {
+	for _, src := range []string{
+		"Hi [pause 0ms]", "Hi [pause]", "Hi [pause short]", "Hi [silence 1s]", "Hi [break 0.5min]",
+	} {
+		script, err := parse.Parse("t.tbx", src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diags := Apply(script, false); Failed(diags) != nil {
+			t.Fatalf("%q: %v", src, diags)
+		}
+	}
+	for _, src := range []string{
+		"Hi [pause 0]", "Hi [pause .5s]", "Hi [pause 1m]", "Hi [pause 1s250ms]", `Hi [pause "1s"]`,
+		"Hi [pause -1s]", "Hi [pause 61s]", "Hi [pause 1 2]", "Hi [silence NaN]", "Hi [break 2min]",
+	} {
+		script, err := parse.Parse("t.tbx", src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := Failed(Apply(script, false)); err == nil {
+			t.Fatalf("accepted %q", src)
+		}
+	}
+}
+
 func TestPauseRejectsSpan(t *testing.T) {
 	script, err := parse.Parse("scene.tbx", "[pause|wait]\n")
 	if err != nil {

@@ -61,6 +61,9 @@ func Plan(doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
 					seg.Controls = append(seg.Controls, n)
 				}
 			}
+			if strings.TrimSpace(seg.Voice) == "" {
+				return fmt.Errorf("set --voice, providers.%s.voice, or a cast voices.%s mapping", id, id)
+			}
 			out = append(out, seg)
 			nodes = nil
 			return nil

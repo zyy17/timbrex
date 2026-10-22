@@ -81,10 +81,45 @@ func TestResetFeatureRestoresSceneValue(t *testing.T) {
 }
 
 func TestPlanRejectsBadPausesAndFences(t *testing.T) {
-	for _, src := range []string{"Hi [pause -1s]", "Hi [pause 61s]", "Hi [pause 1 2]", "Hi [pause NaN]", "Hi [pause 1m]", "Hi [pause 1s250ms]", `Hi [pause "1s"]`, "Hi [pause 0]", "```ssml azure\n<speak/>\n```", "// empty"} {
+	pauses := []string{"Hi [pause -1s]", "Hi [pause 61s]", "Hi [pause 1 2]", "Hi [pause NaN]", "Hi [pause 1m]", "Hi [pause 1s250ms]", `Hi [pause "1s"]`, "Hi [pause 0]"}
+	for _, src := range pauses {
+		script, err := parse.Parse("test.tbx", src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := check.Failed(check.Apply(script, false)); err == nil {
+			t.Fatalf("check accepted %q", src)
+		}
+		if _, err := providers.Plan(lower.Script(script), "openai", "coral"); err == nil {
+			t.Fatalf("plan accepted %q", src)
+		}
+	}
+	for _, src := range []string{"```ssml azure\n<speak/>\n```", "// empty"} {
 		if _, err := providers.Plan(document(t, src), "openai", "coral"); err == nil {
 			t.Fatalf("accepted %q", src)
 		}
+	}
+}
+
+func TestPlanRejectsEmptyVoice(t *testing.T) {
+	doc := document(t, "Hello\n")
+	if _, err := providers.Plan(doc, "openai", ""); err == nil || !strings.Contains(err.Error(), "providers.openai.voice") {
+		t.Fatalf("err = %v", err)
+	}
+	if _, err := providers.Plan(doc, "openai", "  "); err == nil {
+		t.Fatal("accepted whitespace voice")
+	}
+	mapped := document(t, "---\ncast:\n  lin: {}\n---\nlin: Hello\n")
+	if _, err := providers.Plan(mapped, "openai", ""); err == nil {
+		t.Fatal("accepted empty fallback for a known speaker")
+	}
+	direct, err := providers.Plan(document(t, `[voice coral|Hello]`), "openai", "")
+	if err != nil || len(direct) != 1 || direct[0].Voice != "coral" {
+		t.Fatalf("voice span: %+v %v", direct, err)
+	}
+	pause, err := providers.Plan(document(t, "[pause 200ms]\n"), "openai", "")
+	if err != nil || len(pause) != 1 || pause[0].Pause != 200*time.Millisecond {
+		t.Fatalf("pause only: %+v %v", pause, err)
 	}
 }
 

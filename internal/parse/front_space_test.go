@@ -20,6 +20,19 @@ func TestFrontMatterAllowsTrailingWhitespace(t *testing.T) {
 	}
 }
 
+func TestFrontMatterClosingAllowsTrailingWhitespace(t *testing.T) {
+	for _, close := range []string{"--- \n", "---\t\n", "---  \t\n"} {
+		src := "---\ncast: auto\n" + close + "lin: hi\n"
+		script, err := Parse("space.tbx", src)
+		if err != nil {
+			t.Fatalf("%q parse: %v", close, err)
+		}
+		if !script.Front.CastAuto || len(script.Blocks) != 1 || script.Blocks[0].Kind != ast.Turn || script.Blocks[0].Speaker != "lin" {
+			t.Fatalf("%q CastAuto=%v blocks=%+v", close, script.Front.CastAuto, script.Blocks)
+		}
+	}
+}
+
 func TestFourDashesIsNotFrontMatter(t *testing.T) {
 	script, err := Parse("dash.tbx", "----\ncast: auto\n---\nlin: hi\n")
 	if err != nil {

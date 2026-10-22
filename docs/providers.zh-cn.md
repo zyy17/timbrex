@@ -129,7 +129,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 请求明确指定 `AUDIO_WAV`、`INLINE` 和 24000 Hz。响应必须恰好包含一个 `STOP` 候选和一个内联 `audio/wav` part，且输入/输出未被拦截。额外 part、多个候选、无效 JSON/base64 和 API 错误对象均失败。共用解码器要求完整 RIFF 长度、PCM1、单声道、24 kHz、16-bit、对齐 2、字节率 48000；未知长度 WAV、重复音频块和其他编码会失败，额外 RIFF 元数据块可接受。64 MiB HTTP 限制包含 JSON/base64 开销。本适配器先提取 WAV 内的 PCM，再交给共用渲染器；前述原始 PCM 限制适用于其他适配器。
 
-参考：[当前 TTS 指南](https://ai.google.dev/gemini-api/docs/speech-generation)、[GenerateContent schema](https://ai.google.dev/api/generate-content)、[模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)。离线样例验证所选 schema 和拒绝行为，尚未进行真实账号或声学验证。
+参考：[GenerateContent TTS 指南](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation)、[GenerateContent schema](https://ai.google.dev/api/generate-content)、[模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)。[当前产品 TTS 指南](https://ai.google.dev/gemini-api/docs/speech-generation) 以 Interactions API 为主，本适配器不调用该接口。离线样例验证所选 schema 和拒绝行为，尚未进行真实账号或声学验证。
 
 ## Fish Audio
 

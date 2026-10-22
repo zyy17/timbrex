@@ -73,6 +73,19 @@ func TestCheckExample(t *testing.T) {
 	}
 }
 
+func TestCheckRejectsBarePauseNumber(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "pause.tbx")
+	if err := os.WriteFile(path, []byte("Hi [pause 0]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stderr bytes.Buffer
+	err := run(context.Background(), []string{"check", path}, strings.NewReader(""), &bytes.Buffer{}, &stderr)
+	if err == nil || !strings.Contains(err.Error(), "check failed") || !strings.Contains(stderr.String(), "unquoted duration") {
+		t.Fatalf("err=%v stderr=%q", err, stderr.String())
+	}
+}
+
 func TestCheckError(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.tbx")
