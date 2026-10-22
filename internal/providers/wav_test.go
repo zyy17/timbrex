@@ -94,3 +94,15 @@ func FuzzDecodeWAV(f *testing.F) {
 		}
 	})
 }
+
+func TestDecodeWAVSizeBoundary(t *testing.T) {
+	data := make([]byte, MaxResponseBytes+1)
+	copy(data, wavHeader(MaxResponseBytes-44))
+	pcm, err := DecodeWAV(data[:MaxResponseBytes])
+	if err != nil || len(pcm) != MaxResponseBytes-44 {
+		t.Fatalf("exact bound: bytes=%d err=%v", len(pcm), err)
+	}
+	if _, err := DecodeWAV(data); err == nil {
+		t.Fatal("accepted response above limit")
+	}
+}
