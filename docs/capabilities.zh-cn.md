@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 文本与 cast 音色 | 支持 | 支持 | 支持 | 支持 | 支持 |
 | `pause`、`silence`、`break`、非负 `gap` | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 |
-| `speed`、`fast`、`slow` | 参数：0.25–4 倍 | 参数：0.7–1.2 倍 | 参数：0.5–2 倍 | SSML：0.5–2 倍 | 参数：0.5–2 倍 |
+| `speed`、`fast`、`slow` | 参数：0.25–4 倍 | 参数：0.7–1.2 倍；v4/v4 Turbo 不支持 | 参数：0.5–2 倍 | SSML：0.5–2 倍 | 参数：0.5–2 倍 |
 | `pitch` | 不支持 | 不支持 | 整数 −12…+12 半音 | SSML −12…+12 半音 | 参数 −12…+12 半音 |
 | `volume` | 不支持 | 不支持 | 参数 −60…+20 dB | SSML −60…+20 dB | 参数 −60…约 +6.02 dB |
 | 标准情绪 | 指令 | Audio-tag 指令 | 七种映射情绪 | 映射到 style | 指令 |
@@ -22,7 +22,7 @@
 | `lang` span / front matter | 指令 | 语言代码 | Language boost | SSML locale | 语言提示 |
 | `voice`、`as` span；`reset` | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 |
 
-OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`；适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见[厂商接入](providers.zh-cn.md)。
+OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`。`eleven_v4` 和 `eleven_v4_turbo` 不支持语速设置，因此会拒绝显式语速控制；其他模型的适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见[厂商接入](providers.zh-cn.md)。
 
 ## 具体映射
 
@@ -43,7 +43,9 @@ ElevenLabs 事件：`laugh`、`sigh`、`gasp`、`clear-throat`、`giggle`、`cou
 
 ## 字面量文本
 
-转义保护 Timbrex 语法，但不能关闭厂商的原生标记。为防止字面量文本变成意外指令，ElevenLabs 和 Qwen 拒绝台词中的 ASCII `[`、`]`，ElevenLabs 也拒绝表演指令中的方括号。MiniMax 拒绝 `(laughs)` 等已识别的原生事件字符串，以及停顿前缀 `<#`；普通圆括号仍然是文本。需要保留这些符号为文字时，可以使用 `（ ）`、`［ ］` 等 Unicode 替代字符，或换用其他厂商。
+转义保护 Timbrex 语法，但不能关闭厂商的原生标记。为防止字面量文本变成意外指令，ElevenLabs 和 Qwen 拒绝台词中的 ASCII `[`、`]`。ElevenLabs 也拒绝表演指令中的方括号、旧模型中的字面量 `<break>` 标签，以及 `eleven_flash_v2` 和 `eleven_turbo_v2` 中的 `<phoneme>` 标签。数学比较及无关的类似标签词语仍被接受。
+
+MiniMax 拒绝 `(laughs)` 等已识别的原生事件字符串，以及停顿前缀 `<#`。其他圆括号会原样传递，但服务可能将括号内的拼音、IPA 或粤拼解释为发音控制；适配器无法识别所有此类形式。需要保留这些符号为文字时，可以使用 `（ ）`、`［ ］` 等 Unicode 替代字符，或换用其他厂商。
 
 Azure 对文本和属性进行 XML 转义，OpenAI 将台词和指令放在不同字段。这避免了编译器生成的结构注入，但不保证生成模型逐字朗读每个符号。
 

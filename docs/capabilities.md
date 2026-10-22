@@ -8,7 +8,7 @@ This table describes Timbrex's current adapters, not everything the vendors offe
 | --- | --- | --- | --- | --- | --- |
 | Text and cast voices | Yes | Yes | Yes | Yes | Yes |
 | `pause`, `silence`, `break`, nonnegative `gap` | Local silence | Local silence | Local silence | Local silence | Local silence |
-| `speed`, `fast`, `slow` | Parameter: 0.25–4× | Parameter: 0.7–1.2× | Parameter: 0.5–2× | SSML: 0.5–2× | Parameter: 0.5–2× |
+| `speed`, `fast`, `slow` | Parameter: 0.25–4× | Parameter: 0.7–1.2×; unsupported on v4/v4 Turbo | Parameter: 0.5–2× | SSML: 0.5–2× | Parameter: 0.5–2× |
 | `pitch` | Unsupported | Unsupported | Integer −12…+12 st | SSML −12…+12 st | Parameter −12…+12 st |
 | `volume` | Unsupported | Unsupported | Parameter −60…+20 dB | SSML −60…+20 dB | Parameter −60…about +6.02 dB |
 | Standard emotions | Instruction | Audio-tag instruction | Seven mapped emotions | Mapped styles | Instruction |
@@ -22,7 +22,7 @@ This table describes Timbrex's current adapters, not everything the vendors offe
 | `lang` span / front matter | Instruction | Language code | Language boost | SSML locale | Language hint |
 | `voice`, `as` spans; `reset` | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner |
 
-OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. The adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](providers.md).
+OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. Explicit speed controls are rejected on `eleven_v4` and `eleven_v4_turbo`, which do not support the speed setting. For other models, the adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](providers.md).
 
 ## Exact mappings
 
@@ -43,7 +43,9 @@ Volume converts dB to a linear amplitude ratio with `10^(dB/20)`. MiniMax receiv
 
 ## Literal text
 
-Escaping protects Timbrex syntax, but does not disable a vendor's native markup. To avoid turning literal text into unintended instructions, ElevenLabs and Qwen reject literal ASCII `[` or `]` in spoken text. ElevenLabs also rejects brackets inside acting instructions. MiniMax rejects its recognized native event strings, such as `(laughs)`, and its pause prefix `<#`; ordinary parentheses remain text. Use Unicode alternatives such as `（ ）` and `［ ］`, or another provider, when those marks must remain text.
+Escaping protects Timbrex syntax, but does not disable a vendor's native markup. To avoid turning literal text into unintended instructions, ElevenLabs and Qwen reject literal ASCII `[` or `]` in spoken text. ElevenLabs also rejects brackets inside acting instructions, literal `<break>` tags on older models, and `<phoneme>` tags on `eleven_flash_v2` and `eleven_turbo_v2`. Mathematical comparisons and unrelated tag-like words remain accepted.
+
+MiniMax rejects its recognized native event strings, such as `(laughs)`, and its pause prefix `<#`. Other parentheses are passed through, but the service can interpret parenthesized Pinyin, IPA, or Jyutping as pronunciation controls; the adapter does not recognize every such form. Use Unicode alternatives such as `（ ）` and `［ ］`, or another provider, when those marks must remain text.
 
 Azure XML-escapes text and attributes. OpenAI sends speech and instructions in separate fields. This prevents compiler-generated structural injection; it does not guarantee that a generative model will pronounce every symbol literally.
 

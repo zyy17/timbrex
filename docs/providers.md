@@ -49,7 +49,7 @@ References: [Create speech](https://developers.openai.com/api/reference/resource
 ./timbrex synth examples/expressive.tbx --provider elevenlabs -o elevenlabs.wav
 ```
 
-Calls `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=pcm_24000` with `xi-api-key`. The adapter emits native audio tags for `eleven_v3`, `eleven_v4`, and `eleven_v4_turbo`. Other model IDs accept plain speech and speed but reject acting tags and nonverbal events. A conservative 5000-character adapter limit includes generated tags. Language hints use the primary language subtag; `eleven_multilingual_v2` rejects explicit `lang` because it does not accept `language_code`.
+Calls `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=pcm_24000` with `xi-api-key`. The adapter emits native audio tags for `eleven_v3`, `eleven_v4`, and `eleven_v4_turbo`; the two v4 models reject explicit `speed`, `fast`, and `slow` because they do not support the speed setting. Other model IDs accept plain speech and speed but reject acting tags and nonverbal events. A conservative 5000-character adapter limit includes generated tags. Language hints use the primary language subtag; `eleven_multilingual_v2` rejects explicit `lang` because it does not accept `language_code`.
 
 References: [Create speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert), [audio tags](https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4), [speed control](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech). Audio tags describe desired performance; they are not guaranteed sound effects.
 
