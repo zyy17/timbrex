@@ -94,6 +94,32 @@ func TestRejectInvalidConfigurationWithoutLeakingValues(t *testing.T) {
 	}
 }
 
+func TestMalformedProviderSettingsDoNotLeakCredentials(t *testing.T) {
+	const secret = "FAKE-SECRET-DO-NOT-LOG"
+	for _, id := range []string{"stub", "openai", "elevenlabs", "minimax", "azure", "qwen"} {
+		for _, tt := range []struct {
+			name, settings string
+		}{
+			{"credential mapping", "{api_key: {" + secret + ": null}}"},
+			{"nested credential mapping", "{api_key: {nested: {" + secret + ": null}}}"},
+			{"credential mapping value", "{api_key: {value: " + secret + "}}"},
+			{"credential list", "{api_key: [" + secret + ", null]}"},
+			{"null credential", "{api_key: null, voice: " + secret + "}"},
+			{"settings list", "[{api_key: " + secret + "}]"},
+			{"unknown field", "{api_key: " + secret + ", unknown: " + secret + "}"},
+			{"nested unknown field", "{unknown: {api_key: " + secret + "}}"},
+		} {
+			t.Run(id+"/"+tt.name, func(t *testing.T) {
+				body := "providers:\n  " + id + ": " + tt.settings + "\n"
+				_, err := loadTest(t, body)
+				if err == nil || strings.Contains(err.Error(), secret) {
+					t.Fatalf("invalid config was accepted or leaked a credential: %v", err)
+				}
+			})
+		}
+	}
+}
+
 func TestSelectedProviderRequirementsAndAzureEndpoint(t *testing.T) {
 	c, err := loadTest(t, "providers:\n  azure: {api_key: test-key, region: eastus}\n")
 	if err != nil {
@@ -129,16 +155,20 @@ func TestSelectedProviderRequirementsAndAzureEndpoint(t *testing.T) {
 }
 
 func TestRedactedOutputPreservesCredentials(t *testing.T) {
-	c, err := loadTest(t, "providers:\n  openai: {api_key: secret-value}\n")
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := c.RedactedYAML()
-	if err != nil || strings.Contains(string(data), "secret-value") || !strings.Contains(string(data), "api_key: REDACTED") {
-		t.Fatal("configuration output must redact credentials")
-	}
-	if c.Providers["openai"].APIKey != "secret-value" {
-		t.Fatal("displaying configuration changed its credentials")
+	for _, id := range []string{"stub", "openai", "elevenlabs", "minimax", "azure", "qwen"} {
+		t.Run(id, func(t *testing.T) {
+			c, err := loadTest(t, "providers:\n  "+id+": {api_key: FAKE-SECRET-DO-NOT-LOG}\n")
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := c.RedactedYAML()
+			if err != nil || strings.Contains(string(data), "FAKE-SECRET-DO-NOT-LOG") || !strings.Contains(string(data), "api_key: REDACTED") {
+				t.Fatal("configuration output must redact credentials")
+			}
+			if c.Providers[id].APIKey != "FAKE-SECRET-DO-NOT-LOG" {
+				t.Fatal("displaying configuration changed its credentials")
+			}
+		})
 	}
 }
 
