@@ -29,19 +29,9 @@ type request struct {
 }
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
+	segments, requests, err := providers.Prepare(doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) { return build(seg, opt.Model) })
 	if err != nil {
 		return providers.Result{}, err
-	}
-	requests := make([]request, len(segments))
-	for i, seg := range segments {
-		if seg.Pause > 0 {
-			continue
-		}
-		requests[i], err = build(seg, opt.Model)
-		if err != nil {
-			return providers.Result{}, fmt.Errorf("openai: %w", err)
-		}
 	}
 	endpoint := strings.TrimRight(opt.Endpoint, "/") + "/audio/speech"
 	headers := map[string]string{
