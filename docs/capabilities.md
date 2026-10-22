@@ -47,6 +47,8 @@ Escaping protects Timbrex syntax, but does not disable a vendor's native markup.
 
 MiniMax rejects its recognized native event strings, such as `(laughs)`, and its pause prefix `<#`. Other parentheses are passed through, but the service can interpret parenthesized Pinyin, IPA, or Jyutping as pronunciation controls; the adapter does not recognize every such form. Use Unicode alternatives such as `（ ）` and `［ ］`, or another provider, when those marks must remain text.
 
+Eleven v4 also interprets [slash-delimited IPA](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#ipa-with-eleven-v4) as pronunciation guidance. Slash text is passed through; the adapter does not broadly reject slashes or guarantee that every native pronunciation form stays literal.
+
 Azure XML-escapes text and attributes. OpenAI sends speech and instructions in separate fields. This prevents compiler-generated structural injection; it does not guarantee that a generative model will pronounce every symbol literally.
 
 ## Reserved, not implemented
