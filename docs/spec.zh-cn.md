@@ -6,7 +6,7 @@
 
 ## 1. 文本与标签
 
-`.tbx` 文件是 UTF-8 文本，`.timbrex` 是等价扩展名。开头的 BOM 会移除，CRLF/CR 换行统一为 LF。纯文本就是合法脚本。
+`.tbx` 文件是 UTF-8 文本，`.timbrex` 是等价扩展名。开头的 BOM 会移除，CRLF/CR 换行统一为 LF。纯文本是合法脚本。
 
 ```tbx
 Hello.
@@ -48,7 +48,7 @@ This is narration.
 
 角色 ID 匹配 `[A-Za-z][A-Za-z0-9_.-]*`，区分大小写。只有 `cast` 中声明的 ID 才能开启发言，显示名称不是别名。未声明时，`note: hello` 是普通文本。`cast: auto` 接受所有行首 ASCII ID，`check` 会列出识别结果。`lin\: hello` 可转义可能的角色前缀。
 
-旁白默认使用 `narrator`，也可以通过 front matter 的 `narrator:` 指定另一个 ASCII ID。在 cast 中为该 ID 配置音色即可改变旁白音色。显示名称仅作元数据；适配器当前使用 ID 和音色映射，不会将显示名称作为表演指令。
+旁白默认使用 `narrator`，也可以通过 front matter 的 `narrator:` 指定另一个 ASCII ID。在 cast 中为该 ID 配置音色以指定旁白音色。显示名称仅作元数据；适配器当前使用 ID 和音色映射，不会将显示名称作为表演指令。
 
 ## 3. 参数、转义与注释
 
@@ -94,7 +94,7 @@ This is narration.
 | `W103` | 使用了 cast 显示名称而非角色 ID |
 | `I050` | 非 ASCII 自由表演文本 |
 
-建议使用不超过 2 的编辑距离。`[paus]` 会建议 `[pause]`；`[laff]` 与 `[laugh]` 距离为 3，不会得到该建议。警告和信息不会使 `check` 失败，错误会。其他解析错误和位置错误可能没有诊断代码。没有自动翻译或拼写修复。
+编辑距离不超过 2。`[paus]` 会建议 `[pause]`；`[laff]` 与 `[laugh]` 距离为 3，不会得到该建议。警告和信息不会使 `check` 失败，错误会。其他解析错误和位置错误可能没有诊断代码。没有自动翻译或拼写修复。
 
 ## 5. 作用域与词表
 
@@ -163,4 +163,4 @@ cast:
 
 冻结语法为外部词表、注册厂商命名空间、原始内容透传、能力声明、锁文件，以及语音正文之外的数据集模板保留了空间。外部 YAML 配置已经实现，见 [配置](configuration.zh-cn.md)。发音控制、混音、降级规划、流式、原生对话和音色管理都需要独立实现与测试。语法不包含循环或条件分支。
 
-`fix`、`fmt`、`expand`、`compile`、`caps`、`voices`、`tags`、`migrate`、LSP 和公开 Go SDK 均未交付。旧设计草图不构成兼容性承诺。后续工作应保持简单的写作模型，并以中英文记录真实行为。
+`fix`、`fmt`、`expand`、`compile`、`caps`、`voices`、`tags`、`migrate`、LSP 和公开 Go SDK 均未交付。旧设计草图不构成兼容性承诺。后续工作须以中英文记录已实现行为。

@@ -2,7 +2,7 @@
 
 [English](contributing.md)
 
-Timbrex 的目标是保持小巧、好读的富表现力 TTS DSL。请先阅读 [教程](docs/tutorial.zh-cn.md)、[SPEC v0.3.4](docs/spec.zh-cn.md) 和 [仓库规则](AGENTS.md)。语法已冻结，应通过词表和适配器扩展能力，不增加新语法。
+请阅读 [教程](docs/tutorial.zh-cn.md)、[SPEC v0.3.4](docs/spec.zh-cn.md) 和 [仓库规则](AGENTS.md)。语法已冻结。通过词表和适配器扩展，不增加新语法。
 
 ## 提交变更前
 
@@ -20,7 +20,7 @@ make lint
 make tidy
 ```
 
-默认测试必须离线。用 `httptest` 验证厂商契约，常规测试不能要求凭证或产生费用。行为修复应补充回归测试和有意义的边界测试。修改 TextMate YAML 源文件后，重新生成随包交付的 JSON：
+默认测试必须离线。用 `httptest` 验证厂商契约，常规测试不能要求凭证或产生费用。行为修复应补充回归测试和边界测试。修改 TextMate YAML 源文件后，重新生成随包交付的 JSON：
 
 ```bash
 go test ./editors/vscode -update
@@ -38,4 +38,4 @@ go test ./editors/vscode -update
 
 文档文件名统一使用小写；`AGENTS.md` 为便于工具自动读取，保留原名。英文和 `.zh-cn.md` 版本在同一变更中更新。保持示例可执行：每个 `tbx` 围栏代码块和每个 `.tbx` 文件都必须能通过 `go test` 解析。区分已实现功能、近似行为和规划。厂商行为引用一手来源，不写无依据的价格、许可、质量或停用声明。
 
-使用简短、符合 Go 惯例的代码和清晰的包边界。只有 `internal/cli` 导入 Cobra。优先沿用现有模式，不轻易增加抽象。标识符、错误、帮助文本、注释和 Conventional Commit 消息使用英文。提交保持聚焦，附上验证结果，不提交密钥或 `.env` 文件。贡献适用仓库的 [MIT 许可证](license)。
+使用简短、符合 Go 惯例的代码和清晰的包边界。只有 `internal/cli` 导入 Cobra。优先沿用现有模式，避免新增抽象。标识符、错误、帮助文本、注释和 Conventional Commit 消息使用英文。提交保持聚焦，附上验证结果，不提交密钥或 `.env` 文件。贡献适用仓库的 [MIT 许可证](license)。
