@@ -23,7 +23,7 @@ make build
 
 From the repository root, `go run .` is the same binary as `./timbrex`. There is no `cmd/timbrex` package.
 
-## Quickstart
+## Get started
 
 ```bash
 ./timbrex check examples/expressive.tbx
@@ -47,7 +47,7 @@ From the repository root, `go run .` is the same binary as `./timbrex`. There is
 | `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` |
 | `fish` | `FISH_API_KEY` and a voice/reference ID | `s2.1-pro` |
 
-Gemini rejects numeric speed; use [examples/gemini.tbx](examples/gemini.tbx). Fish requires a voice reference ID; use [examples/fish.tbx](examples/fish.tbx). A recognized tag is not necessarily synthesizable. Unsupported controls fail before requests rather than disappearing. Setup and mappings: [providers](docs/providers.md), [capabilities](docs/capabilities.md).
+Gemini rejects numeric speed; use [examples/gemini.tbx](examples/gemini.tbx). Fish requires a voice reference ID; use [examples/fish.tbx](examples/fish.tbx). A registered tag is not necessarily synthesizable. Unsupported controls fail before requests. They are not dropped. See [providers](docs/providers.md) and [capabilities](docs/capabilities.md).
 
 ## Commands
 
@@ -55,7 +55,7 @@ Gemini rejects numeric speed; use [examples/gemini.tbx](examples/gemini.tbx). Fi
 
 ## Documentation
 
-Start with the [tutorial](docs/tutorial.md). Development: [contributing](contributing.md).
+Procedure: [tutorial](docs/tutorial.md). Development: [contributing](contributing.md).
 
 | Document | English | 简体中文 |
 | --- | --- | --- |

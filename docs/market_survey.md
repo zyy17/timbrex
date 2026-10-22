@@ -14,9 +14,9 @@ Review date: **2026-10-22**. This document records API design differences releva
 | [Gemini TTS](https://ai.google.dev/gemini-api/docs/speech-generation) | Structured `speech_metadata.style`, inline vocal tags, WAV or raw PCM | Keep turn-level style out of the transcript; unwrap WAV before the shared PCM renderer |
 | [Fish Audio](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech) | Bearer `POST /v1/tts`, `model` header, `reference_id`, S2 bracket cues, WAV/PCM/MP3/Opus | Require an explicit voice ID; map a documented cue subset; unwrap WAV before the shared PCM renderer |
 
-These adapters provide a path to compatible PCM, allowing a small sequential WAV renderer without compressed-audio concatenation or a transcoding dependency. This is an implementation choice, not a claim that the vendors' other audio formats are unsuitable.
+These adapters can return compatible PCM. Timbrex concatenates those samples into one WAV. It does not concatenate compressed audio or depend on a transcoder. This is an implementation choice, not a claim that other vendor formats are unsuitable.
 
-Three questions remain for live evaluation: whether each documented request works for the target account and region; how reliably each model follows expressive controls; and how audible segment boundaries are. A useful evaluation should record exact model/voice IDs, source scripts, requested parameters, date, failures, and listening criteria. It should distinguish API acceptance from performance quality.
+Live evaluation still has to answer three questions: whether each documented request works for the target account and region; how reliably each model follows performance controls; and how audible segment boundaries are. Record exact model and voice IDs, source scripts, requested parameters, date, failures, and listening criteria. Distinguish API acceptance from performance quality.
 
 Voice cloning, native multi-speaker generation, streaming, alignment, and sound-effect generation may be separate vendor products. Their existence does not mean Timbrex integrates them. See [current capabilities](capabilities.md) and [setup](providers.md) for implemented behavior.
 
@@ -24,11 +24,11 @@ Voice cloning, native multi-speaker generation, streaming, alignment, and sound-
 
 These projects overlap with different layers of Timbrex. This comparison is based on their published repositories and documentation, not a runtime or listening evaluation.
 
-| Project | Relevant work | What to study |
+| Project | Relevant work | Notes |
 | --- | --- | --- |
 | [Speech Markdown](https://github.com/speechmarkdown/speechmarkdown-js) (MIT) | Speech markup grammar, parser, and platform formatters | Authoring syntax and target-specific conversion |
 | [SSMD](https://github.com/buchwandler/ssmd) (MIT) | Markdown-style voice, pronunciation, and prosody annotations with structural parsing and migration | Scope, diagnostics, and semantic preservation |
 | [Speech SDK](https://github.com/Jellypod-Inc/speech-sdk) (Apache-2.0) | TypeScript synthesis, streaming, and multi-speaker orchestration with native-dialogue and stitch paths | Rendering decisions and explicit capability constraints |
 | [Podcastfy](https://github.com/souzatharsis/podcastfy) (Apache-2.0) | Content-to-podcast generation with multiple speech backends | End-to-end authoring and audio workflows |
 
-A compact syntax and several adapters alone do not distinguish Timbrex. Its intended contribution is a readable performance script with explicit roles, scoped directions, nonverbal events, and honest target mappings. Interoperability with existing markup and synthesis tools is worth evaluating before reproducing their features.
+Syntax size and adapter count are not a product claim. Timbrex maps roles, scoped directions, and nonverbal events onto documented vendor controls. Evaluate existing markup tools before duplicating their features.

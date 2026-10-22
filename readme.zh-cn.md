@@ -2,13 +2,13 @@
 
 [English](readme.md)
 
-Timbrex 是一套用英文 ASCII 标签标注表演的语音脚本语言。`.tbx` 脚本经编译后，由 TTS 厂商生成音频。
+Timbrex 是一套英文 ASCII 标签语言，用于描述语音表演。`.tbx` 脚本由 TTS 厂商合成为音频。
 
 ```tbx
 [happy|很高兴见到你！] [pause 300ms] [slow|慢慢来。]
 ```
 
-纯文本就是合法脚本。标签只有一种形式：`[name]`、`[name args]` 或 `[name args|content]`。台词可用任意语言，标签名保持英文 ASCII。语法冻结为 `timbrex: 1`（[SPEC v0.3.4](docs/spec.zh-cn.md)）。
+纯文本是合法脚本。标签只有一种形式：`[name]`、`[name args]` 或 `[name args|content]`。台词可用任意语言，标签名保持英文 ASCII。语法冻结为 `timbrex: 1`（[SPEC v0.3.4](docs/spec.zh-cn.md)）。
 
 ## 安装
 
@@ -23,7 +23,7 @@ make build
 
 在仓库根目录，`go run .` 与 `./timbrex` 是同一个程序。没有 `cmd/timbrex` 包。
 
-## 快速开始
+## 入门
 
 ```bash
 ./timbrex check examples/expressive.tbx
@@ -47,7 +47,7 @@ make build
 | `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` |
 | `fish` | `FISH_API_KEY` 和音色 / reference ID | `s2.1-pro` |
 
-Gemini 拒绝数值语速，使用 [examples/gemini.tbx](examples/gemini.tbx)。Fish 需要音色 reference ID，使用 [examples/fish.tbx](examples/fish.tbx)。词表认识一个标签，不代表所有厂商都能合成它。不支持的控制会在发请求前报错，不会静默丢弃。配置与映射见 [厂商接入](docs/providers.zh-cn.md)、[能力表](docs/capabilities.zh-cn.md)。
+Gemini 拒绝数值语速，使用 [examples/gemini.tbx](examples/gemini.tbx)。Fish 需要音色 reference ID，使用 [examples/fish.tbx](examples/fish.tbx)。词表注册某个标签，不表示所有厂商都能合成它。不支持的控制在发请求前失败，不会被丢弃。见 [厂商接入](docs/providers.zh-cn.md) 与 [能力表](docs/capabilities.zh-cn.md)。
 
 ## 命令
 
@@ -55,7 +55,7 @@ Gemini 拒绝数值语速，使用 [examples/gemini.tbx](examples/gemini.tbx)。
 
 ## 文档
 
-从 [教程](docs/tutorial.zh-cn.md) 开始。开发见 [参与贡献](contributing.zh-cn.md)。
+操作步骤见 [教程](docs/tutorial.zh-cn.md)。开发见 [参与贡献](contributing.zh-cn.md)。
 
 | 文档 | English | 简体中文 |
 | --- | --- | --- |

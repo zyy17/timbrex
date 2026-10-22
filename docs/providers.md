@@ -6,7 +6,7 @@ Timbrex uses synchronous HTTP APIs directly. The adapters are based on the offic
 
 ## Configuration
 
-Settings are loaded centrally from YAML and environment variables; see [configuration](configuration.md). Prefer credentials in your shell or secret manager. Timbrex does **not** load `.env` files. Never put keys in `.tbx` files or commit them. The table below describes environment-based setup; equivalent `providers.<id>` file fields are also supported.
+Settings come from YAML and environment variables. See [configuration](configuration.md). Store credentials in the environment or a secret manager. Timbrex does not load `.env` files. Do not put keys in `.tbx` files or commit them. The table lists environment-based setup. Equivalent `providers.<id>` file fields are also valid.
 
 | Provider ID | Required environment | Default model | Default voice |
 | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ Optional environment defaults:
 
 `--model` and `--voice` override front matter, which overrides environment settings, which override YAML configuration and built-in defaults. Cast voice mappings override the default voice. A `[voice "vendor-id"|text]` span selects a voice directly. `[as lin|text]` uses Lin's mapping; a known speaker without a mapping still uses the default voice, and an unknown target is an error. Changing provider does not translate a model or voice ID belonging to another vendor.
 
-Endpoint overrides are intended for your chosen regional service or a trusted compatible gateway. API credentials are sent to that endpoint. Use HTTPS for remote services. HTTP is accepted for local testing. Requests do not follow redirects.
+Endpoint overrides target a regional service or a trusted compatible gateway. API credentials are sent to that endpoint. Use HTTPS for remote services. HTTP is accepted for local testing. Requests do not follow redirects.
 
 ## OpenAI
 

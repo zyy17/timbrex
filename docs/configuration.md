@@ -2,11 +2,11 @@
 
 [简体中文](configuration.zh-cn.md) · [Provider setup](providers.md) · [Tutorial](tutorial.md)
 
-Cobra handles every command. `internal/config` uses [koanf](https://github.com/knadh/koanf) to merge configuration and decode typed settings. The CLI loads them once; adapters receive resolved settings and never read environment variables or configuration files themselves.
+The CLI loads configuration once per `check`, `synth`, or `config` invocation. `internal/config` merges defaults, one YAML file, and environment variables through [koanf](https://github.com/knadh/koanf). Adapters receive resolved options. They do not read files or environment variables.
 
-## Choose a file
+## File discovery
 
-By default, `check`, `synth`, and `config` read `timbrex.yaml` from the **current working directory**, if present. They do not search the script's directory, parent directories, or your home directory. An explicit `--config` selects one file instead; a missing explicit file is an error.
+By default, `check`, `synth`, and `config` read `timbrex.yaml` from the **current working directory**, if present. They do not search the script directory, parent directories, or the home directory. `--config` selects one file. A missing explicit file is an error.
 
 ```bash
 cp examples/timbrex.yaml timbrex.yaml
@@ -38,7 +38,7 @@ The file contains one YAML mapping. Keys are case-sensitive. Unknown keys, unkno
 | --- | --- |
 | `provider` | Default provider; initially `stub` |
 | `strict_tags` | Default tag checking mode; initially `false` |
-| `providers.<id>.api_key` | Credential for that provider; prefer its environment variable |
+| `providers.<id>.api_key` | Credential for that provider; use its environment variable |
 | `providers.<id>.model` | Default model; Azure selects models through its voice and rejects a model |
 | `providers.<id>.voice` | Fallback voice for speakers without cast mappings |
 | `providers.<id>.endpoint` | API base URL for OpenAI, ElevenLabs, MiniMax, Gemini, and Fish; full request URL for Azure and Qwen |
@@ -64,6 +64,6 @@ A cast voice mapping still takes priority over the fallback voice, including `--
 
 `--strict-tags=false` explicitly disables strict mode; `--no-strict-tags=false` enables it. The two flag names are mutually exclusive. This preserves the distinction between an omitted boolean and an explicit `false`.
 
-## Inspect settings
+## Inspect
 
-`timbrex config` prints the merged defaults, file, and environment as YAML, with configured API keys replaced by `REDACTED`. It does not read a script, apply synthesis flags, test credentials, or contact a provider. Its output is for inspection, not a credential backup. The repository ignores the root `timbrex.yaml`; do not commit credentials in other files.
+`timbrex config` prints the merged defaults, file, and environment as YAML. Configured API keys are replaced by `REDACTED`. It does not read a script, apply `synth` flags, test credentials, or contact a provider. The output is not a credential backup. The repository ignores the root `timbrex.yaml`. Do not commit credentials.

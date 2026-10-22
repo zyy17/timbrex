@@ -4,7 +4,7 @@
 
 为 `.tbx` 和 `.timbrex` 提供语法高亮。词法遵循 SPEC v0.3.4。语言 ID 为 `timbrex`，scope 为 `source.tbx`。扩展只提供高亮，不提供补全、验证或 LSP。请运行 `timbrex check` 验证脚本。
 
-## 试用扩展
+## 加载扩展
 
 在仓库根目录启动扩展开发窗口：
 

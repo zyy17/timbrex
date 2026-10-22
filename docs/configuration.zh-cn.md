@@ -2,11 +2,11 @@
 
 [English](configuration.md) · [厂商接入](providers.zh-cn.md) · [教程](tutorial.zh-cn.md)
 
-所有命令由 Cobra 驱动。`internal/config` 使用 [koanf](https://github.com/knadh/koanf) 合并配置并解码为有类型的设置。CLI 只加载一次，适配器接收解析后的设置，不再自行读取环境变量或配置文件。
+每次执行 `check`、`synth` 或 `config` 时，CLI 加载一次配置。`internal/config` 通过 [koanf](https://github.com/knadh/koanf) 合并默认值、一份 YAML 文件和环境变量。适配器接收解析后的选项，不自行读取文件或环境变量。
 
-## 选择配置文件
+## 配置文件
 
-默认情况下，`check`、`synth` 和 `config` 会读取**当前工作目录**下存在的 `timbrex.yaml`。不会搜索脚本所在目录、父目录或用户主目录。显式 `--config` 改为选择指定的一个文件；该文件不存在时会报错。
+默认情况下，`check`、`synth` 和 `config` 读取**当前工作目录**下存在的 `timbrex.yaml`。不会搜索脚本所在目录、父目录或主目录。`--config` 指定一个文件。显式路径不存在时会报错。
 
 ```bash
 cp examples/timbrex.yaml timbrex.yaml
@@ -38,7 +38,7 @@ providers:
 | --- | --- |
 | `provider` | 默认厂商，初始为 `stub` |
 | `strict_tags` | 默认标签检查模式，初始为 `false` |
-| `providers.<id>.api_key` | 对应厂商的凭证，建议使用其环境变量 |
+| `providers.<id>.api_key` | 对应厂商的凭证；使用其环境变量 |
 | `providers.<id>.model` | 默认模型；Azure 通过音色选择模型，指定模型会报错 |
 | `providers.<id>.voice` | 未配置 cast 映射的角色使用的兜底音色 |
 | `providers.<id>.endpoint` | OpenAI、ElevenLabs、MiniMax、Gemini、Fish 的 API 基础 URL；Azure、Qwen 的完整请求 URL |
@@ -64,6 +64,6 @@ Cast 音色映射仍然优先于兜底音色，包括 `--voice`。`voice` 或 `a
 
 `--strict-tags=false` 显式关闭严格模式，`--no-strict-tags=false` 则开启。两个参数名互斥，从而区分“未传入”和“显式 false”。
 
-## 查看设置
+## 查看
 
-`timbrex config` 将合并后的默认值、文件和环境变量以 YAML 输出，已配置的 API key 替换为 `REDACTED`。它不读取脚本、不应用合成参数、不验证凭证有效性，也不联系厂商。输出用于检查，不是凭证备份。仓库忽略根目录的 `timbrex.yaml`，其他文件也不应提交凭证。
+`timbrex config` 将合并后的默认值、文件和环境变量以 YAML 输出。已配置的 API key 替换为 `REDACTED`。它不读取脚本、不应用 `synth` 参数、不验证凭证，也不联系厂商。输出不是凭证备份。仓库忽略根目录的 `timbrex.yaml`。不要提交凭证。

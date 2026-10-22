@@ -2,7 +2,7 @@
 
 [简体中文](contributing.zh-cn.md)
 
-Timbrex aims to be a small, understandable DSL for expressive TTS. Start with the [tutorial](docs/tutorial.md), [SPEC v0.3.4](docs/spec.md), and [repository rules](AGENTS.md). The grammar is frozen; extend vocabulary and adapters without adding new syntax.
+Read the [tutorial](docs/tutorial.md), [SPEC v0.3.4](docs/spec.md), and [repository rules](AGENTS.md). The grammar is frozen. Extend the vocabulary and adapters. Do not add syntax.
 
 ## Before opening a change
 
@@ -20,7 +20,7 @@ make lint
 make tidy
 ```
 
-Tests must be offline by default. Use `httptest` for vendor contracts; never require credentials or spend money in the normal test suite. Add regression coverage for behavioral fixes and meaningful boundary cases. If changing the TextMate YAML source, regenerate its packaged JSON with:
+Tests must be offline by default. Use `httptest` for vendor contracts; never require credentials or spend money in the normal test suite. Add regression coverage for behavioral fixes and boundary cases. If changing the TextMate YAML source, regenerate its packaged JSON with:
 
 ```bash
 go test ./editors/vscode -update

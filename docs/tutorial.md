@@ -2,9 +2,9 @@
 
 [简体中文](tutorial.zh-cn.md) · [Language reference](spec.md)
 
-This walkthrough installs Timbrex, writes a `.tbx` script, checks it, inspects settings, synthesizes a local tone with `stub`, then uses one HTTP provider. Later sections add speakers, pauses, emotions, and a batch loop. Every command was run against the current CLI (`timbrex 0.1.0`). There is no `compile` or `inspect` command.
+Timbrex compiles a `.tbx` script to a WAV file. This page runs `check` and `synth` against the current CLI (`timbrex 0.1.0`). The CLI has no `compile` or `inspect` command.
 
-## 1. Install
+## Prerequisites
 
 Requires Go 1.27 ([go.mod](../go.mod)).
 
@@ -19,19 +19,19 @@ make build
 timbrex 0.1.0
 ```
 
-From the repository root, `go run .` runs the same program as `./timbrex`. There is no `cmd/timbrex` package. The rest of this tutorial uses `./timbrex` after `make build`.
+From the repository root, `go run .` is the same program as `./timbrex`. There is no `cmd/timbrex` package. Later steps use `./timbrex` after `make build`.
 
-## 2. Write a first script
+## Write a script
 
-Create `hello.tbx`. Plain text is valid. Tags are optional.
+Create `hello.tbx`. Plain text is a valid script. Tags are optional.
 
 ```tbx
 Hello. [pause 300ms] Welcome home.
 ```
 
-The only markup form is `[name]`, `[name args]`, or `[name args|content]`. Tag names are English ASCII. Spoken text may be any language.
+Markup is `[name]`, `[name args]`, or `[name args|content]`. Tag names are English ASCII. Spoken text may be any language.
 
-A slightly richer script, matching [examples/expressive.tbx](../examples/expressive.tbx):
+The following script matches [examples/expressive.tbx](../examples/expressive.tbx):
 
 ```tbx
 ---
@@ -41,11 +41,11 @@ strict_tags: true
 [happy|Good to see you!] [pause 300ms] [slow|Take your time.]
 ```
 
-`timbrex: 1` is the frozen grammar version ([SPEC v0.3.4](spec.md)). `strict_tags: true` rejects unknown tag names. Front matter is optional; if present, the file must start with a line that is exactly `---` (no trailing spaces).
+`timbrex: 1` is the frozen grammar version ([SPEC v0.3.4](spec.md)). `strict_tags: true` rejects unknown tag names. Front matter is optional. If present, the file must start with a line that is exactly `---` (no trailing spaces).
 
-## 3. Check the script
+## Check a script
 
-`check` parses the file, resolves tags, and prints diagnostics. It does not need credentials or a network.
+`check` parses the file and resolves tags. It does not use credentials or the network.
 
 ```bash
 ./timbrex check hello.tbx
@@ -55,7 +55,7 @@ strict_tags: true
 ok
 ```
 
-Checked-in examples:
+Repository examples:
 
 ```bash
 ./timbrex check examples/hello.tbx
@@ -63,15 +63,15 @@ Checked-in examples:
 ./timbrex check examples/dialogue.tbx
 ```
 
-Each prints `ok` on stdout. Warnings and info go to stderr and still allow `ok`. Errors fail the command.
+Success prints `ok` on stdout. Warnings and info go to stderr and still print `ok`. An error fails the command.
 
-Unknown names become free-form acting unless strict mode is on. `--strict-tags` / `--no-strict-tags` override front matter and configuration.
+Unknown names become free-form acting unless strict mode is on. `--strict-tags` and `--no-strict-tags` override front matter and configuration.
 
 ```bash
 ./timbrex check hello.tbx --strict-tags
 ```
 
-A strict-mode unknown tag (not a `hello.tbx` snippet; shown as text so doc tests do not parse it as a script):
+The following line is invalid in strict mode. The block is fenced as `text` so `go test` does not parse it as a script:
 
 ```text
 [thoughtfully] Hello.
@@ -82,17 +82,17 @@ script.tbx:1:1: error[V041]: unregistered tag "thoughtfully"; for free-form acti
 error: check failed
 ```
 
-Write free-form acting explicitly: `[act "thoughtfully"]`.
+Write free-form acting as `[act "thoughtfully"]`.
 
-## 4. Inspect settings and diagnostics
+## Inspect configuration
 
-Timbrex has no `compile` or `inspect` command. Use `check` for the language, and `config` for merged file and environment settings (API keys become `REDACTED`). `config` does not read a script or apply `synth` flags.
+`check` validates language. `config` prints merged file and environment settings. Configured API keys are shown as `REDACTED`. `config` does not read a script or apply `synth` flags.
 
 ```bash
 ./timbrex config
 ```
 
-Without provider environment variables, built-in defaults look like this:
+Without provider environment variables, built-in defaults are:
 
 ```yaml
 provider: stub
@@ -117,7 +117,7 @@ providers:
     stub: {}
 ```
 
-`cast: auto` is accepted by `check`. Each discovered speaker is listed once on stderr:
+`check` accepts `cast: auto` and lists each discovered speaker once on stderr:
 
 ```tbx
 ---
@@ -134,22 +134,9 @@ script.tbx:6:1: info: cast auto recognized speaker "chen"
 ok
 ```
 
-Coded diagnostics you will see while learning:
+## Synthesize with stub
 
-| Code | Severity | Meaning |
-| --- | --- | --- |
-| `V012` | error | Unclosed tag |
-| `V013` | error | `[/name]` is invalid; spans use `[name\|...]` |
-| `V041` | error | Unregistered tag in strict mode |
-| `W040` | warning | Unknown single-word tag close to a registered name |
-| `W103` | warning | Cast display name used as a speaker prefix |
-| `I050` | info | Non-ASCII free-form acting text |
-
-Parse errors (such as `V012`) print as `file:line:col: …`. Check failures add `error: check failed`.
-
-## 5. Synthesize with stub
-
-`stub` is the default provider. It writes a short 8 kHz tone from the script's rune count. It is not a speech engine. Use it to exercise the pipeline without a key.
+`stub` is the default provider. It writes an 8 kHz tone from the script's rune count. It is not a speech engine and does not require a key.
 
 ```bash
 ./timbrex synth hello.tbx --provider stub -o tone.wav
@@ -159,9 +146,7 @@ Parse errors (such as `V012`) print as `file:line:col: …`. Check failures add 
 tone.wav
 ```
 
-The printed line is the output path. `-o` / `--out` must end in `.wav`. If you omit `-o`, the default is the script path with `.wav` (here `hello.wav`). The source script cannot be overwritten.
-
-The same command works on the repository examples:
+Stdout is the output path. `-o` / `--out` must end in `.wav`. If `-o` is omitted, the default is the script path with `.wav` (here `hello.wav`). The source script cannot be overwritten.
 
 ```bash
 ./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
@@ -171,11 +156,11 @@ The same command works on the repository examples:
 tone.wav
 ```
 
-`file tone.wav` reports `WAVE audio, Microsoft PCM, 16 bit, mono 8000 Hz`. Real providers write 24 kHz WAV instead.
+`file tone.wav` reports `WAVE audio, Microsoft PCM, 16 bit, mono 8000 Hz`. HTTP adapters write 24 kHz WAV.
 
-## 6. Synthesize with a real provider
+## Synthesize with OpenAI
 
-HTTP adapters need credentials. OpenAI is the smallest extra setup: one environment variable. Without it, `synth` fails before any request:
+HTTP adapters require credentials. OpenAI requires `OPENAI_API_KEY`. Without it, `synth` fails before any request:
 
 ```bash
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
@@ -190,13 +175,13 @@ export OPENAI_API_KEY=your-key
 ./timbrex synth examples/expressive.tbx --provider openai --voice coral -o speech.wav
 ```
 
-On success, stdout is the output path (`speech.wav`). Default model is `gpt-4o-mini-tts`. Live account compatibility and acoustic quality have not been verified in this repository.
+On success, stdout is the output path (`speech.wav`). The default model is `gpt-4o-mini-tts`. Live account compatibility and acoustic quality have not been verified in this repository.
 
-`--provider` wins, then front matter `provider:`, then configuration (default `stub`). [examples/dialogue.tbx](../examples/dialogue.tbx) sets `provider: openai`; pass `--provider stub` if you want a local tone from that file.
+Provider selection: `--provider`, then front matter `provider:`, then configuration (default `stub`). [examples/dialogue.tbx](../examples/dialogue.tbx) sets `provider: openai`. Pass `--provider stub` to write a local tone from that file.
 
-Other adapters need more than a key: ElevenLabs needs a voice ID; Azure needs a region or endpoint; Qwen needs a workspace endpoint. See [provider setup](providers.md).
+Other adapters require additional settings: ElevenLabs needs a voice ID; Azure needs a region or endpoint; Qwen needs a workspace endpoint. See [provider setup](providers.md).
 
-## 7. Speakers and cast
+## Declare speakers
 
 A line that starts with `id:` is a turn only when that id is in `cast`, or when `cast: auto`. Otherwise it is narration. Narration uses speaker `narrator` unless front matter sets `narrator:`.
 
@@ -225,9 +210,9 @@ ok
 dialogue.wav
 ```
 
-`cast.<id>.voices.<provider>` selects that speaker's voice. `--voice` is a fallback; it does not replace cast mappings. A display name is not a speaker alias. `Lin:` in the body stays narration and may warn `W103`.
+`cast.<id>.voices.<provider>` selects that speaker's voice. `--voice` is a fallback; it does not replace cast mappings. A display name is not a speaker alias. `Lin:` in the body remains narration and may emit `W103`.
 
-## 8. Pauses
+## Insert pauses
 
 `pause`, `silence`, `break`, and a nonnegative `gap` become local silence during `synth`. They are not sent to the vendor. Default pause is 250 ms. `short`, `medium`, and `long` are 250 ms, 500 ms, and 1 s. Explicit durations use `ms`, `s`, or `min`, from `0ms` to `1min`. `0ms` is accepted and produces no samples.
 
@@ -249,9 +234,9 @@ ok
 pauses.wav
 ```
 
-There is no implicit pause between turns. `overlap` is reserved and rejected by real adapters.
+There is no implicit pause between turns. `overlap` is reserved. HTTP adapters reject it.
 
-## 9. Emotions and styles
+## Set emotion and style
 
 A point tag lasts to the end of the turn. A span applies only to its content. A line that contains only tags without spans sets scene state for later turns. `[reset]` restores scene state.
 
@@ -277,11 +262,11 @@ emotion.wav
 
 `[happy]` on its own line is scene state. The next narration line inherits it. `[happy|…]` is a local span. `[act "…"]` is the explicit acting form required in strict mode.
 
-What a provider does with those tags differs. OpenAI and Qwen send many of them as instructions. MiniMax maps seven emotions. Azure maps styles. ElevenLabs uses audio tags on v3/v4 models. `stub` ignores performance and still writes a tone. See [capabilities](capabilities.md) before targeting a real adapter.
+Adapters map these tags differently. OpenAI and Qwen send many of them as instructions. MiniMax maps seven emotions. Azure maps styles. ElevenLabs uses audio tags on v3/v4 models. `stub` ignores performance and writes a tone. See [capabilities](capabilities.md) before targeting an HTTP adapter.
 
-## 10. Batch
+## Synthesize multiple scripts
 
-There is no batch command. A shell loop is enough. `--provider stub` is required here because [examples/dialogue.tbx](../examples/dialogue.tbx) sets `provider: openai`.
+There is no batch command. Use a shell loop. `--provider stub` is required here because [examples/dialogue.tbx](../examples/dialogue.tbx) sets `provider: openai`.
 
 ```bash
 mkdir -p out
@@ -300,7 +285,20 @@ ok
 out/hello.wav
 ```
 
-`check` stays offline. `synth` without `stub` needs that provider's credentials.
+`check` does not use the network. `synth` without `stub` requires that provider's credentials.
+
+## Diagnostics
+
+| Code | Severity | Meaning |
+| --- | --- | --- |
+| `V012` | error | Unclosed tag |
+| `V013` | error | `[/name]` is invalid; spans use `[name\|...]` |
+| `V041` | error | Unregistered tag in strict mode |
+| `W040` | warning | Unknown single-word tag close to a registered name |
+| `W103` | warning | Cast display name used as a speaker prefix |
+| `I050` | info | Non-ASCII free-form acting text |
+
+Parse errors (such as `V012`) print as `file:line:col: …`. Check failures add `error: check failed`.
 
 ## Glossary
 
@@ -317,13 +315,13 @@ out/hello.wav
 | `check` | Parse and resolve tags; print `ok` or diagnostics |
 | `synth` | Same check, then write a WAV |
 | `config` | Print merged settings with keys redacted |
-| `stub` | Default provider; 8 kHz test tone, no speech |
+| `stub` | Default provider; 8 kHz test tone, not speech |
 | strict mode | Unknown tags are `V041`; write `[act "…"]` instead |
 | provider | `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, or `qwen` |
 
-## Next
+## See also
 
 - [SPEC v0.3.4](spec.md) — grammar, vocabulary, diagnostics
 - [Configuration](configuration.md) — flags, files, environment
 - [Providers](providers.md) — credentials and request shapes
-- [Capabilities](capabilities.md) — what each adapter implements
+- [Capabilities](capabilities.md) — adapter mappings
