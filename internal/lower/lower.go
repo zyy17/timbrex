@@ -2,9 +2,6 @@
 package lower
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/zyy17/timbrex/internal/ast"
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/vocab"
@@ -15,7 +12,14 @@ import (
 // front matter narrator: names another speaker.
 // Call check.Apply first so free-form tags already carry their note.
 func Script(script *ast.Script) *ir.Document {
-	doc := &ir.Document{Provider: script.Front.Provider}
+	doc := &ir.Document{
+		Provider: script.Front.Provider, Model: script.Front.Model,
+		Voice: script.Front.Voice, Lang: script.Front.Lang,
+		Voices: make(map[string]map[string]string),
+	}
+	for id, member := range script.Front.Cast {
+		doc.Voices[id] = member.Voices
+	}
 	narrator := script.Front.Narrator
 	if narrator == "" {
 		narrator = "narrator"
@@ -57,7 +61,7 @@ func flatten(nodes []ast.Node, blockScope string) []ir.Node {
 		name := canonical(node.Name)
 		if node.Span {
 			out = append(out, ir.Node{
-				Kind: ir.SpanStart, Name: name, Args: formatArgs(node.Args), Note: node.Note, Scope: "span",
+				Kind: ir.SpanStart, Name: name, Args: lowerArgs(node.Args), Note: node.Note, Scope: "span",
 			})
 			out = append(out, flatten(node.Content, blockScope)...)
 			out = append(out, ir.Node{Kind: ir.SpanEnd, Name: name, Scope: "span"})
@@ -77,7 +81,7 @@ func flatten(nodes []ast.Node, blockScope string) []ir.Node {
 			scope = "scene"
 		}
 		out = append(out, ir.Node{
-			Kind: kind, Name: name, Args: formatArgs(node.Args), Note: node.Note, Scope: scope,
+			Kind: kind, Name: name, Args: lowerArgs(node.Args), Note: node.Note, Scope: scope,
 		})
 	}
 	return out
@@ -90,18 +94,10 @@ func canonical(name string) string {
 	return name
 }
 
-func formatArgs(args []ast.Arg) string {
-	parts := make([]string, 0, len(args))
+func lowerArgs(args []ast.Arg) []ir.Arg {
+	out := make([]ir.Arg, 0, len(args))
 	for _, arg := range args {
-		raw := arg.Raw
-		if arg.Kind == "quoted" {
-			raw = strconv.Quote(arg.Raw)
-		}
-		if arg.Key != "" {
-			parts = append(parts, arg.Key+"="+raw)
-			continue
-		}
-		parts = append(parts, raw)
+		out = append(out, ir.Arg{Key: arg.Key, Raw: arg.Raw, Kind: arg.Kind})
 	}
-	return strings.Join(parts, " ")
+	return out
 }

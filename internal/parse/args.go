@@ -23,6 +23,9 @@ func scanArgs(s string) ([]ast.Arg, error) {
 			return nil, err
 		}
 		args = append(args, arg)
+		if next < len(s) && s[next] != ' ' && s[next] != '\t' {
+			return nil, fmt.Errorf("tag arguments must be separated by whitespace")
+		}
 		i = next
 	}
 }
@@ -132,6 +135,9 @@ func scanNumber(s string, i int) (string, string, int, bool) {
 		if i < len(s) && isValueCont(s[i]) {
 			return "", "", 0, false
 		}
+	}
+	if i < len(s) && s[i] != ' ' && s[i] != '\t' {
+		return "", "", 0, false
 	}
 	return s[start:i], kind, i, true
 }

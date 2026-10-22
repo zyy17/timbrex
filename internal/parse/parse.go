@@ -177,11 +177,17 @@ func (p *parser) lookLine() []lex.Token {
 }
 
 func (p *parser) lineStartsTurn(line []lex.Token) bool {
+	if len(line) > 0 && line[0].Depth > 0 {
+		return false
+	}
 	speaker, _, _, _ := speakerPrefix(line)
 	return speakerAllowed(p.front, speaker)
 }
 
 func (p *parser) isScene(line []lex.Token) bool {
+	if len(line) > 0 && line[0].Depth > 0 {
+		return false
+	}
 	if blankLine(line) || p.lineStartsTurn(line) {
 		return false
 	}
@@ -193,6 +199,9 @@ func (p *parser) isScene(line []lex.Token) bool {
 	for _, node := range nodes {
 		switch node.Kind {
 		case ast.Tag:
+			if node.Span {
+				return false
+			}
 			sawTag = true
 		case ast.Text:
 			if strings.TrimSpace(node.Text) != "" {

@@ -60,7 +60,8 @@ type Node struct {
 
 // Cast is one declared speaker.
 type Cast struct {
-	Name string
+	Name   string
+	Voices map[string]string
 }
 
 // Front is the YAML front matter.
@@ -71,6 +72,8 @@ type Cast struct {
 type Front struct {
 	Timbrex    int
 	Provider   string
+	Model      string
+	Voice      string
 	Lang       string
 	StrictTags *bool
 	Narrator   string

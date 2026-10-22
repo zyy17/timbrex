@@ -15,8 +15,10 @@ import (
 
 // Options selects the source path and the output file.
 type Options struct {
-	Path string
-	Out  string
+	Path  string
+	Out   string
+	Model string
+	Voice string
 }
 
 // Result is one successful synthesis.

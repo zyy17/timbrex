@@ -1,5 +1,8 @@
 # Review rounds
 
+> Historical M0 review notes. These are not current capability or validation claims; see [README](README.md) and [CONTRIBUTING](CONTRIBUTING.md).
+> 历史 M0 审查记录，不代表当前能力或验证结果；现状见 [中文说明](README.zh-CN.md)和[贡献指南](CONTRIBUTING.zh-CN.md)。
+
 Strict self-review of the M0 tip. P0 and P1 were fixed before the next round. P2 was recorded and left.
 
 ## Round 1

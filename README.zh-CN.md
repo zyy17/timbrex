@@ -2,66 +2,106 @@
 
 [English](README.md)
 
-Timbrex 是一种面向表现力语音合成的标签脚本语言。`.tbx` 文件就是普通文本，再加上一种标记：`[name]` 或 `[name|content]`。同一份脚本可以编译到多个语音服务。
+**用一个小巧的 DSL 生成富有表现力的语音。** 写下台词及其表演方式，通过 ElevenLabs、OpenAI、MiniMax、Azure Speech 或 Qwen 生成音频。
 
-语法版本：`timbrex: 1`。设计说明：[docs/SPEC.zh-CN.md](docs/SPEC.zh-CN.md)（英文主文档：[docs/SPEC.md](docs/SPEC.md)）。
+```tbx
+[happy|很高兴见到你！] [pause 300ms] [slow|慢慢来。]
+```
 
-**状态：M0。** 编译器覆盖 v0.3.4 的主要表面：普通文本、`[tag]` 与 `[tag|content]`、参数、说话人行、cast、`//` 注释、YAML front matter、场景行，以及原文围栏。`timbrex check` 使用标准词表。`--strict-tags` 会拒绝未注册标签（批量模式的规则），并仍然接受 `[act "…"]`。`timbrex synth` 把脚本降到 IR 再调用 provider。当前树里只有 `stub`，它写出一段短促的 WAV 音调，并不合成语音。
+纯文本就是合法脚本。标签只有一种形式：`[name]` 或 `[name|content]`。台词可以使用任意语言，标签名使用英文 ASCII。语法冻结在 `timbrex: 1`，扩展厂商和词表不需要增加语法。
 
-## 目标
+Timbrex 处于早期开发阶段。编译器和五个 HTTP 适配器已经实现，并有离线契约测试覆盖，但这些适配器**尚未通过真实厂商账号验证**。模型权限、音色、区域可用性和表演指令效果仍需实测。不同厂商不保证生成相同的表演效果。
 
-1. **小编译器。** 管线是 lex、parse、IR、lower。已经有可靠库能做的事就用库（命令行、YAML front matter，以及以后的 HTTP 或音频封装）。不要做成编译器框架。
-2. **从脚本得到音频。** `timbrex check` 做检查。`timbrex synth` 写出音频文件。每个 provider 是独立包，共用一个接口，增加厂商时不改语法。
-3. **代码易读。** 包短、函数短、少绕一层。
+## 生成第一段语音
 
-## 示例
-
-见 `examples/hello.tbx`。
+需要 Go 1.27，与 [go.mod](go.mod) 一致。
 
 ```sh
 make build
-./timbrex check examples/hello.tbx
-./timbrex synth examples/hello.tbx -o hello.wav
+./timbrex check examples/expressive.tbx --strict-tags
+
+# 先在环境中设置 OPENAI_API_KEY。
+./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
-这里的 `hello.wav` 是 stub 的音调，不是语音。台词和引号字符串可以用任何语言。标签名、参数名和配置键是英文 ASCII。
+上面的示例使用各适配器的默认模型及合适的音色即可运行。ElevenLabs 还需要你的音色 ID，Qwen 需要工作空间端点。五个服务的配置见[厂商接入](docs/PROVIDERS.zh-CN.md)。
 
-## 构建
-
-需要 Go 1.27。
+无需凭证或网络请求，也可以体验编译流程：
 
 ```sh
-make build   # 生成 ./timbrex
-make test    # 先生成 ./timbrex，再跑测试
-make lint    # golangci-lint v2.14.0，与 CI 相同
+./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
+```
+
+`stub` 生成测试音，不生成语音。未选择厂商时默认使用它。
+
+## 学习语言
+
+```tbx
+---
+timbrex: 1
+provider: openai
+strict_tags: true
+cast:
+  lin:
+    name: Lin
+    voices: {openai: coral}
+  chen:
+    name: Chen
+    voices: {openai: onyx}
+---
+lin: [happy] You came! [pause 300ms] [whisper|Come inside.]
+chen: [slow|I've got something to tell you.]
+```
+
+- `[happy]` 作用于本轮剩余台词，`[happy|台词]` 只作用于其中的文字。
+- 一行只有不带 span 的标签时，设置场景状态。独占一行的 `[reset]` 清除场景状态。
+- 只有在 `cast` 中声明了 `lin`，`lin:` 才会开启角色发言。没有声明时，它仍是普通台词。`cast: auto` 可显式启用自动识别。
+- 无前缀的段落由 `narrator` 朗读，也可以用 front matter 的 `narrator:` 指定其他 ID。
+- 行首 `//` 表示注释，空行分隔发言。
+- 自由表演指令优先写成 `[act "holding back tears"]`。`--strict-tags` 拒绝未知标签名；`--no-strict-tags` 允许 `[thoughtfully]` 这样的隐式表演指令。
+
+详见[语言参考](docs/SPEC.zh-CN.md)和[已实现能力表](docs/CAPABILITIES.zh-CN.md)。词表认识一个标签，不代表所有厂商都能合成它。不支持的控制会报错，不会静默丢弃。
+
+## 命令与输出
+
+```sh
+./timbrex version
+./timbrex check script.tbx
+./timbrex synth script.tbx --provider openai --model gpt-4o-mini-tts --voice coral -o script.wav
+```
+
+厂商优先级：`--provider`、front matter 的 `provider:`、`stub`。模型和默认音色优先级：CLI 参数、front matter、厂商环境变量、内置默认值。角色的 `cast.<id>.voices.<provider>` 优先于默认音色。`--voice` 提供兜底音色，不覆盖角色映射。
+
+`check` 验证语法和词表，不需要凭证或网络。`synth` 先执行相同检查，再验证适配器支持的控制，最后发出请求。严格模式参数覆盖 front matter 的 `strict_tags`，默认非严格。使用 `cast: auto` 时，`check` 将每个识别出的角色列出一次。
+
+真实厂商输出单个 24 kHz、单声道、16 位 PCM WAV 文件。发言和控制变化会切成顺序请求，显式停顿生成为本地静音。span 边界处可能出现听感不连贯。整个渲染成功后才替换输出文件；渲染失败时已有音频保留，但已完成的 API 请求仍可能计费。没有自动重试。`-o` 默认为源文件路径换成 `.wav`，不允许覆盖源文件。
+
+## 开发
+
+```sh
+make test    # 构建 ./timbrex 并运行全部 Go 测试
+make lint    # 需要 golangci-lint v2.14.0，与 CI 一致
+make tidy    # 验证模块文件，不修改它们
 make fmt
-make tidy    # go.mod 或 go.sum 会变化时失败
 ```
 
-`timbrex version` 打印工具版本。`timbrex synth --provider` 选择已注册的 provider。未指定时用 front matter 的 `provider:`，再没有则是 `stub`。`cast: auto` 时，`timbrex check` 会把每个识别到的说话人列出来一次。front matter 的 `narrator:` 指定无前缀段落的说话人，默认是 `narrator`。用 cast 的显示名当行首时仍是旁白，并给出警告 W103。
+测试覆盖解析、诊断、嵌套作用域、各适配器请求契约、精确停顿、失败处理和输出保留。测试只使用本地 HTTP 服务，不读取厂商凭证。参见[参与贡献](CONTRIBUTING.zh-CN.md)和 [AGENTS.md](AGENTS.md)。
 
-`timbrex check --strict-tags` 是批量规则：未注册的 `[tag]` 报错 V041，自由表演要写成 `[act "…"]`。`--no-strict-tags` 强制单脚本规则。两个开关都不用时，看 front matter 的 `strict_tags`；普通脚本默认允许自由表演。单个未注册词与标准标签的编辑距离不超过 2 时给出警告 W040，命令仍然成功。非 ASCII 的自由表演是 info I050。`[laff]` 与 `[laugh]` 的距离是 3，所以不给建议。`[paus]` 会建议 `[pause]`。
+处理流程为：源码 → lexer → parser/AST → check → lower/IR → provider → WAV。`internal/` 下的包遵循这些边界，只有 `internal/cli` 依赖 Cobra，各厂商位于 `internal/providers/<name>`。[编辑器支持](editors/vscode/README.zh-CN.md)提供 VS Code 和 Cursor 使用的 TextMate 语法。
 
-## 编辑器高亮
+## 范围与文档
 
-TextMate 语法覆盖上述记号。VS Code 和 Cursor 用语言扩展加载。Sublime Text 以及其他 TextMate 编辑器可以直接指向同一份语法文件。Neovim 和 Helix 需要 tree-sitter，M0 不包含。
+已实现：脚本解析和检查、角色音色映射、控制作用域、顺序合成、本地停顿和 WAV 输出。尚未实现：流式输出、并发对话、音频混音、发音包装标签、厂商原生内容透传、音色克隆、数据集展开、配置与锁文件，以及 CLI 的 `fmt`/`fix` 命令。词表保留了部分相关标签，但合成时会拒绝它们。
 
-```sh
-cd editors/vscode
-cursor --install-extension .    # 或者 code --install-extension .
-```
+英文为主文档，中文版本描述相同的行为和限制。
 
-说明：[editors/vscode/README.md](editors/vscode/README.md)。语法文件：[editors/vscode/syntaxes/tbx.tmLanguage.yaml](editors/vscode/syntaxes/tbx.tmLanguage.yaml)。安装后重载窗口，打开 `.tbx`。语言 id 是 `timbrex`。`.timbrex` 使用同一语言。
+| 文档 | English | 简体中文 |
+| --- | --- | --- |
+| 语言参考 | [SPEC](docs/SPEC.md) | [语言参考](docs/SPEC.zh-CN.md) |
+| 凭证和适配器 | [PROVIDERS](docs/PROVIDERS.md) | [厂商接入](docs/PROVIDERS.zh-CN.md) |
+| 已实现控制 | [CAPABILITIES](docs/CAPABILITIES.md) | [能力表](docs/CAPABILITIES.zh-CN.md) |
+| 厂商调研 | [MARKET_SURVEY](docs/MARKET_SURVEY.md) | [厂商调研](docs/MARKET_SURVEY.zh-CN.md) |
+| 设计思路 | [REFLECTION](docs/REFLECTION.md) | [设计思路](docs/REFLECTION.zh-CN.md) |
+| 参与贡献 | [CONTRIBUTING](CONTRIBUTING.md) | [参与贡献](CONTRIBUTING.zh-CN.md) |
 
-## 文档
-
-英文是主文本。中文对应文件使用 `.zh-CN.md` 后缀。
-
-- [docs/SPEC.zh-CN.md](docs/SPEC.zh-CN.md) — 语言 v0.3.4（[English](docs/SPEC.md)）
-- [docs/CAPABILITIES.zh-CN.md](docs/CAPABILITIES.zh-CN.md) — provider 能力（[English](docs/CAPABILITIES.md)）
-- [docs/MARKET_SURVEY.zh-CN.md](docs/MARKET_SURVEY.zh-CN.md) — 市场与声音能力（[English](docs/MARKET_SURVEY.md)）
-- [docs/REFLECTION.zh-CN.md](docs/REFLECTION.zh-CN.md) — 语法为何如此（[English](docs/REFLECTION.md)）
-
-## 许可
-
-[MIT](LICENSE)
+采用 MIT 许可证，详见 [LICENSE](LICENSE)。

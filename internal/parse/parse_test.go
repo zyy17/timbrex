@@ -522,3 +522,102 @@ func TestExample(t *testing.T) {
 		t.Fatalf("speakers = %q %q", script.Blocks[1].Speaker, script.Blocks[2].Speaker)
 	}
 }
+
+func TestSpanOnlyLineIsSpoken(t *testing.T) {
+	script, err := Parse("t.tbx", "[whisper|Hello]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Blocks[0].Kind != ast.Narration {
+		t.Fatalf("span is not narration: %+v", script.Blocks[0])
+	}
+}
+
+func TestQuotesInSpanContentArePlainText(t *testing.T) {
+	script, err := Parse("t.tbx", `[whisper|He said "[emph|hello]" and "left.]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	span := script.Blocks[0].Nodes[0]
+	if len(span.Content) != 3 || span.Content[1].Name != "emph" || span.Content[2].Text != `" and "left.` {
+		t.Fatalf("content = %+v", span.Content)
+	}
+}
+
+func TestSpanContinuationDoesNotStartTurnOrScene(t *testing.T) {
+	src := "---\ncast: auto\n---\nlin: [whisper|One\nchen: Two\n[pause]\nThree]\nchen: Four\n"
+	script, err := Parse("t.tbx", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(script.Blocks) != 2 || script.Blocks[1].Speaker != "chen" {
+		t.Fatalf("blocks = %+v", script.Blocks)
+	}
+	span := script.Blocks[0].Nodes[0]
+	if !strings.Contains(span.Content[0].Text, "chen: Two") || span.Content[1].Name != "pause" {
+		t.Fatalf("content = %+v", span.Content)
+	}
+}
+
+func TestArgumentBoundaries(t *testing.T) {
+	for _, src := range []string{`[act "one""two"]`, `[act x="one"y=2]`} {
+		if _, err := Parse("t.tbx", src); err == nil {
+			t.Fatalf("accepted %s", src)
+		}
+	}
+	script, err := Parse("t.tbx", `[act 1%foo 2st:bar 1/2]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, arg := range script.Blocks[0].Nodes[0].Args {
+		if arg.Kind != "word" {
+			t.Fatalf("split a word: %+v", arg)
+		}
+	}
+}
+
+func TestFrontMatterVoiceMappings(t *testing.T) {
+	script, err := Parse("t.tbx", "---\nmodel: model-id\nvoice: default-id\ncast:\n  lin: {name: Lin, voices: {openai: coral, azure: zh-CN-XiaoxiaoNeural}}\n---\nlin: Hi")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script.Front.Model != "model-id" || script.Front.Voice != "default-id" || script.Front.Cast["lin"].Voices["openai"] != "coral" {
+		t.Fatalf("front = %+v", script.Front)
+	}
+	for _, id := range []string{"9lin", "林", "two words"} {
+		if _, err := Parse("t.tbx", "---\ncast:\n  "+id+": {}\n---\nHi"); err == nil {
+			t.Fatalf("accepted cast %q", id)
+		}
+	}
+}
+
+func TestInvalidFrontMatterVersionAndNarrator(t *testing.T) {
+	for _, front := range []string{"timbrex: 0", "timbrex: -1", "narrator: 'two words'", "narrator: 旁白"} {
+		if _, err := Parse("test.tbx", "---\n"+front+"\n---\nHello"); err == nil {
+			t.Fatalf("accepted %q", front)
+		}
+	}
+}
+
+func TestFrontMatterRejectsUnknownKeys(t *testing.T) {
+	for _, front := range []string{
+		"provder: openai", "strict_tag: true", "cast:\n  lin: {voice: coral}",
+		"cast:\n  lin: &member {voics: {openai: coral}}\n  chen: *member",
+		"voice: coral\n...\nprovider: openai",
+	} {
+		if _, err := Parse("test.tbx", "---\n"+front+"\n---\nHello"); err == nil {
+			t.Fatalf("silently accepted %q", front)
+		}
+	}
+	src := "---\ncast:\n  lin: &member {voices: {openai: coral}}\n  chen: *member\n---\nlin: Hello"
+	script, err := Parse("test.tbx", src)
+	if err != nil || script.Front.Cast["chen"].Voices["openai"] != "coral" {
+		t.Fatalf("valid alias: %v", err)
+	}
+}
+
+func TestEmptyFrontMatter(t *testing.T) {
+	if _, err := Parse("test.tbx", "---\n---\nHello"); err != nil {
+		t.Fatal(err)
+	}
+}

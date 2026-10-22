@@ -1,101 +1,107 @@
 # Timbrex
 
-Timbrex is a tag-based scripting language for expressive text-to-speech. A `.tbx` file is plain text plus one markup form, `[name]` or `[name|content]`. The same script compiles to more than one speech provider.
+[简体中文](README.zh-CN.md)
 
-Grammar version: `timbrex: 1`. Design: [docs/SPEC.md](docs/SPEC.md).
+**A small DSL for expressive text-to-speech.** Write what to say and how to say it, then generate audio through ElevenLabs, OpenAI, MiniMax, Azure Speech, or Qwen.
 
-**Status: M0.** The compiler parses the v0.3.4 surface: plain text, `[tag]` and `[tag|content]`, arguments, speaker lines, cast, `//` comments, YAML front matter, scene lines, and raw fences. `timbrex check` applies the standard vocabulary. `--strict-tags` rejects an unregistered tag (the batch rule) and still accepts `[act "…"]`. `timbrex synth` lowers the script and calls a provider. The only provider in this tree is `stub`, which writes a short tone as a WAV file. It does not speak.
+```tbx
+[happy|Good to see you!] [pause 300ms] [slow|Take your time.]
+```
 
-## Goals
+Plain text is valid. Tags use one shape: `[name]` or `[name|content]`. Spoken text can be in any language; tag names are English ASCII. The grammar is frozen at `timbrex: 1`. Providers and vocabulary can grow without adding syntax.
 
-1. **Small compiler.** The pipeline is lex, parse, IR, then lower. Use a maintained library where one already fits (command line, YAML front matter, and later HTTP or audio muxing). Do not grow a compiler framework.
-2. **Audio from scripts.** `timbrex check` parses. `timbrex synth` writes an audio file. Providers are separate packages behind one interface, so more vendors can land without changing the grammar.
-3. **Readable Go.** Short packages, short functions, little indirection.
+Timbrex is in early development. The compiler and five HTTP adapters are implemented and covered by offline contract tests. These adapters have **not yet been validated with live provider accounts**. Model access, voices, regional availability, and the quality of acting instructions require live verification. Different providers do not promise identical performances.
 
-## Quick example
+## Generate your first speech
 
-`examples/hello.tbx`:
+Requires Go 1.27, as declared in [go.mod](go.mod).
+
+```sh
+make build
+./timbrex check examples/expressive.tbx --strict-tags
+
+# Set OPENAI_API_KEY in your environment first.
+./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
+```
+
+The example above works with each adapter's default model and a suitable voice. ElevenLabs additionally requires your voice ID; Qwen requires a workspace endpoint. See [provider setup](docs/PROVIDERS.md) for all five services.
+
+To try the compiler without credentials or a network request:
+
+```sh
+./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
+```
+
+`stub` creates a test tone, not speech. It remains the default when no provider is selected.
+
+## Learn the language
 
 ```tbx
 ---
 timbrex: 1
+provider: openai
+strict_tags: true
 cast:
-  lin: { name: Lin }
-  chen: { name: Chen }
+  lin:
+    name: Lin
+    voices: {openai: coral}
+  chen:
+    name: Chen
+    voices: {openai: onyx}
 ---
-// A two-line scene.
-lin: [laugh] Really? [pause 500ms] That's great!
-chen: [sigh] [whisper|I knew it already.]
+lin: [happy] You came! [pause 300ms] [whisper|Come inside.]
+chen: [slow|I've got something to tell you.]
 ```
 
+- `[happy]` changes delivery for the rest of the turn; `[happy|words]` changes only those words.
+- A line containing only tags without spans sets scene state. `[reset]` on its own line clears it.
+- `lin:` starts a turn only if `lin` is declared in `cast`. Without a cast, the prefix is ordinary spoken text. `cast: auto` opts into automatic speaker detection.
+- Unprefixed paragraphs use `narrator`, or the ID selected by front matter `narrator:`.
+- `//` at the start of a line is a comment. Blank lines separate turns.
+- Prefer `[act "holding back tears"]` for free-form acting. `--strict-tags` rejects unknown names; `--no-strict-tags` allows implicit acting such as `[thoughtfully]`.
+
+Read the [language reference](docs/SPEC.md) and [implemented capability table](docs/CAPABILITIES.md). A recognized tag is not necessarily synthesizable by every provider. Unsupported controls fail instead of silently disappearing.
+
+## Commands and output
+
 ```sh
-make build
-./timbrex check examples/hello.tbx
-./timbrex synth examples/hello.tbx -o hello.wav
+./timbrex version
+./timbrex check script.tbx
+./timbrex synth script.tbx --provider openai --model gpt-4o-mini-tts --voice coral -o script.wav
 ```
 
-`hello.wav` from this tree is a tone from the stub provider, not speech. Spoken lines and quoted strings may be any language. Tag names, arguments, and config keys are English ASCII.
+Provider selection: `--provider`, then front matter `provider:`, then `stub`. Model and default voice: CLI flag, front matter, provider environment variable, built-in default. A speaker's `cast.<id>.voices.<provider>` takes priority over the default voice. `--voice` supplies a fallback; it does not replace cast mappings.
 
-## Build
+`check` validates syntax and vocabulary without credentials or network access. `synth` runs the same check, validates the selected adapter's supported controls, and then makes requests. Strict-mode flags override front matter `strict_tags`; the default is non-strict. With `cast: auto`, `check` lists each recognized speaker once.
 
-Requires Go 1.27.
+Real providers produce one 24 kHz, mono, 16-bit PCM WAV file. Turns and control changes become sequential requests; explicit pauses become local silence. Requests across span boundaries may sound discontinuous. Output is replaced only after the full render succeeds. Existing audio survives a failed render, although completed API calls may still be billed. There are no automatic retries. `-o` defaults to the source path with `.wav`; the source file cannot be overwritten.
+
+## Development
 
 ```sh
-make build   # writes ./timbrex
-make test    # builds ./timbrex, then runs the tests
-make lint    # golangci-lint v2.14.0, same as CI
+make test    # builds ./timbrex and runs all Go tests
+make lint    # requires golangci-lint v2.14.0, matching CI
+make tidy    # verifies module files without changing them
 make fmt
-make tidy    # fails if go.mod or go.sum would change
 ```
 
-`timbrex version` prints the tool version. `timbrex synth --provider` selects a registered provider. Front matter `provider:` is the fallback when the flag is omitted. The default is `stub`. With `cast: auto`, `timbrex check` lists each recognized speaker once. Front matter `narrator:` sets the speaker of unprefixed paragraphs. The default is `narrator`. A cast display name used as a prefix stays narration and warns W103.
+Tests cover parsing, diagnostics, nested scopes, request contracts for every adapter, exact pauses, failure handling, and output preservation. Tests use local HTTP servers, never vendor credentials. See [contributing](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
 
-`timbrex check --strict-tags` is the batch rule: an unregistered `[tag]` is error V041, and `[act "…"]` is the explicit free-form form. `--no-strict-tags` forces the single-script rule. With neither flag, front matter `strict_tags` applies, and a normal script defaults to allowing free-form tags. A single unknown word within edit distance 2 of a standard tag is warning W040, and the command still succeeds. Non-ASCII free-form acting is info I050. `[laff]` is distance 3 from `[laugh]`, so it is reported with no suggestion. `[paus]` suggests `[pause]`.
+The pipeline is source → lexer → parser/AST → check → lower/IR → provider → WAV. Packages follow those boundaries under `internal/`. Only `internal/cli` knows Cobra; each provider lives in `internal/providers/<name>`. [Editor support](editors/vscode/README.md) includes a TextMate grammar for VS Code and Cursor.
 
-## Editor highlighting
+## Scope and documentation
 
-A TextMate grammar covers the same tokens. VS Code and Cursor load it as a language extension. Sublime Text and other TextMate editors can point at the same file. Neovim and Helix need a tree-sitter grammar, which is not in M0.
+Implemented: script parsing and checking, speaker voice mappings, scoped controls, sequential synthesis, local pauses, and WAV output. Not implemented: streaming, concurrent dialogue, audio mixing, pronunciation wrappers, raw-provider passthrough, voice cloning, dataset expansion, config/lock files, or `fmt`/`fix` CLI commands. Some corresponding tags are reserved in the vocabulary; synthesis rejects them.
 
-```sh
-cd editors/vscode
-cursor --install-extension .    # or: code --install-extension .
-```
+English is the primary documentation. Chinese companions carry the same behavior and limitations.
 
-Details: [editors/vscode/README.md](editors/vscode/README.md). Grammar file: [editors/vscode/syntaxes/tbx.tmLanguage.yaml](editors/vscode/syntaxes/tbx.tmLanguage.yaml). After installing, reload the window and open a `.tbx` file. The language id is `timbrex`. `.timbrex` is recognized as the same language.
+| Document | English | 简体中文 |
+| --- | --- | --- |
+| Language reference | [SPEC](docs/SPEC.md) | [语言参考](docs/SPEC.zh-CN.md) |
+| Credentials and adapters | [PROVIDERS](docs/PROVIDERS.md) | [厂商接入](docs/PROVIDERS.zh-CN.md) |
+| Implemented controls | [CAPABILITIES](docs/CAPABILITIES.md) | [能力表](docs/CAPABILITIES.zh-CN.md) |
+| Provider research | [MARKET_SURVEY](docs/MARKET_SURVEY.md) | [厂商调研](docs/MARKET_SURVEY.zh-CN.md) |
+| Design rationale | [REFLECTION](docs/REFLECTION.md) | [设计思路](docs/REFLECTION.zh-CN.md) |
+| Contributing | [CONTRIBUTING](CONTRIBUTING.md) | [参与贡献](CONTRIBUTING.zh-CN.md) |
 
-## Layout
-
-| Path | Role |
-| --- | --- |
-| `main.go` | Process entry |
-| `internal/cli` | Cobra commands |
-| `internal/lex` | Tokens |
-| `internal/parse` | AST, including YAML front matter |
-| `internal/ast` | Script tree |
-| `internal/lower` | AST to IR |
-| `internal/ir` | Flat utterances |
-| `internal/vocab` | Standard tag list |
-| `internal/check` | Strict tags, closing tags, notes |
-| `internal/providers` | Provider interface |
-| `internal/providers/stub` | Tone WAV used by tests and the default synth path |
-| `editors/vscode` | TextMate grammar and editor extension |
-
-## Out of scope for M0
-
-- Real provider APIs and SDKs
-- `timbrex fix` / `fmt`, dataset expand (`*.tbxset.yaml`), and `timbrex.yaml` / `timbrex.lock` loading
-- Per-tag parameter schemas beyond the value grammar and `note: allow`
-- A tree-sitter grammar, audio muxing, streaming, and voice cloning
-
-## Docs
-
-English is the primary text. Chinese companions use the `.zh-CN.md` suffix. [中文说明](README.zh-CN.md).
-
-- [docs/SPEC.md](docs/SPEC.md) — language v0.3.4 ([中文](docs/SPEC.zh-CN.md))
-- [docs/CAPABILITIES.md](docs/CAPABILITIES.md) — provider control surface ([中文](docs/CAPABILITIES.zh-CN.md))
-- [docs/MARKET_SURVEY.md](docs/MARKET_SURVEY.md) — market and voice features ([中文](docs/MARKET_SURVEY.zh-CN.md))
-- [docs/REFLECTION.md](docs/REFLECTION.md) — why the grammar looks like this ([中文](docs/REFLECTION.zh-CN.md))
-
-## License
-
-[MIT](LICENSE)
+MIT licensed. See [LICENSE](LICENSE).

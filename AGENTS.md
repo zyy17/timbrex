@@ -8,7 +8,7 @@ Timbrex is an English-ASCII tag language for expressive speech, plus a compiler 
 
 Three goals:
 
-1. **Small compiler.** Pipeline is lex, then parse, then IR, then lower. If a maintained library already covers a piece (YAML front matter, the CLI, HTTP, audio muxing), use it. Do not build a compiler framework.
+1. **Small compiler.** Pipeline is lex, then parse, then check, then lower to IR, then provider. If a maintained library already covers a piece (YAML front matter, the CLI, HTTP, audio muxing), use it. Do not build a compiler framework.
 2. **Audio from scripts.** The end state is `timbrex synth script.tbx` and `timbrex check`. Support as many TTS providers as practical. When adding a provider, read that vendor's official docs and implement the real API, tags, and parameters. No guessed request shapes.
 3. **Readable code.** Short packages, short functions, little indirection. A reader should follow one script from source to a provider call without a pile of wrappers.
 
@@ -44,13 +44,13 @@ Later packages, not in this tree yet: `internal/expand` (dataset templates), `in
 - Binary name: `timbrex`. Script extension: `.tbx`. `.timbrex` is an alias for the same language. The CLI reads the path it is given.
 - With `cast: auto`, `check` lists each recognized speaker once.
 - Front matter `narrator:` names the narration speaker. The default is `narrator`.
-- M0 commands: `version`, `check`, `synth`.
+- Commands: `version`, `check`, `synth`.
 - `check` parses, resolves tags, and prints `ok` or diagnostics. `--strict-tags` / `--no-strict-tags` override front matter `strict_tags`.
 - `synth` writes audio after the same check. `--provider` wins, then front matter `provider:`, then `stub`.
 - `stub` is the fake provider. It writes a WAV tone so the pipeline can be tested. It is not a speech engine.
 - Do not add a real provider until its official documentation has been read and the request matches that documentation.
 
-## M0 scope
+## Current scope
 
 In:
 
@@ -59,14 +59,17 @@ In:
 - Value grammar: number, duration, percent, semitone, decibel, quoted string, word, and `key=value`
 - Standard vocabulary, V041 in strict mode, W040 for a near miss in a single script, W103 when a display name is used as a speaker prefix, I050 for non-ASCII acting text, V013 for `[/name]`, V012 for an unclosed tag
 - Explicit `[act "…"]` in strict mode. Implicit free-form tags become `act` when strict mode is off
-- Lowering to IR. Stub synthesis
+- Lowering to IR with typed arguments. Stub synthesis and real HTTP providers: ElevenLabs, OpenAI, MiniMax, Azure, and Qwen
+- Cast voice mappings, scene/turn/span planning, local pauses, sequential PCM synthesis into WAV
 - TextMate grammar in `editors/vscode` for `.tbx`
 
 Out:
 
-- Real TTS SDKs, `timbrex fix` / `fmt`, dataset expand, `timbrex.yaml` / `timbrex.lock`
+- Vendor SDK dependencies, `timbrex fix` / `fmt`, dataset expand, `timbrex.yaml` / `timbrex.lock`
 - Per-tag parameter schemas, registered provider namespaces, tree-sitter
-- Audio muxing and streaming
+- General audio mixing, overlap, raw-provider passthrough, and streaming
+
+Provider request contracts are tested offline. Do not claim live compatibility or acoustic quality without recording a real account validation. Unsupported controls must fail before synthesis requests rather than silently disappear. Provider details and setup live in [docs/PROVIDERS.md](docs/PROVIDERS.md); update its Chinese companion with it.
 
 ## Language
 

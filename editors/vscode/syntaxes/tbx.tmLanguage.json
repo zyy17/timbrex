@@ -1,0 +1,213 @@
+{
+  "fileTypes": [
+    "tbx",
+    "timbrex"
+  ],
+  "name": "Timbrex",
+  "patterns": [
+    {
+      "include": "#front-matter"
+    },
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#fence"
+    },
+    {
+      "include": "#escape"
+    },
+    {
+      "include": "#speaker"
+    },
+    {
+      "include": "#tag"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^[ \\t]*//.*$",
+      "name": "comment.line.double-slash.tbx"
+    },
+    "escape": {
+      "match": "\\[\\[|\\]\\]|\\\\[\\[\\]|\\\\:]",
+      "name": "constant.character.escape.tbx"
+    },
+    "fence": {
+      "begin": "^[ \\t]*```[ \\t]*(\\S.*)$",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.fence.begin.tbx"
+        },
+        "1": {
+          "name": "keyword.control.fence-info.tbx"
+        }
+      },
+      "contentName": "string.unquoted.fence.tbx",
+      "end": "^[ \\t]*```[ \\t]*$",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.fence.end.tbx"
+        }
+      },
+      "name": "meta.embedded.block.fence.tbx"
+    },
+    "front-matter": {
+      "begin": "\\A---[ \\t]*$",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.front-matter.begin.tbx"
+        }
+      },
+      "end": "^---[ \\t]*$",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.front-matter.end.tbx"
+        }
+      },
+      "name": "meta.embedded.block.yaml.front-matter.tbx",
+      "patterns": [
+        {
+          "include": "source.yaml"
+        }
+      ]
+    },
+    "speaker": {
+      "captures": {
+        "1": {
+          "name": "entity.name.function.speaker.tbx"
+        },
+        "2": {
+          "name": "punctuation.separator.speaker.tbx"
+        }
+      },
+      "match": "^([A-Za-z][A-Za-z0-9_.-]*)(:)"
+    },
+    "string": {
+      "match": "\"([^\"\\\\]|\\\\.)*\"",
+      "name": "string.quoted.double.tbx"
+    },
+    "tag": {
+      "begin": "(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)(\\[)(?!\\[)[ \\t]*([A-Za-z][A-Za-z0-9_.-]*(?::[A-Za-z][A-Za-z0-9_.-]*)?)?",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.tbx"
+        },
+        "2": {
+          "name": "entity.name.tag.tbx"
+        }
+      },
+      "end": "(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)\\](?!\\])",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.tag.end.tbx"
+        }
+      },
+      "name": "meta.tag.tbx",
+      "patterns": [
+        {
+          "include": "#tag-content"
+        },
+        {
+          "include": "#tag-arg"
+        }
+      ]
+    },
+    "tag-arg": {
+      "patterns": [
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#escape"
+        },
+        {
+          "captures": {
+            "1": {
+              "name": "entity.other.attribute-name.tbx"
+            },
+            "2": {
+              "name": "punctuation.separator.key-value.tbx"
+            }
+          },
+          "match": "([A-Za-z_][A-Za-z0-9_.-]*)(=)"
+        },
+        {
+          "match": "[+-]?(?:\\d+\\.\\d+|\\d+)(?:ms|min|st|dB|%|s)?(?![A-Za-z0-9_.-])",
+          "name": "constant.numeric.tbx"
+        },
+        {
+          "match": "[+-]?(?:\\d+\\.\\d+|\\d+)[A-Za-z_][A-Za-z0-9_.-]*",
+          "name": "variable.parameter.tbx"
+        },
+        {
+          "match": "[A-Za-z_][A-Za-z0-9_.-]*",
+          "name": "variable.parameter.tbx"
+        }
+      ]
+    },
+    "tag-content": {
+      "begin": "(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)\\|",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.separator.tag-content.tbx"
+        }
+      },
+      "end": "(?=(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)\\](?!\\]))",
+      "name": "meta.tag.content.tbx",
+      "patterns": [
+        {
+          "include": "#escape"
+        },
+        {
+          "include": "#tag-nested"
+        }
+      ]
+    },
+    "tag-content-nested": {
+      "begin": "(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)\\|",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.separator.tag-content.tbx"
+        }
+      },
+      "end": "(?=(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)\\])",
+      "name": "meta.tag.content.tbx",
+      "patterns": [
+        {
+          "include": "#escape"
+        },
+        {
+          "include": "#tag-nested"
+        }
+      ]
+    },
+    "tag-nested": {
+      "begin": "(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)(\\[)(?!\\[)[ \\t]*([A-Za-z][A-Za-z0-9_.-]*(?::[A-Za-z][A-Za-z0-9_.-]*)?)?",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.tbx"
+        },
+        "2": {
+          "name": "entity.name.tag.tbx"
+        }
+      },
+      "end": "(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.tag.end.tbx"
+        }
+      },
+      "name": "meta.tag.tbx",
+      "patterns": [
+        {
+          "include": "#tag-content-nested"
+        },
+        {
+          "include": "#tag-arg"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.tbx"
+}

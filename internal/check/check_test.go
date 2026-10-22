@@ -1,12 +1,31 @@
 package check
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/zyy17/timbrex/internal/ast"
 	"github.com/zyy17/timbrex/internal/parse"
 )
+
+func TestApplyIsRepeatableAcrossModes(t *testing.T) {
+	script, err := parse.Parse("t.tbx", `[thoughtfully] [act holding back tears] [laugh nervously]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := Apply(script, false)
+	before := append([]ast.Node(nil), script.Blocks[0].Nodes...)
+	if got := Apply(script, false); !reflect.DeepEqual(first, got) || !reflect.DeepEqual(before, script.Blocks[0].Nodes) {
+		t.Fatal("repeat check changed tags or diagnostics")
+	}
+	if diags := Apply(script, true); len(diags) != 1 || diags[0].Code != "V041" {
+		t.Fatalf("strict recheck = %+v", diags)
+	}
+	if got := Apply(script, false); !reflect.DeepEqual(first, got) || !reflect.DeepEqual(before, script.Blocks[0].Nodes) {
+		t.Fatal("strict check lost free-form acting")
+	}
+}
 
 func TestStrictRejectsUnknownAndAllowsAct(t *testing.T) {
 	script, err := parse.Parse("batch.tbx", "Hello [laff] [act \"holding back tears\"] [thoughtfully]\n")

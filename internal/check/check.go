@@ -37,7 +37,7 @@ func (d Diag) Error() string {
 // Apply resolves tags in place. strict reports V041 for implicit free-form acting.
 // Explicit [act "..."] stays valid in both modes.
 //
-// No provider namespace is loaded in M0, so a head like ns:name is free-form
+// No provider namespace is currently loaded, so a head like ns:name is free-form
 // acting. Bare words on a note:allow tag become the note; other value tokens
 // stay arguments. Per-tag parameter schemas are not applied yet.
 func Apply(script *ast.Script, strict bool) []Diag {
@@ -199,6 +199,7 @@ func (c *checker) one(n *ast.Node, atStart, scene bool) {
 	}
 	if n.Span && !spec.Content {
 		c.error(n, "", `tag "`+spec.Name+`" does not take content`)
+		return
 	}
 	if spec.Kind == vocab.Turn && !scene && !atStart {
 		c.error(n, "", `tag "`+spec.Name+`" must be at the start of a turn`)
@@ -214,7 +215,7 @@ func (c *checker) resolve(n *ast.Node) bool {
 		n.Name = name
 		return true
 	}
-	if !n.Head {
+	if !n.Head || n.Free {
 		c.free(n, raw)
 		return false
 	}
@@ -226,7 +227,11 @@ func (c *checker) resolve(n *ast.Node) bool {
 	n.Name = spec.Name
 	n.Free = false
 	if spec.Note {
-		n.Args, n.Note = splitNote(n.Args)
+		args, note := splitNote(n.Args)
+		n.Args = args
+		if note != "" {
+			n.Note = note
+		}
 	}
 	return false
 }
@@ -335,6 +340,9 @@ func suggest(raw string) string {
 	best := ""
 	bestD := 3
 	for _, cand := range vocab.Names() {
+		if len(name)-len(cand) > 2 || len(cand)-len(name) > 2 {
+			continue
+		}
 		d := dist(name, cand)
 		if d < bestD || (d == bestD && (best == "" || cand < best)) {
 			best = cand

@@ -27,11 +27,12 @@ const (
 // Token is one lexical unit. Line and Col are 1-based.
 // Body is set on a Fence token and holds the raw interior.
 type Token struct {
-	Kind Kind
-	Lit  string
-	Body string
-	Line int
-	Col  int
+	Kind  Kind
+	Lit   string
+	Body  string
+	Line  int
+	Col   int
+	Depth int // Open tags before this token.
 }
 
 // Error is a lexical failure. The parser adds the file name.
@@ -50,10 +51,12 @@ func Scan(src string) ([]Token, error) {
 	s := &scanner{src: src, line: 1, col: 1, bol: true}
 	var out []Token
 	for {
+		depth := s.depth
 		tok, err := s.next()
 		if err != nil {
 			return nil, err
 		}
+		tok.Depth = depth
 		out = append(out, tok)
 		if tok.Kind == EOF {
 			return out, nil
@@ -62,12 +65,13 @@ func Scan(src string) ([]Token, error) {
 }
 
 type scanner struct {
-	src   string
-	i     int
-	line  int
-	col   int
-	bol   bool
-	depth int
+	src     string
+	i       int
+	line    int
+	col     int
+	bol     bool
+	depth   int
+	headers []bool
 }
 
 func (s *scanner) next() (Token, error) {
@@ -81,7 +85,7 @@ func (s *scanner) next() (Token, error) {
 		return s.fence()
 	}
 	// A quoted argument is opaque. "|" "[" "]" inside it are not markup.
-	if s.depth > 0 && s.peek() == '"' {
+	if s.inHeader() && s.peek() == '"' {
 		return s.quoted()
 	}
 	switch s.peek() {
@@ -92,6 +96,7 @@ func (s *scanner) next() (Token, error) {
 			return s.text(), nil
 		}
 		s.depth++
+		s.headers = append(s.headers, true)
 		return s.emit(LBrack, "[", 1), nil
 	case ']':
 		// ]] is a literal ] in plain text and inside one open tag.
@@ -103,10 +108,12 @@ func (s *scanner) next() (Token, error) {
 		}
 		if s.depth > 0 {
 			s.depth--
+			s.headers = s.headers[:s.depth]
 		}
 		return s.emit(RBrack, "]", 1), nil
 	case '|':
 		if s.depth > 0 {
+			s.headers[s.depth-1] = false
 			return s.emit(Pipe, "|", 1), nil
 		}
 		return s.text(), nil
@@ -251,13 +258,17 @@ func (s *scanner) text() Token {
 		if r == '\\' {
 			break
 		}
-		if s.depth > 0 && r == '"' {
+		if s.inHeader() && r == '"' {
 			break
 		}
 		b.WriteRune(r)
 		s.advance()
 	}
 	return Token{Kind: Text, Lit: b.String(), Line: line, Col: col}
+}
+
+func (s *scanner) inHeader() bool {
+	return s.depth > 0 && s.headers[s.depth-1]
 }
 
 // quoted reads one double-quoted string inside a tag, including its quotes.

@@ -24,7 +24,7 @@
       {
         "language": "timbrex",
         "scopeName": "source.tbx",
-        "path": "./syntaxes/tbx.tmLanguage.yaml"
+        "path": "./syntaxes/tbx.tmLanguage.json"
       }
     ]
   }

@@ -94,7 +94,7 @@ repository:
       - include: "#tag-content-nested"
       - include: "#tag-arg"
 
-  # Text after an unescaped "|" is content. Nested tags and strings still apply.
+  # Text after an unescaped "|" is content. Quotes are ordinary spoken text.
   tag-content:
     begin: '(?<=(?:^|[^\\])(?:\\\\)*)\|'
     beginCaptures:
@@ -103,7 +103,6 @@ repository:
     name: meta.tag.content.tbx
     patterns:
       - include: "#escape"
-      - include: "#string"
       - include: "#tag-nested"
 
   tag-content-nested:
@@ -114,7 +113,6 @@ repository:
     name: meta.tag.content.tbx
     patterns:
       - include: "#escape"
-      - include: "#string"
       - include: "#tag-nested"
 
   tag-arg:

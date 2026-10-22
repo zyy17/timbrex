@@ -1,0 +1,5 @@
+---
+timbrex: 1
+strict_tags: true
+---
+[happy|Good to see you!] [pause 300ms] [slow|Take your time.]

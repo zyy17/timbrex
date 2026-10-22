@@ -1,7 +1,10 @@
 package parse
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/adrg/frontmatter"
@@ -14,8 +17,10 @@ import (
 const grammarVersion = 1
 
 type frontDoc struct {
-	Timbrex    int       `yaml:"timbrex"`
+	Timbrex    *int      `yaml:"timbrex"`
 	Provider   string    `yaml:"provider"`
+	Model      string    `yaml:"model"`
+	Voice      string    `yaml:"voice"`
 	Lang       string    `yaml:"lang"`
 	StrictTags *bool     `yaml:"strict_tags"`
 	Narrator   string    `yaml:"narrator"`
@@ -23,7 +28,8 @@ type frontDoc struct {
 }
 
 type frontCast struct {
-	Name string `yaml:"name"`
+	Name   string            `yaml:"name"`
+	Voices map[string]string `yaml:"voices"`
 }
 
 type castYAML struct {
@@ -39,11 +45,31 @@ func (c *castYAML) UnmarshalYAML(value *yaml.Node) error {
 		}
 		return fmt.Errorf("cast must be a map or auto")
 	}
-	return value.Decode(&c.Members)
+	data, err := yaml.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return decodeFront(data, &c.Members)
 }
 
 // yamlFence is the only front matter form the grammar allows.
-var yamlFence = frontmatter.NewFormat("---", "---", yaml.Unmarshal)
+var yamlFence = frontmatter.NewFormat("---", "---", decodeFront)
+
+func decodeFront(data []byte, value any) error {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(value); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		return err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		return fmt.Errorf("front matter must contain one YAML document")
+	}
+	return nil
+}
 
 func splitFront(file, src string) (ast.Front, string, error) {
 	if !strings.HasPrefix(src, "---\n") {
@@ -58,7 +84,7 @@ func splitFront(file, src string) (ast.Front, string, error) {
 	if body == src {
 		return ast.Front{}, "", &Error{File: file, Line: 1, Col: 1, Msg: "unclosed front matter"}
 	}
-	if doc.Timbrex != 0 && doc.Timbrex != grammarVersion {
+	if doc.Timbrex != nil && *doc.Timbrex != grammarVersion {
 		return ast.Front{}, "", &Error{
 			File: file,
 			Line: 1,
@@ -67,18 +93,28 @@ func splitFront(file, src string) (ast.Front, string, error) {
 		}
 	}
 	front := ast.Front{
-		Timbrex:    doc.Timbrex,
 		Provider:   doc.Provider,
+		Model:      doc.Model,
+		Voice:      doc.Voice,
 		Lang:       doc.Lang,
 		StrictTags: doc.StrictTags,
 		Narrator:   strings.TrimSpace(doc.Narrator),
+	}
+	if doc.Timbrex != nil {
+		front.Timbrex = *doc.Timbrex
+	}
+	if front.Narrator != "" && identLen(front.Narrator) != len(front.Narrator) {
+		return ast.Front{}, "", &Error{File: file, Line: 1, Col: 1, Msg: "narrator must be an ASCII identifier"}
 	}
 	if doc.Cast != nil {
 		front.CastAuto = doc.Cast.Auto
 		if doc.Cast.Members != nil {
 			front.Cast = make(map[string]ast.Cast, len(doc.Cast.Members))
 			for id, member := range doc.Cast.Members {
-				front.Cast[id] = ast.Cast{Name: member.Name}
+				if id == "" || identLen(id) != len(id) {
+					return ast.Front{}, "", &Error{File: file, Line: 1, Col: 1, Msg: fmt.Sprintf("invalid cast identifier %q", id)}
+				}
+				front.Cast[id] = ast.Cast{Name: member.Name, Voices: member.Voices}
 			}
 		}
 	}

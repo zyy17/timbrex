@@ -21,10 +21,16 @@ const (
 type Node struct {
 	Kind  Kind
 	Name  string
-	Args  string
+	Args  []Arg
 	Note  string
 	Text  string
 	Scope string
+}
+
+type Arg struct {
+	Key  string
+	Raw  string
+	Kind string
 }
 
 // Utterance is one speaker turn, scene line, or raw fence after lowering.
@@ -36,5 +42,9 @@ type Utterance struct {
 // Document is the whole script after lowering.
 type Document struct {
 	Provider   string
+	Model      string
+	Voice      string
+	Lang       string
+	Voices     map[string]map[string]string
 	Utterances []Utterance
 }

@@ -1,116 +1,54 @@
-# TTS provider capability matrix
+# Implemented provider capabilities
 
-Checked 2026-10-20. Chinese text: [CAPABILITIES.zh-CN.md](CAPABILITIES.zh-CN.md). This file is the English primary.
+[简体中文](CAPABILITIES.zh-CN.md) · [Setup and official references](PROVIDERS.md)
 
-Legend: confirmed in official docs; conditional or partial; not found in official docs and needs a live check; officially unsupported.
+This table describes Timbrex's current adapters, not everything the vendors offer. **Parameter** means a numeric API field or SSML control. **Instruction** means a requested performance that the model may interpret approximately. **Unsupported** means a local error when used by a speech segment. Voice/model restrictions still apply; these mappings have offline contract coverage, not live acoustic verification.
 
-The native-syntax column is what an adapter should emit. It is not Timbrex syntax.
+| Control | OpenAI | ElevenLabs | MiniMax | Azure | Qwen |
+| --- | --- | --- | --- | --- | --- |
+| Text and cast voices | Yes | Yes | Yes | Yes | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence | Local silence | Local silence | Local silence | Local silence |
+| `speed`, `fast`, `slow` | Parameter: 0.25–4× | Parameter: 0.7–1.2× | Parameter: 0.5–2× | SSML: 0.5–2× | Parameter: 0.5–2× |
+| `pitch` | Unsupported | Unsupported | Integer −12…+12 st | SSML −12…+12 st | Parameter −12…+12 st |
+| `volume` | Unsupported | Unsupported | Parameter −60…+20 dB | SSML −60…+20 dB | Parameter −60…about +6.02 dB |
+| Standard emotions | Instruction | Audio-tag instruction | Seven mapped emotions | Mapped styles | Instruction |
+| Emotion intensity, e.g. `happy 0.8` | Text instruction | Text instruction | Unsupported | Unsupported | Text instruction |
+| `whisper` / `shout` | Instruction | Audio tags | Whisper on 2.6 only; no shout | Voice-dependent styles | Instruction |
+| `act`, `accent`, `dialect`, custom `emotion` | Instruction | Audio-tag instruction | Unsupported | Unsupported | Instruction |
+| `style`, `role` | Instruction | Audio-tag instruction | Unsupported | SSML; role requires style | Instruction |
+| `emph` | Instruction | Audio-tag instruction | Unsupported | Voice-dependent emphasis | Instruction |
+| `laugh`, `cry`, `sigh` **spans** | Instruction | Audio-tag instruction | Unsupported | Unsupported | Instruction |
+| Standalone nonverbal events | Unsupported | Selected events | Selected events on 2.8 | Unsupported | Selected events |
+| `lang` span / front matter | Instruction | Language code | Language boost | SSML locale | Language hint |
+| `voice`, `as` spans; `reset` | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner |
 
-## 1. Commercial APIs
+OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. The adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](PROVIDERS.md).
 
-### Azure AI Speech (Neural / HD)
+## Exact mappings
 
-SSML is confirmed (`break`, `prosody`, `emphasis`, `say-as`, `phoneme`, `sub`, `lang`, `voice`, `audio`, `bookmark`, `lexicon`). Style and role are confirmed on some voices via `mstts:express-as`. HD voices use inline marks such as `[whispering]` until `[Neutral]`, a new sentence, or a newline. Silence, target duration, background audio, multi-voice requests, word and viseme events, and custom or personal voice are confirmed. There is no general nonverbal tag. Streaming is confirmed.
+MiniMax emotion mappings: `happy→happy`, `sad→sad`, `angry→angry`, `fear→fearful`, `disgust→disgusted`, `surprise→surprised`, `calm→calm`. `whisper` occupies the same API field as emotion and cannot be combined with one. Supported events on `speech-2.8-hd` and `speech-2.8-turbo`:
 
-Sources: Microsoft Learn, speech synthesis markup, HD voices, and markup structure.
+```text
+laugh chuckle cough clear-throat groan breath pant inhale exhale gasp
+sniff sigh snort burp lip-smack hum hiss emm sneeze
+```
 
-### Google Cloud TTS
+Azure style mappings: `happy→cheerful`, `sad→sad`, `angry→angry`, `fear→fearful`, `excited→excited`, `calm→calm`, `tender→gentle`, `serious→serious`, `whisper→whispering`, `shout→shouting`, `crying→crying`, `neutral→neutral`. `[style "vendor-style"]` passes a style name. Only one style is allowed per segment. The selected voice must support it; Azure can ignore unsupported styles. Timbrex currently does not probe voices.
 
-Neural2, WaveNet, Standard, and Studio take standard SSML. Chirp 3 HD SSML is a preview and sync-only. Chirp 3 HD pauses are `[pause short]`, `[pause]`, and `[pause long]` in the `markup` field. Chirp 3 HD does not take speed or pitch parameters. Gemini TTS takes a natural-language style (`speech_metadata.style`) and inline voice events such as `<sigh>` and `<laughs>`. Multi-speaker setup, emphasis by capitals, and partial `<mark>` timestamps are confirmed. A Cartesia summary said Gemini 2.5/3.1 preview TTS would shut down after 2026-11-17. Treat that as a vendor announcement, not as this file's claim.
+ElevenLabs events: `laugh`, `sigh`, `gasp`, `clear-throat`, `giggle`, `cough`. Qwen events: `laugh`, `sigh`, `gasp`, `clear-throat`, `giggle`, `cough`, `snort`. Event arguments and notes are unsupported, including `[laugh nervously]`; use a supported accompanying-speech span or an acting instruction instead.
 
-### AWS Polly
+`[laugh|Hello]` asks for speech while laughing. `[laugh]` requests a standalone event. Those are different capabilities. An instruction does not guarantee a precise nonverbal duration or an isolated sound.
 
-SSML is confirmed. Generative voices take a subset and error on unsupported tags. Emotion is unsupported. Newscaster domain, whispered effect, and DRC are conditional. Speech marks are confirmed.
+Volume converts dB to a linear amplitude ratio with `10^(dB/20)`. MiniMax receives that ratio; Azure receives a relative percentage; Qwen receives a rounded integer scaled from its default volume of 50. Qwen pitch converts semitones to a ratio with `2^(st/12)`. These are parameter mappings, not measurements of rendered loudness or pitch accuracy.
 
-### ElevenLabs (v3 / v4)
+## Literal text
 
-Audio tags are free text, not an enum: `[laughs]`, `[whispers]`, `[sighs]`, and many others. Effect, accent, and singing tags are experimental. v3/v4 do not take SSML `<break>`. Emphasis is capitals and punctuation. Dialogue is the Text to Dialogue API. Speed and stability, pronunciation dictionaries, timestamps, and voice design or cloning are confirmed.
+Escaping protects Timbrex syntax, but does not disable a vendor's native markup. To avoid turning literal text into unintended instructions, ElevenLabs and Qwen reject literal ASCII `[` or `]` in spoken text. ElevenLabs also rejects brackets inside acting instructions. MiniMax rejects its recognized native event strings, such as `(laughs)`, and its pause prefix `<#`; ordinary parentheses remain text. Use Unicode alternatives such as `（ ）` and `［ ］`, or another provider, when those marks must remain text.
 
-### OpenAI gpt-4o-mini-tts
+Azure XML-escapes text and attributes. OpenAI sends speech and instructions in separate fields. This prevents compiler-generated structural injection; it does not guarantee that a generative model will pronounce every symbol literally.
 
-Style, emotion, accent, pace, and tone go through `instructions`. `speed` is a parameter. SSML and inline tags are unsupported. Multi-speaker and timestamps are unsupported. The model is deprecated and scheduled to shut down on 2027-01-06, with migration toward the Realtime API.
+## Reserved, not implemented
 
-### Cartesia Sonic-3
+All real adapters currently reject pronunciation wrappers (`ipa`, `pinyin`, `sub`, `say`, and related tags), audio files/effects/music, `overlap`, `cut`, `duration`, `rate`, `oral`, `emovec`, markers, voice conversion, and raw fences. There is no automatic fallback or silent dropping of unsupported controls. Named tag arguments are parsed but have no adapter mappings yet.
 
-Speed, volume, emotion (beta, English, a large enum), break, spell, `[laughter]`, pronunciation dictionaries, and streaming word timestamps are confirmed.
-
-### Hume Octave
-
-Acting instructions are a per-utterance `description` on Octave 1. Octave 2 docs have called this upcoming. Speed, trailing silence, per-utterance voice changes, and voice design are confirmed.
-
-### Fish Audio
-
-S2 and S2.1-Pro take free `[whisper]`-style prompts anywhere, including natural language. S1 (retiring 2026-12-31) uses a fixed parenthetical set. Cloning and streaming are confirmed.
-
-### MiniMax Speech (T2A v2)
-
-Pauses are `<#0.5#>`. Emotion is `voice_setting.emotion`. Speed, volume, and pitch are parameters. Pinyin, IPA, and Jyutping are parenthetical. Speech 2.8 adds a fixed nonverbal parenthetical list. Voice mixing, subtitles, cloning, and voice design are confirmed. Whisper as an emotion value is model-dependent.
-
-### Volcengine Doubao speech synthesis 2.0
-
-Official 2.0 voices take `context_texts` instructions. Emotion enums and SSML on 2.0 were not confirmed in the docs checked. Cloning (`seed-icl-2.0`) is confirmed.
-
-### Alibaba CosyVoice / Qwen-TTS
-
-CosyVoice SSML is confirmed behind `enable_ssml`. Instruction text is confirmed and voice-specific. Qwen-Audio-TTS has used inline tags plus instruction. Qwen3-TTS instruction support was not confirmed. LaTeX reading is documented with SSML.
-
-### Tencent Cloud TTS
-
-Emotion category and intensity are confirmed on multi-emotion voices. SSML is confirmed, mainly for Chinese. Speed and volume are parameters.
-
-### iFlytek hyper-real synthesis
-
-`oral_level` is `high`, `mid`, or `low`. Speed, volume, and pitch exist. Emotion and nonverbal controls were not confirmed.
-
-## 2. Open models
-
-| Model | Confirmed control |
-| --- | --- |
-| ChatTTS | Token-level `[laugh]`, `[uv_break]`, `[lbreak]`. Sentence refine prompts. Speaker embedding sampling. Speed is unstable. |
-| CosyVoice 2/3 | Inline nonverbal tokens, span tags such as `<strong>`, instruct text, pinyin and ARPAbet, zero-shot cloning, streaming |
-| IndexTTS2 | An 8-d emotion vector, `emo_text`, an emotion reference clip, `emo_alpha`, duration control |
-| F5-TTS | Reference-audio cloning, speed, diffusion steps. No inline tags |
-| Dia | Speakers `[S1]` `[S2]` and a parenthetical nonverbal list |
-| Kokoro | `[word](/IPA/)`, stress marks, speed |
-
-## 3. Cross-check
-
-Four control styles show up together: SSML, inline tags, natural-language instructions, and structured parameters.
-
-The trend is from fixed enums toward free text (Fish S1 to S2, ElevenLabs tags, Gemini style). Two widely used APIs have lifecycle risk (OpenAI gpt-4o-mini-tts, Gemini preview TTS). The DSL must treat free-text acting as a first-class feature and keep adapters replaceable.
-
-Nonverbal overlap across four or more vendors: laugh, sigh, breath or inhale or exhale, cough, gasp, clear-throat, sniff. Those belong in the core vocabulary.
-
-## 4. Leaderboard models (Artificial Analysis, 2026-10)
-
-The ranking list was supplied upstream and was not re-ranked here. The control notes below were checked.
-
-| Model | Confirmed control | Multi-speaker |
-| --- | --- | --- |
-| ElevenLabs Eleven v4 / v4 Turbo | Same free-text `[...]` tags as v3. Dialogue API. No SSML break | Yes |
-| Alibaba Qwen-Audio-3.1-TTS-Plus | `instruction`, rate, pitch, volume, SSML, pronunciation hot-fix, seed, character timestamps. Inline tags were documented for other 3.x flash/plus ids, not clearly for 3.1-plus | Unconfirmed |
-| Cartesia Sonic 3.6 | Same family as Sonic-3 | No |
-| Google Gemini 3.8 Flash TTS | Verbatim `text`, `speech_metadata.style`, inline `<sigh>`-style events, capitals, voice design, multi-speaker | Yes |
-| Inworld Realtime TTS-2 | English `[...]` steering until it changes or `[reset]`, a nonverbal list of about 50, breaks, custom pronunciation, verbatim, timestamps and visemes, `delivery_mode` | Unconfirmed |
-| Fish Audio Drama 3 | Free `[...]` in any language, a small set of paired word tags, experimental language tags, phonemes, temperature and top_p | Yes, with a speaker token |
-| MiniMax Speech 2.8 | Parenthetical nonverbals, `<#x#>`, emotion enum, phonetic marks | No |
-| StepFun StepAudio 2.5 / 3 | Global `instruction`, inline `(...)` that is not spoken, speed, volume, pronunciation map, streaming, cloning | No |
-
-Head models use brackets plus free text, and they do not agree which bracket means what. The compiler must escape ordinary parentheses for Step and MiniMax. StepAudio documents that parenthetical text is not spoken.
-
-## 5. More providers and voice features
-
-See [MARKET_SURVEY.md](MARKET_SURVEY.md) for the market table. Short control notes:
-
-| Provider | Expressive control | Voice |
-| --- | --- | --- |
-| xAI / Grok TTS | Voice tags (exact grammar not fully confirmed), speed, a `replace` pronunciation table, text normalization, character timestamps | Built-in voices and cloning with a passphrase plus a voiceprint check |
-| Mistral Voxtral TTS | No tags. Emotion and accent come from the reference audio | Zero-shot cloning on the API. The open build is preset voices only |
-| Murf Falcon 2 | Not confirmed here | Short cloning for enterprise, with consent |
-| Deepgram Aura-2 | Little | No cloning in the sources checked |
-| ElevenLabs voices | — | IVC, PVC, Voice Design, Voice Remix, Voice Library, voice-captcha |
-| MiniMax voices | — | Cloning, voice design, `timbre_weights`, identity verification |
-| Doubao voice clone 2.0 | — | Short reference. Best results need a longer take |
-| Alibaba CosyVoice / Qwen-Audio voices | — | Cloning, voice design, optional hidden AIGC mark |
-
-MiniMax's clone-preview word list is longer than the T2A nonverbal list (it adds items such as whistles, crying, and applause). Adapters should re-check that list against the clone API docs.
+The stub ignores performance semantics and writes an 8 kHz test tone. It cannot validate provider capabilities or speech quality. `check` recognizes the full vocabulary but does not select an adapter, validate its parameter ranges, or make requests.

@@ -68,11 +68,11 @@ func TestLowerSceneFenceAndArgs(t *testing.T) {
 		t.Fatalf("doc = %+v", doc)
 	}
 	scene := doc.Utterances[0].Nodes
-	if len(scene) != 1 || scene[0].Kind != ir.Event || scene[0].Scope != "scene" || scene[0].Args != "rain.wav vol=-22dB" {
+	if len(scene) != 1 || scene[0].Kind != ir.Event || scene[0].Scope != "scene" || len(scene[0].Args) != 2 || scene[0].Args[0].Raw != "rain.wav" || scene[0].Args[1].Key != "vol" || scene[0].Args[1].Raw != "-22dB" {
 		t.Fatalf("scene = %+v", scene)
 	}
 	act := doc.Utterances[1].Nodes
-	if doc.Utterances[1].Speaker != "narrator" || len(act) != 2 || act[1].Kind != ir.State || act[1].Scope != "turn" || act[1].Args != `"holding back tears"` {
+	if doc.Utterances[1].Speaker != "narrator" || len(act) != 2 || act[1].Kind != ir.State || act[1].Scope != "turn" || act[1].Args[0].Raw != "holding back tears" {
 		t.Fatalf("act = %+v speaker %q", act, doc.Utterances[1].Speaker)
 	}
 	raw := doc.Utterances[2].Nodes
@@ -95,11 +95,11 @@ func TestLowerTurnTagsAreTurnScope(t *testing.T) {
 		t.Fatalf("doc = %+v", doc)
 	}
 	overlap := doc.Utterances[0].Nodes[0]
-	if overlap.Kind != ir.Event || overlap.Name != "overlap" || overlap.Scope != "turn" || overlap.Args != "-200ms" {
+	if overlap.Kind != ir.Event || overlap.Name != "overlap" || overlap.Scope != "turn" || overlap.Args[0].Raw != "-200ms" {
 		t.Fatalf("overlap = %+v", overlap)
 	}
 	gap := doc.Utterances[1].Nodes[0]
-	if doc.Utterances[1].Speaker != "lin" || gap.Kind != ir.Event || gap.Name != "gap" || gap.Scope != "turn" || gap.Args != "1s" {
+	if doc.Utterances[1].Speaker != "lin" || gap.Kind != ir.Event || gap.Name != "gap" || gap.Scope != "turn" || gap.Args[0].Raw != "1s" {
 		t.Fatalf("gap = %+v", gap)
 	}
 	if strings.TrimSpace(doc.Utterances[1].Nodes[1].Text) != "Hello" {
@@ -118,7 +118,7 @@ func TestLowerCanonicalName(t *testing.T) {
 	}
 	doc := Script(script)
 	ev := doc.Utterances[0].Nodes[1]
-	if ev.Kind != ir.Event || ev.Name != "pause" || ev.Scope != "here" || ev.Args != "1s" {
+	if ev.Kind != ir.Event || ev.Name != "pause" || ev.Scope != "here" || ev.Args[0].Raw != "1s" {
 		t.Fatalf("event = %+v", ev)
 	}
 }

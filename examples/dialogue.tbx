@@ -1,0 +1,14 @@
+---
+timbrex: 1
+provider: openai
+strict_tags: true
+cast:
+  lin:
+    name: Lin
+    voices: {openai: coral}
+  chen:
+    name: Chen
+    voices: {openai: onyx}
+---
+lin: [happy] You came! [pause 300ms] [whisper|Come inside.]
+chen: [slow|I've got something to tell you.]
