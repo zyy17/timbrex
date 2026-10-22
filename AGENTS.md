@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Rules for humans and coding agents working on Timbrex. Prefer this file over history when they disagree. Design and usage live in [readme.md](readme.md) and [docs/spec.md](docs/spec.md). Do not paste chat logs into the docs.
+Rules for humans and coding agents working on Timbrex. Prefer this file over history when they disagree. Design and usage live in [readme.md](readme.md), [docs/tutorial.md](docs/tutorial.md), and [docs/spec.md](docs/spec.md) (SPEC v0.3.4). Do not paste chat logs into the docs. This file is English-only for tool discovery.
 
 ## What this project is
 
@@ -44,10 +44,10 @@ Load configuration once through the Cobra entry point. Keep environment bindings
 
 ## CLI
 
-- Binary name: `timbrex`. Script extension: `.tbx`. `.timbrex` is an alias for the same language. The CLI reads the path it is given.
+- Binary name: `timbrex`. Script extension: `.tbx`. `.timbrex` is an alias for the same language. The CLI reads the path it is given. Entry point is repository-root `main.go`: `go run .` or `make build` then `./timbrex`. There is no `cmd/timbrex` package.
 - With `cast: auto`, `check` lists each recognized speaker once.
 - Front matter `narrator:` names the narration speaker. The default is `narrator`.
-- Commands: `version`, `check`, `synth`, `config`.
+- Commands: `version`, `check`, `synth`, `config`. There is no `compile` or `inspect` command.
 - `check` parses, resolves tags, and prints `ok` or diagnostics. `--strict-tags` / `--no-strict-tags` override front matter `strict_tags`.
 - `synth` writes audio after the same check. `--provider` wins, then front matter `provider:`, then configuration (default `stub`).
 - `--config` selects a YAML file; otherwise load `./timbrex.yaml` if present. `config` displays merged settings with credentials redacted. Help and version do not load configuration.
@@ -87,7 +87,7 @@ Provider request contracts are tested offline. Do not claim live compatibility o
 
 - Design and usage. No conversation transcripts.
 - Keep README honest when behavior changes. Update the Chinese companion in the same change when the English text changes.
-- [docs/spec.md](docs/spec.md) is the language target. The code may lag it; say so in the README rather than pretending a command exists.
+- [docs/spec.md](docs/spec.md) is SPEC v0.3.4, the language target. The code may lag it; say so in the README rather than pretending a command exists. Keep [docs/tutorial.md](docs/tutorial.md) runnable: every command and `ok`/error line must match the current CLI.
 
 ## Git
 

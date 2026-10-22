@@ -1,6 +1,6 @@
-# 配置管理
+# 配置
 
-[English](configuration.md) · [厂商接入](providers.zh-cn.md)
+[English](configuration.md) · [厂商接入](providers.zh-cn.md) · [教程](tutorial.zh-cn.md)
 
 所有命令由 Cobra 驱动。`internal/config` 使用 [koanf](https://github.com/knadh/koanf) 合并配置并解码为有类型的设置。CLI 只加载一次，适配器接收解析后的设置，不再自行读取环境变量或配置文件。
 
@@ -44,7 +44,7 @@ providers:
 | `providers.<id>.endpoint` | OpenAI、ElevenLabs、MiniMax、Gemini、Fish 的 API 基础 URL；Azure、Qwen 的完整请求 URL |
 | `providers.azure.region` | 未设置端点时使用的 Azure 区域 |
 
-厂商 ID 为 `stub`、`openai`、`elevenlabs`、`minimax`、`azure`、`qwen`、`gemini`、`fish`。默认值和支持的环境变量名见[厂商接入](providers.zh-cn.md)。[完整示例](../examples/timbrex.yaml)包含各语音服务。stub 忽略语音设置。
+厂商 ID 为 `stub`、`openai`、`elevenlabs`、`minimax`、`azure`、`qwen`、`gemini`、`fish`。默认值和支持的环境变量名见 [厂商接入](providers.zh-cn.md)。[完整示例](../examples/timbrex.yaml) 包含各语音服务。stub 忽略语音设置。
 
 端点必须是 HTTP(S) URL，不能嵌入凭证、查询参数或 fragment。凭证会发送至配置的端点，应使用可信服务或网关。Azure 显式端点优先于区域配置。检查脚本和查看配置不要求凭证，合成时验证所选厂商的凭证和端点。
 

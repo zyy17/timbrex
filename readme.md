@@ -2,110 +2,71 @@
 
 [简体中文](readme.zh-cn.md)
 
-**A small DSL for expressive text-to-speech.** Write what to say and how to say it, then generate audio through ElevenLabs, OpenAI, MiniMax, Azure Speech, Qwen, Gemini TTS, or Fish Audio.
+Timbrex is an English-ASCII tag language for expressive speech. A `.tbx` script compiles to audio through a TTS provider.
 
 ```tbx
 [happy|Good to see you!] [pause 300ms] [slow|Take your time.]
 ```
 
-Plain text is valid. Tags use one shape: `[name]` or `[name|content]`. Spoken text can be in any language; tag names are English ASCII. The grammar is frozen at `timbrex: 1`. Providers and vocabulary can grow without adding syntax.
+Plain text is a valid script. Tags use one form: `[name]`, `[name args]`, or `[name args|content]`. Spoken text may be any language; tag names stay English ASCII. The grammar is frozen at `timbrex: 1` ([SPEC v0.3.4](docs/spec.md)).
 
-Timbrex is in early development. The compiler and HTTP adapters are implemented and covered by offline contract tests. These adapters have **not yet been validated with live provider accounts**. Model access, voices, regional availability, and the quality of acting instructions require live verification. Different providers do not promise identical performances.
-
-## Generate your first speech
+## Install
 
 Requires Go 1.27, as declared in [go.mod](go.mod).
 
 ```sh
+git clone https://github.com/zyy17/timbrex.git
+cd timbrex
 make build
-./timbrex check examples/expressive.tbx --strict-tags
+./timbrex version
+```
 
-# Set OPENAI_API_KEY in your environment first.
+From the repository root, `go run .` is the same binary as `./timbrex`. There is no `cmd/timbrex` package.
+
+## Quickstart
+
+```sh
+./timbrex check examples/expressive.tbx
+./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
+# Set OPENAI_API_KEY first.
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
-The example above illustrates the existing adapters; Gemini has a dedicated [example](examples/gemini.tbx) because numeric speed is unsupported. Fish Audio has a dedicated [example](examples/fish.tbx) and requires your voice reference ID. ElevenLabs additionally requires your voice ID; Qwen requires a workspace endpoint. See [provider setup](docs/providers.md) for each service.
+`check` prints `ok` or diagnostics. `stub` writes an 8 kHz test tone, not speech, and needs no key. HTTP adapters write one 24 kHz mono 16-bit PCM WAV. They have offline contract tests and have not been validated with live accounts.
 
-To try the compiler without credentials or a network request:
+## Providers
 
-```sh
-./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
-```
+| ID | Required setup | Default model |
+| --- | --- | --- |
+| `stub` | None | Test tone (not speech) |
+| `openai` | `OPENAI_API_KEY` | `gpt-4o-mini-tts` |
+| `elevenlabs` | `ELEVENLABS_API_KEY` and a voice ID | `eleven_v3` |
+| `minimax` | `MINIMAX_API_KEY` | `speech-2.8-hd` |
+| `azure` | `AZURE_SPEECH_KEY` and region or endpoint | Selected by voice |
+| `qwen` | `DASHSCOPE_API_KEY` and `QWEN_ENDPOINT` | `qwen-audio-3.1-tts-flash` |
+| `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` |
+| `fish` | `FISH_API_KEY` and a voice/reference ID | `s2.1-pro` |
 
-`stub` creates a test tone, not speech. It remains the default when no provider is selected.
+Gemini rejects numeric speed; use [examples/gemini.tbx](examples/gemini.tbx). Fish requires a voice reference ID; use [examples/fish.tbx](examples/fish.tbx). A recognized tag is not necessarily synthesizable. Unsupported controls fail before requests rather than disappearing. Setup and mappings: [providers](docs/providers.md), [capabilities](docs/capabilities.md).
 
-## Learn the language
+## Commands
 
-```tbx
----
-timbrex: 1
-provider: openai
-strict_tags: true
-cast:
-  lin:
-    name: Lin
-    voices: {openai: coral}
-  chen:
-    name: Chen
-    voices: {openai: onyx}
----
-lin: [happy] You came! [pause 300ms] [whisper|Come inside.]
-chen: [slow|I've got something to tell you.]
-```
+`version`, `check`, `synth`, `config`. Priority: flags, script front matter, environment, `./timbrex.yaml` or `--config`, then defaults. The default provider is `stub`. See [configuration](docs/configuration.md).
 
-- `[happy]` changes delivery for the rest of the turn; `[happy|words]` changes only those words.
-- A line containing only tags without spans sets scene state. `[reset]` on its own line clears it.
-- `lin:` starts a turn only if `lin` is declared in `cast`. Without a cast, the prefix is ordinary spoken text. `cast: auto` opts into automatic speaker detection.
-- Unprefixed paragraphs use `narrator`, or the ID selected by front matter `narrator:`.
-- `//` at the start of a line is a comment. Blank lines separate turns.
-- Prefer `[act "holding back tears"]` for free-form acting. `--strict-tags` rejects unknown names; `--no-strict-tags` allows implicit acting such as `[thoughtfully]`.
+## Documentation
 
-Read the [language reference](docs/spec.md) and [implemented capability table](docs/capabilities.md). A recognized tag is not necessarily synthesizable by every provider. Unsupported controls fail instead of silently disappearing.
-
-## Commands and output
-
-```sh
-./timbrex version
-./timbrex config
-./timbrex check script.tbx
-./timbrex synth script.tbx --provider openai --model gpt-4o-mini-tts --voice coral -o script.wav
-```
-
-Settings take priority in this order: CLI flags, script front matter, environment variables, the selected YAML configuration, built-in defaults. The default provider is `stub`. A speaker's `cast.<id>.voices.<provider>` takes priority over the default voice. `--voice` supplies a fallback; it does not replace cast mappings.
-
-Cobra drives every command. Configuration is loaded once through koanf from `./timbrex.yaml` if present, or the file selected by `--config`. `timbrex config` displays effective file/environment settings with API keys redacted. Start with [examples/timbrex.yaml](examples/timbrex.yaml); the [configuration guide](docs/configuration.md) documents file discovery, environment bindings, and validation.
-
-`check` validates syntax and vocabulary without credentials or network access. `synth` runs the same check, validates the selected adapter's supported controls, and then makes requests. Strict-mode flags override front matter `strict_tags`; the default is non-strict. With `cast: auto`, `check` lists each recognized speaker once.
-
-Real providers produce one 24 kHz, mono, 16-bit PCM WAV file. Turns and control changes become sequential requests; explicit pauses become local silence. Requests across span boundaries may sound discontinuous. Output is replaced only after the full render succeeds. Existing audio survives a failed render, although completed API calls may still be billed. There are no automatic retries. `-o` defaults to the source path with `.wav`; the source file cannot be overwritten.
-
-## Development
-
-```sh
-make test    # builds ./timbrex and runs all Go tests
-make lint    # requires golangci-lint v2.14.0, matching CI
-make tidy    # verifies module files without changing them
-make fmt
-```
-
-Tests cover parsing, diagnostics, nested scopes, request contracts for every adapter, exact pauses, failure handling, and output preservation. Tests use local HTTP servers, never vendor credentials. See [contributing](contributing.md) and [AGENTS.md](AGENTS.md).
-
-The pipeline is source → lexer → parser/AST → check → lower/IR → provider → WAV. Packages follow those boundaries under `internal/`. Only `internal/cli` knows Cobra. `internal/config` owns configuration and environment access; each provider lives in `internal/providers/<name>` and receives resolved settings. [Editor support](editors/vscode/readme.md) includes a TextMate grammar for VS Code and Cursor.
-
-## Scope and documentation
-
-Implemented: script parsing and checking, centralized configuration, speaker voice mappings, scoped controls, sequential synthesis, local pauses, and WAV output. Not implemented: streaming, concurrent dialogue, audio mixing, pronunciation wrappers, raw-provider passthrough, voice cloning, dataset expansion, lock files, or `fmt`/`fix` CLI commands. Some corresponding tags are reserved in the vocabulary; synthesis rejects them.
-
-English is the primary documentation. Chinese companions carry the same behavior and limitations.
+Start with the [tutorial](docs/tutorial.md). Development: [contributing](contributing.md).
 
 | Document | English | 简体中文 |
 | --- | --- | --- |
-| Language reference | [Language reference](docs/spec.md) | [语言参考](docs/spec.zh-cn.md) |
-| Configuration | [Configuration](docs/configuration.md) | [配置管理](docs/configuration.zh-cn.md) |
-| Credentials and adapters | [Provider setup](docs/providers.md) | [厂商接入](docs/providers.zh-cn.md) |
+| Tutorial | [Tutorial](docs/tutorial.md) | [教程](docs/tutorial.zh-cn.md) |
+| Language reference | [SPEC v0.3.4](docs/spec.md) | [语言参考](docs/spec.zh-cn.md) |
+| Configuration | [Configuration](docs/configuration.md) | [配置](docs/configuration.zh-cn.md) |
+| Provider setup | [Providers](docs/providers.md) | [厂商接入](docs/providers.zh-cn.md) |
 | Implemented controls | [Capabilities](docs/capabilities.md) | [能力表](docs/capabilities.zh-cn.md) |
-| Provider research | [Provider research](docs/market_survey.md) | [厂商调研](docs/market_survey.zh-cn.md) |
-| Design rationale | [Design rationale](docs/reflection.md) | [设计思路](docs/reflection.zh-cn.md) |
+| Provider research | [Research](docs/market_survey.md) | [厂商调研](docs/market_survey.zh-cn.md) |
+| Design rationale | [Design](docs/reflection.md) | [设计思路](docs/reflection.zh-cn.md) |
 | Contributing | [Contributing](contributing.md) | [参与贡献](contributing.zh-cn.md) |
+| Editor highlighting | [VS Code / Cursor](editors/vscode/readme.md) | [VS Code / Cursor](editors/vscode/readme.zh-cn.md) |
 
-MIT licensed. See [MIT license](license).
+MIT licensed. See [license](license).

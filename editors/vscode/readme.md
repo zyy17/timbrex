@@ -2,7 +2,7 @@
 
 [简体中文](readme.zh-cn.md)
 
-Syntax highlighting for `.tbx` and `.timbrex`. The language ID is `timbrex`, and the scope is `source.tbx`. This extension provides highlighting, not completion, validation, or an LSP. Run `timbrex check` to validate scripts.
+Syntax highlighting for `.tbx` and `.timbrex`. Tokens follow SPEC v0.3.4. The language ID is `timbrex`, and the scope is `source.tbx`. This extension provides highlighting, not completion, validation, or an LSP. Run `timbrex check` to validate scripts.
 
 ## Try the extension
 

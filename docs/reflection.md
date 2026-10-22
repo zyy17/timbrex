@@ -1,6 +1,6 @@
 # Design rationale
 
-[简体中文](reflection.zh-cn.md)
+[简体中文](reflection.zh-cn.md) · [Tutorial](tutorial.md)
 
 Timbrex exists to make expressive speech easy to write and read. A script should show the dialogue, its speakers, and its performance without requiring the author to learn every vendor's request format.
 
@@ -38,4 +38,4 @@ Language validation and synthesis support are separate. `check` confirms syntax 
 
 The shared segment planner is a baseline implementation, not a mandatory provider interface. Adapters receive the full IR and may eventually preserve whole utterances through native SSML or inline controls. Keep this option open: splitting every control span permanently would impose avoidable latency, cost, and audible discontinuities on providers that can express the whole sentence.
 
-One synthesis invocation selects one provider and one model. Cast mappings select voices within it. Cross-provider dialogue, calibrated emotion intensity, seamless segment boundaries, and reproducible acoustic output are not current guarantees. Establish those guarantees with measured behavior before adding more vocabulary or abstraction.
+One synthesis invocation selects one provider and one model. Cast mappings select voices within it. Cross-provider dialogue, calibrated emotion intensity, inaudible segment boundaries, and reproducible acoustic output are not current guarantees. Establish those guarantees with measured behavior before adding more vocabulary or abstraction.

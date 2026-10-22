@@ -1,6 +1,6 @@
 # Implemented provider capabilities
 
-[简体中文](capabilities.zh-cn.md) · [Setup and official references](providers.md)
+[简体中文](capabilities.zh-cn.md) · [Setup and official references](providers.md) · [Tutorial](tutorial.md)
 
 This table describes Timbrex's current adapters, not everything the vendors offer. **Parameter** means a numeric API field or SSML control. **Instruction** means a requested performance that the model may interpret approximately. **Unsupported** means a local error when used by a speech segment. Voice/model restrictions still apply; these mappings have offline contract coverage, not live acoustic verification.
 

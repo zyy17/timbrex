@@ -2,7 +2,7 @@
 
 [English](readme.md)
 
-为 `.tbx` 和 `.timbrex` 提供语法高亮。语言 ID 为 `timbrex`，scope 为 `source.tbx`。扩展只提供高亮，不提供补全、验证或 LSP。请运行 `timbrex check` 验证脚本。
+为 `.tbx` 和 `.timbrex` 提供语法高亮。词法遵循 SPEC v0.3.4。语言 ID 为 `timbrex`，scope 为 `source.tbx`。扩展只提供高亮，不提供补全、验证或 LSP。请运行 `timbrex check` 验证脚本。
 
 ## 试用扩展
 
@@ -18,7 +18,7 @@ cursor --extensionDevelopmentPath="$PWD/editors/vscode" "$PWD/examples/expressiv
 
 ## 语法文件
 
-编辑源文件：[syntaxes/tbx.tmLanguage.yaml](syntaxes/tbx.tmLanguage.yaml)。随包交付的运行时文件：[syntaxes/tbx.tmLanguage.json](syntaxes/tbx.tmLanguage.json)。VS Code 要求 JSON 格式，详见官方[语法高亮指南](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide#using-yaml-to-write-a-grammar)。
+编辑源文件：[syntaxes/tbx.tmLanguage.yaml](syntaxes/tbx.tmLanguage.yaml)。随包交付的运行时文件：[syntaxes/tbx.tmLanguage.json](syntaxes/tbx.tmLanguage.json)。VS Code 要求 JSON 格式，详见官方 [语法高亮指南](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide#using-yaml-to-write-a-grammar)。
 
 修改 YAML 后，在仓库根目录重新生成：
 

@@ -1,8 +1,8 @@
 # Timbrex language reference
 
-[简体中文](spec.zh-cn.md) · [Provider capabilities](capabilities.md)
+[简体中文](spec.zh-cn.md) · [Provider capabilities](capabilities.md) · [Tutorial](tutorial.md)
 
-Grammar version: **`timbrex: 1`**. The syntax is frozen. This reference describes language rules and identifies current synthesis support separately.
+**SPEC v0.3.4.** Grammar version: **`timbrex: 1`**. The syntax is frozen. This reference describes language rules and identifies current synthesis support separately.
 
 ## 1. Text and tags
 
@@ -149,13 +149,13 @@ cast:
 
 Supported keys are `timbrex`, `provider`, `model`, `voice`, `lang`, `strict_tags`, `narrator`, and `cast`. `cast` is either `auto` or a map of IDs with optional `name` and `voices`. If supplied, `timbrex` must be `1`. Unknown YAML keys are errors, including misspelled cast fields; future configuration is not silently accepted.
 
-Precedence is documented in [README](../readme.md#commands-and-output). Voice IDs and models are vendor-specific. `lang` is a hint interpreted by the selected adapter; unsupported hints may fail. Azure chooses models through voice names and rejects `model:`. Keep credentials in environment variables, never in scripts.
+Precedence is documented in [configuration](configuration.md). Voice IDs and models are vendor-specific. `lang` is a hint interpreted by the selected adapter; unsupported hints may fail. Azure chooses models through voice names and rejects `model:`. Keep credentials in environment variables, never in scripts.
 
 ## 7. Synthesis contract
 
 `check` validates the language and vocabulary. `synth` additionally validates the current adapter's mapping, then renders sequentially. Unsupported controls, raw fences, and invalid parameter values used by a speech segment fail before the first paid request. State that is overridden before any speech has no audible effect.
 
-Pauses (`pause`, `silence`, `break`, and a nonnegative `gap`) are local silence. Default pause is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations range from 0 to 1 minute per pause. `fast` is 1.2× and `slow` is 0.8×. `speed 120%` means 1.2×, not an increase of 120%. Pitch uses semitones and volume uses dB; supported ranges depend on the adapter. Emotion intensities are interpreted as text only where documented, not as calibrated measurements.
+Pauses (`pause`, `silence`, `break`, and a nonnegative `gap`) are local silence. Default pause is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations range from 0 to 1 minute per pause. `0ms` is accepted and produces no samples. `fast` is 1.2× and `slow` is 0.8×. `speed 120%` means 1.2×, not an increase of 120%. Pitch uses semitones and volume uses dB; supported ranges depend on the adapter. Emotion intensities are interpreted as text only where documented, not as calibrated measurements.
 
 The renderer concatenates compatible raw PCM segments into one WAV. It does not mix, overlap, resample, normalize, or crossfade. There is no implicit pause between turns. Use explicit pauses for timing. [Provider setup](providers.md) and [capabilities](capabilities.md) describe the exact current mappings and limits.
 

@@ -1,6 +1,6 @@
 # Provider integration research
 
-[简体中文](market_survey.zh-cn.md)
+[简体中文](market_survey.zh-cn.md) · [Tutorial](tutorial.md)
 
 Review date: **2026-10-22**. This document records API design differences relevant to Timbrex. It is not a quality benchmark, price comparison, or legal assessment. No live listening study was performed. Model availability and service terms must be checked with the vendor when deploying.
 
