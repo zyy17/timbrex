@@ -10,5 +10,6 @@ cast:
     name: Chen
     voices: {openai: onyx}
 ---
+// Cast voices for OpenAI. Use --provider stub for a local tone.
 lin: [happy] You came! [pause 300ms] [whisper|Come inside.]
 chen: [slow|I've got something to tell you.]

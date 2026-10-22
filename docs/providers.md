@@ -1,6 +1,6 @@
 # Provider setup
 
-[简体中文](providers.zh-cn.md) · [Supported controls](capabilities.md)
+[简体中文](providers.zh-cn.md) · [Supported controls](capabilities.md) · [Tutorial](tutorial.md)
 
 Timbrex uses synchronous HTTP APIs directly. The adapters are based on the official references below, reviewed on **2026-10-22**. Offline tests verify request and response contracts; live account compatibility and acoustic quality have not been verified. Credentials must belong to the endpoint's region and have access to the chosen model and voice.
 

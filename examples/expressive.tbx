@@ -2,4 +2,5 @@
 timbrex: 1
 strict_tags: true
 ---
+// Strict-mode narration: emotion, pause, and speed spans.
 [happy|Good to see you!] [pause 300ms] [slow|Take your time.]

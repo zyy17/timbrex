@@ -2,7 +2,7 @@
 
 [简体中文](contributing.zh-cn.md)
 
-Timbrex aims to be a small, understandable DSL for expressive TTS. Start with the [language reference](docs/spec.md) and [repository rules](AGENTS.md). The grammar is frozen; extend vocabulary and adapters without adding new syntax.
+Timbrex aims to be a small, understandable DSL for expressive TTS. Start with the [tutorial](docs/tutorial.md), [SPEC v0.3.4](docs/spec.md), and [repository rules](AGENTS.md). The grammar is frozen; extend vocabulary and adapters without adding new syntax.
 
 ## Before opening a change
 
@@ -36,6 +36,6 @@ Document supported models, environment variables, tag mappings, ranges, language
 
 ## Documentation and review
 
-Use lowercase documentation filenames; `AGENTS.md` keeps its name for tool discovery. Update English and `.zh-cn.md` companions in the same change. Keep examples executable and distinguish implemented features, approximations, and plans. Cite primary sources for vendor-specific behavior; avoid unsupported price, licensing, quality, or deprecation claims.
+Use lowercase documentation filenames; `AGENTS.md` keeps its name for tool discovery. Update English and `.zh-cn.md` companions in the same change. Keep examples executable: every fenced `tbx` block and every `.tbx` file must parse under `go test`. Distinguish implemented features, approximations, and plans. Cite primary sources for vendor-specific behavior; avoid unsupported price, licensing, quality, or deprecation claims.
 
 Use short, idiomatic Go with clear package boundaries. Only `internal/cli` imports Cobra. Prefer existing patterns over new abstractions. Use English identifiers, errors, help text, comments, and Conventional Commit messages. Keep commits focused, include validation results, and never commit keys or `.env` files. Contributions are covered by the repository's [MIT license](license).

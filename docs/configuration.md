@@ -1,6 +1,6 @@
 # Configuration
 
-[简体中文](configuration.zh-cn.md) · [Provider setup](providers.md)
+[简体中文](configuration.zh-cn.md) · [Provider setup](providers.md) · [Tutorial](tutorial.md)
 
 Cobra handles every command. `internal/config` uses [koanf](https://github.com/knadh/koanf) to merge configuration and decode typed settings. The CLI loads them once; adapters receive resolved settings and never read environment variables or configuration files themselves.
 

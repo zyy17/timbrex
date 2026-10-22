@@ -1,12 +1,12 @@
 # 厂商接入
 
-[English](providers.md) · [支持的控制](capabilities.zh-cn.md)
+[English](providers.md) · [支持的控制](capabilities.zh-cn.md) · [教程](tutorial.zh-cn.md)
 
 Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，核对日期为 **2026-10-22**。离线测试验证请求和响应契约，尚未验证真实账号兼容性或声音质量。凭证必须属于端点所在区域，并具有所选模型和音色的权限。
 
 ## 配置
 
-设置从 YAML 和环境变量集中加载，详见[配置管理](configuration.zh-cn.md)。建议通过 shell 或密钥管理器设置凭证。Timbrex **不会**加载 `.env` 文件。不要把密钥写入 `.tbx` 文件或提交到仓库。下表描述环境变量配置方式，也支持等价的 `providers.<id>` 文件字段。
+设置从 YAML 和环境变量集中加载，详见 [配置](configuration.zh-cn.md)。建议通过 shell 或密钥管理器设置凭证。Timbrex **不会**加载 `.env` 文件。不要把密钥写入 `.tbx` 文件或提交到仓库。下表描述环境变量配置方式，也支持等价的 `providers.<id>` 文件字段。
 
 | Provider ID | 必需环境变量 | 默认模型 | 默认音色 |
 | --- | --- | --- | --- |

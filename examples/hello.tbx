@@ -4,6 +4,6 @@ cast:
   lin: { name: Lin }
   chen: { name: Chen }
 ---
-// A two-line scene.
+// Two declared speakers: an event, a pause, and a whisper span.
 lin: [laugh] Really? [pause 500ms] That's great!
 chen: [sigh] [whisper|I knew it already.]
