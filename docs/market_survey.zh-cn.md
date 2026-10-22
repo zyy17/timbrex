@@ -11,8 +11,9 @@
 | [MiniMax](https://platform.minimax.io/docs/api-reference/speech-t2a-http) | 音色设置、离散情绪、PCM/hex 响应、依赖模型的语气词 | 映射明确的能力子集，同时检查 HTTP 与 API 完成状态 |
 | [Azure Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice) | SSML 音色、韵律、style 和 role，支持情况取决于音色 | 转义 XML，区分语法支持与实际音色能力 |
 | [Qwen-Audio-TTS](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api) | 工作空间端点、指令与数值控制、可下载音频 | 要求正确的工作空间端点，区分认证合成请求与签名下载 |
+| [Gemini TTS](https://ai.google.dev/gemini-api/docs/speech-generation) | 结构化 `speech_metadata.style`、行内发声标记、WAV 或原始 PCM | 将回合级风格与台词分开；在共享 PCM 渲染前解开 WAV |
 
-五家均可返回兼容 PCM，因此能用小型顺序 WAV 渲染器实现，而无需拼接压缩音频或引入转码依赖。这是实现选择，不意味着厂商的其他音频格式不合适。
+这些适配器均可得到兼容 PCM，因此能用小型顺序 WAV 渲染器实现，而无需拼接压缩音频或引入转码依赖。这是实现选择，不意味着厂商的其他音频格式不合适。
 
 真实评估仍需回答三个问题：文档请求能否在目标账号和区域工作，模型遵循表演控制的稳定程度，以及片段边界的可听程度。有效评估应记录精确模型/音色 ID、源脚本、请求参数、日期、失败情况和听评标准，并区分 API 接受请求与实际表演质量。
 
