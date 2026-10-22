@@ -1,6 +1,7 @@
 package lower
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -8,6 +9,56 @@ import (
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/parse"
 )
+
+func TestLowerDeepSpans(t *testing.T) {
+	const depth = 12000
+	script, err := parse.Parse("deep.tbx", strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diags := check.Apply(script, true); check.Failed(diags) != nil {
+		t.Fatal(diags)
+	}
+	doc := Script(script)
+	nodes := doc.Utterances[0].Nodes
+	if len(nodes) != 2*depth+1 || nodes[depth].Kind != ir.Text || nodes[depth].Text != "hello" {
+		t.Fatalf("nodes = %d", len(nodes))
+	}
+	for i := range depth {
+		if nodes[i].Kind != ir.SpanStart || nodes[i].Name != "happy" || nodes[2*depth-i].Kind != ir.SpanEnd || nodes[2*depth-i].Name != "happy" {
+			t.Fatalf("unbalanced span %d", i)
+		}
+	}
+}
+
+func BenchmarkLowerDeepSpans(b *testing.B) {
+	for _, depth := range []int{400, 4000} {
+		b.Run(strconv.Itoa(depth), func(b *testing.B) {
+			script, err := parse.Parse("deep.tbx", strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth))
+			if err != nil {
+				b.Fatal(err)
+			}
+			b.ReportAllocs()
+			for b.Loop() {
+				Script(script)
+			}
+		})
+	}
+}
+
+func TestLowerDeepSpansAllocationGrowth(t *testing.T) {
+	const depth = 1000
+	script, err := parse.Parse("deep.tbx", strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Empty-argument spans only need space in the output buffer; building a
+	// separate descendant slice for every span makes memory use quadratic.
+	allocs := testing.AllocsPerRun(1, func() { Script(script) })
+	if allocs > 100 {
+		t.Fatalf("lowering %d empty-argument spans used %.0f allocations", depth, allocs)
+	}
+}
 
 func TestNarratorConfig(t *testing.T) {
 	src := "---\nnarrator: host\ncast:\n  lin: { name: Lin }\n---\nHello\nlin: Hi\n"
