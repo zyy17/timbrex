@@ -1,6 +1,49 @@
 package lex
 
-import "testing"
+import (
+	"strconv"
+	"strings"
+	"testing"
+)
+
+func TestScanLongIndentation(t *testing.T) {
+	indent := strings.Repeat(" \t", 50000)
+	for _, tc := range []struct {
+		name string
+		src  string
+		kind Kind
+		lit  string
+	}{
+		{"text", indent + "hello", Text, indent + "hello"},
+		{"comment", indent + "// hello", Comment, " hello"},
+		{"fence", indent + "```ssml\nraw\n" + indent + "```" + indent + "\n", Fence, "ssml"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			toks := mustScan(t, tc.src)
+			if toks[0].Kind != tc.kind || toks[0].Lit != tc.lit {
+				t.Fatalf("first token kind = %v, length = %d", toks[0].Kind, len(toks[0].Lit))
+			}
+			if tc.kind == Fence && toks[0].Body != "raw\n" {
+				t.Fatalf("body = %q", toks[0].Body)
+			}
+		})
+	}
+}
+
+func BenchmarkScanIndentation(b *testing.B) {
+	for _, n := range []int{1000, 10000} {
+		b.Run(strconv.Itoa(n), func(b *testing.B) {
+			src := strings.Repeat(" ", n) + "hello"
+			b.SetBytes(int64(len(src)))
+			b.ReportAllocs()
+			for b.Loop() {
+				if _, err := Scan(src); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
 
 func TestScanTagsAndText(t *testing.T) {
 	toks := mustScan(t, "Hi [laugh] there")
@@ -73,6 +116,16 @@ func TestScanFence(t *testing.T) {
 	}
 	if toks[0].Lit != "ssml azure" || toks[0].Body != "<speak>[x]</speak>\n" {
 		t.Fatalf("fence = %+v", toks[0])
+	}
+}
+
+func TestFenceCloserRequiresEndOfLine(t *testing.T) {
+	for _, suffix := range []string{"text", "\x00", "\u2003"} {
+		body := "```" + suffix + "\n"
+		toks := mustScan(t, "```ssml\n"+body+"```\n")
+		if len(toks) != 2 || toks[0].Kind != Fence || toks[0].Body != body {
+			t.Fatalf("suffix %q: tokens = %+v", suffix, toks)
+		}
 	}
 }
 
