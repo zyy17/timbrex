@@ -65,6 +65,8 @@ Arguments are separated by spaces or tabs. Positional values and `key=value` are
 
 A suffix belongs to a number only if it ends the token: `10stone` is a word. Quoted values support `\"` and `\\`. A registered tag may accept trailing words as a note; the current note-enabled tags are `act` and nonverbal events. The checker does not yet enforce per-tag argument types or ranges. Each real adapter validates the parameters it implements before making requests; named arguments are not currently implemented by these adapters.
 
+Numeric synthesis controls require unquoted values of the matching kind. For example, use `speed 1.2`, not `speed "1.2"` or `speed 1e0`. Pauses accept the duration units `ms`, `s`, and `min`; Go-specific forms such as `1m` and `1s250ms` are words, not durations. Write zero duration as `0ms`.
+
 Outside quoted arguments, `[[` and `\[` produce a literal `[`. `]]` and `\]` produce a literal `]`. Backslash can also escape `|`, `\`, and `:`. Other backslashes are literal. Inside two or more open tags, consecutive `]` close nested tags; use `\]` for a literal closing bracket there. Thus `[whisper|say [pause 1s]]` closes both tags.
 
 A line whose first non-space characters are `//` is a comment outside tags. Inline `//`, `#`, and HTML comments are spoken text. Parentheses and angle brackets are plain language text, but some providers reserve them for native markup; see [capabilities](capabilities.md#literal-text).

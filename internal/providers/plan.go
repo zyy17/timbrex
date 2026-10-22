@@ -186,21 +186,25 @@ func feature(name string) string {
 }
 
 func pauseDuration(n ir.Node) (time.Duration, error) {
-	v := "250ms"
-	if len(n.Args) > 0 {
-		var err error
-		v, err = Value(n)
-		if err != nil {
-			return 0, err
+	if len(n.Args) == 0 {
+		return 250 * time.Millisecond, NoArgs(n)
+	}
+	v, err := Value(n)
+	if err != nil {
+		return 0, err
+	}
+	if n.Args[0].Kind == "word" {
+		switch v {
+		case "short":
+			return 250 * time.Millisecond, nil
+		case "medium":
+			return 500 * time.Millisecond, nil
+		case "long":
+			return time.Second, nil
 		}
 	}
-	switch v {
-	case "short":
-		v = "250ms"
-	case "medium":
-		v = "500ms"
-	case "long":
-		v = "1s"
+	if n.Args[0].Kind != "duration" {
+		return 0, fmt.Errorf("[%s] needs an unquoted duration in ms, s, or min, or short/medium/long", n.Name)
 	}
 	if strings.HasSuffix(v, "min") {
 		v = strings.TrimSuffix(v, "min") + "m"

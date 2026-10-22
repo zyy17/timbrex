@@ -281,3 +281,26 @@ func TestSynthConfigurationPrecedence(t *testing.T) {
 		})
 	}
 }
+
+func TestProvidersRejectInvalidNumbersBeforeRequests(t *testing.T) {
+	for _, vendor := range vendors {
+		t.Run(vendor.id, func(t *testing.T) {
+			clearProviderDefaults(t)
+			calls := 0
+			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { calls++ }))
+			defer srv.Close()
+			t.Setenv(vendor.keyEnv, "test-key")
+			t.Setenv(vendor.endpointEnv, srv.URL)
+			path := filepath.Join(t.TempDir(), "script.tbx")
+			for _, tag := range []string{`[speed "1.2"|Hi]`, `[speed 1e0|Hi]`, `[pause 1m]`, `[pause 1s250ms]`} {
+				if err := os.WriteFile(path, []byte("Hello\n\n"+tag), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				err := run(context.Background(), []string{"synth", path, "--provider", vendor.id, "--voice", "en-US-JennyNeural"}, nil, &bytes.Buffer{}, &bytes.Buffer{})
+				if err == nil || calls != 0 {
+					t.Fatalf("%s: error=%v, requests=%d", tag, err, calls)
+				}
+			}
+		})
+	}
+}

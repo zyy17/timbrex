@@ -34,7 +34,7 @@ func TestWhisperAndEventsAreModelSpecific(t *testing.T) {
 }
 
 func TestControlsAndLanguages(t *testing.T) {
-	seg := providers.Segment{Voice: "voice", Lang: "zh-HK", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}, Controls: []ir.Node{{Name: "pitch", Args: []ir.Arg{{Raw: "+2st"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "0dB"}}}}}
+	seg := providers.Segment{Voice: "voice", Lang: "zh-HK", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}, Controls: []ir.Node{{Name: "pitch", Args: []ir.Arg{{Raw: "+2st", Kind: "semitone"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "0dB", Kind: "decibel"}}}}}
 	r, err := build(seg, "speech-2.8-hd")
 	if err != nil || r.Language != "Chinese,Yue" || r.Voice.Pitch != 2 || r.Voice.Volume != 1 {
 		t.Fatalf("%+v: %v", r, err)

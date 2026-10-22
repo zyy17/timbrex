@@ -81,9 +81,33 @@ func TestResetFeatureRestoresSceneValue(t *testing.T) {
 }
 
 func TestPlanRejectsBadPausesAndFences(t *testing.T) {
-	for _, src := range []string{"Hi [pause -1s]", "Hi [pause 61s]", "Hi [pause 1 2]", "Hi [pause NaN]", "```ssml azure\n<speak/>\n```", "// empty"} {
+	for _, src := range []string{"Hi [pause -1s]", "Hi [pause 61s]", "Hi [pause 1 2]", "Hi [pause NaN]", "Hi [pause 1m]", "Hi [pause 1s250ms]", `Hi [pause "1s"]`, "Hi [pause 0]", "```ssml azure\n<speak/>\n```", "// empty"} {
 		if _, err := providers.Plan(document(t, src), "openai", "coral"); err == nil {
 			t.Fatalf("accepted %q", src)
+		}
+	}
+}
+
+func TestPlanPauseUnitsAndAliases(t *testing.T) {
+	for _, tt := range []struct {
+		arg  string
+		want time.Duration
+	}{
+		{"", 250 * time.Millisecond},
+		{"short", 250 * time.Millisecond},
+		{"medium", 500 * time.Millisecond},
+		{"long", time.Second},
+		{"250ms", 250 * time.Millisecond},
+		{"1.25s", 1250 * time.Millisecond},
+		{"0.5min", 30 * time.Second},
+		{"0ms", 0},
+	} {
+		segs, err := providers.Plan(document(t, "Hello [pause "+tt.arg+"]"), "openai", "coral")
+		if err != nil {
+			t.Fatalf("%q: %v", tt.arg, err)
+		}
+		if got := segs[len(segs)-1].Pause; got != tt.want {
+			t.Errorf("%q: pause=%v, want %v", tt.arg, got, tt.want)
 		}
 	}
 }

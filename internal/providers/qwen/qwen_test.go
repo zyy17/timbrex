@@ -19,7 +19,7 @@ func TestRejectIncompleteOrInvalidResponse(t *testing.T) {
 
 func TestControlsAndNativeText(t *testing.T) {
 	seg := providers.Segment{Voice: "longanhuan_v3.1", Lang: "EN-US", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}, Controls: []ir.Node{
-		{Name: "pitch", Args: []ir.Arg{{Raw: "+12st"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "0dB"}}}, {Name: "act", Args: []ir.Arg{{Raw: "warmly"}}},
+		{Name: "pitch", Args: []ir.Arg{{Raw: "+12st", Kind: "semitone"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "0dB", Kind: "decibel"}}}, {Name: "act", Args: []ir.Arg{{Raw: "warmly"}}},
 	}}
 	r, err := build(seg, "qwen-audio-3.1-tts-flash")
 	if err != nil {

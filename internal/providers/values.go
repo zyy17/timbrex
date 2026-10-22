@@ -28,6 +28,18 @@ func Number(n ir.Node, suffix string, low, high float64) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
+	kind := "number"
+	switch suffix {
+	case "%":
+		kind = "percent"
+	case "st":
+		kind = "semitone"
+	case "dB":
+		kind = "decibel"
+	}
+	if n.Args[0].Kind != kind {
+		return 0, fmt.Errorf("[%s] needs an unquoted %s value", n.Name, kind)
+	}
 	if suffix != "" && !strings.HasSuffix(v, suffix) {
 		return 0, fmt.Errorf("[%s] needs a %s value", n.Name, suffix)
 	}
@@ -76,8 +88,10 @@ func Direction(n ir.Node) (string, error) {
 			return "", fmt.Errorf("[%s] span does not support numeric arguments", n.Name)
 		}
 		return strings.TrimSpace("speak while " + n.Name + "ing " + n.Note), nil
-	case "whisper", "shout", "emph":
+	case "whisper", "shout":
 		return n.Name, NoArgs(n)
+	case "emph":
+		return "emphasize the spoken words", NoArgs(n)
 	case "style", "role", "accent", "dialect", "emotion":
 		v, err := Value(n)
 		return n.Name + ": " + v, err

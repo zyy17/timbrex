@@ -43,7 +43,7 @@ func TestRejectConflictingStylesAndUnsupportedTags(t *testing.T) {
 			t.Fatalf("accepted %+v", controls)
 		}
 	}
-	ssml, err := build(providers.Segment{Voice: "en-US-JennyNeural", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}, Controls: []ir.Node{{Name: "pitch", Args: []ir.Arg{{Raw: "+2st"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "0dB"}}}}})
+	ssml, err := build(providers.Segment{Voice: "en-US-JennyNeural", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}, Controls: []ir.Node{{Name: "pitch", Args: []ir.Arg{{Raw: "+2st", Kind: "semitone"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "0dB", Kind: "decibel"}}}}})
 	if err != nil || !strings.Contains(ssml, `pitch="+2st"`) || !strings.Contains(ssml, `volume="+0.0000%"`) {
 		t.Fatalf("%s: %v", ssml, err)
 	}
