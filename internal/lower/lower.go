@@ -50,7 +50,10 @@ func Script(script *ast.Script) *ir.Document {
 }
 
 func flatten(nodes []ast.Node, blockScope string) []ir.Node {
-	var out []ir.Node
+	return appendNodes(nil, nodes, blockScope)
+}
+
+func appendNodes(out []ir.Node, nodes []ast.Node, blockScope string) []ir.Node {
 	for _, node := range nodes {
 		if node.Kind == ast.Text {
 			if node.Text != "" {
@@ -63,7 +66,7 @@ func flatten(nodes []ast.Node, blockScope string) []ir.Node {
 			out = append(out, ir.Node{
 				Kind: ir.SpanStart, Name: name, Args: lowerArgs(node.Args), Note: node.Note, Scope: "span",
 			})
-			out = append(out, flatten(node.Content, blockScope)...)
+			out = appendNodes(out, node.Content, blockScope)
 			out = append(out, ir.Node{Kind: ir.SpanEnd, Name: name, Scope: "span"})
 			continue
 		}
