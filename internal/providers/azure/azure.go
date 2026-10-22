@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"strings"
+	"regexp"
 
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/providers"
@@ -20,6 +20,8 @@ type provider struct{ client *http.Client }
 
 func (provider) ID() string { return "azure" }
 
+var voiceLocale = regexp.MustCompile(`^([a-z]{2,3}-(?:[A-Z]{2}|[0-9]{3}))-`)
+
 var styles = map[string]string{
 	"happy": "cheerful", "sad": "sad", "angry": "angry", "fear": "fearful",
 	"excited": "excited", "calm": "calm", "tender": "gentle", "serious": "serious",
@@ -30,19 +32,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if opt.Model != "" {
 		return providers.Result{}, fmt.Errorf("azure selects its model through the voice name; omit model")
 	}
-	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
+	segments, requests, err := providers.Prepare(doc, p.ID(), opt.Voice, build)
 	if err != nil {
 		return providers.Result{}, err
-	}
-	requests := make([]string, len(segments))
-	for i, seg := range segments {
-		if seg.Pause > 0 {
-			continue
-		}
-		requests[i], err = build(seg)
-		if err != nil {
-			return providers.Result{}, fmt.Errorf("azure: %w", err)
-		}
 	}
 	// https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech
 	headers := map[string]string{
@@ -120,12 +112,13 @@ func build(seg providers.Segment) (string, error) {
 		text = `<mstts:express-as` + attrs + `>` + text + `</mstts:express-as>`
 	}
 	lang := seg.Lang
-	if lang == "" {
-		parts := strings.Split(seg.Voice, "-")
-		if len(parts) < 3 {
-			return "", fmt.Errorf("set lang for voice %q", seg.Voice)
-		}
-		lang = parts[0] + "-" + parts[1]
+	if match := voiceLocale.FindStringSubmatch(seg.Voice); match != nil {
+		lang = match[1]
+	} else if lang == "" {
+		return "", fmt.Errorf("set lang for voice %q", seg.Voice)
+	}
+	if seg.Lang != "" && seg.Lang != lang {
+		text = `<lang xml:lang="` + escape(seg.Lang) + `">` + text + `</lang>`
 	}
 	ssml := `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="` + escape(lang) + `"><voice name="` + escape(seg.Voice) + `">` + text + `</voice></speak>`
 	if len(ssml) > 64000 {

@@ -54,19 +54,9 @@ var events = map[string]string{
 }
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
+	segments, requests, err := providers.Prepare(doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) { return build(seg, opt.Model) })
 	if err != nil {
 		return providers.Result{}, err
-	}
-	requests := make([]request, len(segments))
-	for i, seg := range segments {
-		if seg.Pause > 0 {
-			continue
-		}
-		requests[i], err = build(seg, opt.Model)
-		if err != nil {
-			return providers.Result{}, fmt.Errorf("minimax: %w", err)
-		}
 	}
 	endpoint := strings.TrimRight(opt.Endpoint, "/") + "/t2a_v2"
 	headers := map[string]string{"Authorization": "Bearer " + opt.APIKey}

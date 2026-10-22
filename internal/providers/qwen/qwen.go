@@ -40,19 +40,9 @@ type input struct {
 var events = map[string]string{"laugh": "[laughing]", "sigh": "[sighing]", "gasp": "[gasp]", "clear-throat": "[clears throat]", "giggle": "[giggles]", "cough": "[cough]", "snort": "[snorts]"}
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	segments, err := providers.Plan(doc, p.ID(), opt.Voice)
+	segments, requests, err := providers.Prepare(doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) { return build(seg, opt.Model) })
 	if err != nil {
 		return providers.Result{}, err
-	}
-	requests := make([]request, len(segments))
-	for i, seg := range segments {
-		if seg.Pause > 0 {
-			continue
-		}
-		requests[i], err = build(seg, opt.Model)
-		if err != nil {
-			return providers.Result{}, fmt.Errorf("qwen: %w", err)
-		}
 	}
 	headers := map[string]string{"Authorization": "Bearer " + opt.APIKey}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
