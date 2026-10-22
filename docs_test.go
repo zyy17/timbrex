@@ -13,13 +13,16 @@ import (
 )
 
 var (
-	tbxBlocks     = regexp.MustCompile("(?ms)^```tbx\\r?\\n(.*?)^```[ \\t]*$")
-	tbxOpen       = regexp.MustCompile("(?m)^```tbx\\r?\\n")
-	mdLinks       = regexp.MustCompile(`\[[^\]]+\]\(([^)]+)\)`)
-	atxHeadings   = regexp.MustCompile(`(?m)^(#{1,6}) `)
-	specVersion   = []byte("SPEC v0.3.4")
-	skipBilingual = map[string]bool{
-		"AGENTS.md": true,
+	tbxBlocks      = regexp.MustCompile("(?ms)^```tbx\\r?\\n(.*?)^```[ \\t]*$")
+	tbxOpen        = regexp.MustCompile("(?m)^```tbx\\r?\\n")
+	mdLinks        = regexp.MustCompile(`\[[^\]]+\]\(([^)]+)\)`)
+	atxHeadings    = regexp.MustCompile(`(?m)^(#{1,6}) `)
+	fenceLine      = regexp.MustCompile("^(`{3,})([^`]*)$")
+	inlineCode     = regexp.MustCompile("`([^`]*)`")
+	specVersion    = []byte("SPEC v0.3.4")
+	skipBilingual  = map[string]bool{"AGENTS.md": true}
+	fenceLanguages = map[string]bool{
+		"go": true, "bash": true, "tbx": true, "yaml": true, "json": true, "text": true,
 	}
 )
 
@@ -104,6 +107,76 @@ func TestBilingualDocPairs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestMarkdownFencesAndTables(t *testing.T) {
+	err := filepath.WalkDir(".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			if strings.HasPrefix(entry.Name(), ".") && path != "." {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if filepath.Ext(path) != ".md" {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		open := ""
+		for i, line := range strings.Split(string(data), "\n") {
+			line = strings.TrimRight(line, "\r")
+			m := fenceLine.FindStringSubmatch(line)
+			if m != nil {
+				lang := strings.TrimSpace(m[2])
+				if open != "" {
+					if lang != "" {
+						t.Errorf("%s:%d: closing fence must be %s alone", path, i+1, open)
+					}
+					if m[1] != open {
+						t.Errorf("%s:%d: fence closer %q does not match opener %q", path, i+1, m[1], open)
+					}
+					open = ""
+					continue
+				}
+				if lang == "" {
+					t.Errorf("%s:%d: fenced block needs a language tag", path, i+1)
+				} else if !fenceLanguages[lang] {
+					t.Errorf("%s:%d: unknown fence language %q", path, i+1, lang)
+				}
+				open = m[1]
+				continue
+			}
+			if open != "" || !strings.HasPrefix(strings.TrimSpace(line), "|") {
+				continue
+			}
+			for _, span := range inlineCode.FindAllStringSubmatch(line, -1) {
+				if unescapedPipe(span[1]) {
+					t.Errorf("%s:%d: unescaped | inside table code %s", path, i+1, span[0])
+				}
+			}
+		}
+		if open != "" {
+			t.Errorf("%s: unclosed fenced block", path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func unescapedPipe(s string) bool {
+	for i := range len(s) {
+		if s[i] == '|' && (i == 0 || s[i-1] != '\\') {
+			return true
+		}
+	}
+	return false
 }
 
 func TestSpecVersionLabel(t *testing.T) {

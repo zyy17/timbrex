@@ -37,7 +37,7 @@ Endpoint overrides are intended for your chosen regional service or a trusted co
 
 ## OpenAI
 
-```sh
+```bash
 # OPENAI_API_KEY must already be set.
 ./timbrex synth examples/expressive.tbx --provider openai --voice coral -o openai.wav
 ```
@@ -52,7 +52,7 @@ References: [Create speech](https://developers.openai.com/api/reference/resource
 
 ## ElevenLabs
 
-```sh
+```bash
 # ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID must already be set.
 ./timbrex synth examples/expressive.tbx --provider elevenlabs -o elevenlabs.wav
 ```
@@ -65,7 +65,7 @@ References: [Create speech](https://elevenlabs.io/docs/api-reference/text-to-spe
 
 ## MiniMax
 
-```sh
+```bash
 # MINIMAX_API_KEY must already be set.
 ./timbrex synth examples/expressive.tbx --provider minimax -o minimax.wav
 ```
@@ -78,7 +78,7 @@ Reference: [Synchronous speech synthesis API](https://platform.minimax.io/docs/a
 
 ## Azure Speech
 
-```sh
+```bash
 # AZURE_SPEECH_KEY must already be set.
 export AZURE_SPEECH_REGION=eastus
 ./timbrex synth examples/expressive.tbx --provider azure --voice en-US-JennyNeural -o azure.wav
@@ -94,7 +94,7 @@ References: [REST API](https://learn.microsoft.com/en-us/azure/ai-services/speec
 
 ## Qwen
 
-```sh
+```bash
 # DASHSCOPE_API_KEY must already be set; replace the workspace placeholder.
 export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer'
 ./timbrex synth examples/expressive.tbx --provider qwen -o qwen.wav

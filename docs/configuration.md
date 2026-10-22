@@ -8,7 +8,7 @@ Cobra handles every command. `internal/config` uses [koanf](https://github.com/k
 
 By default, `check`, `synth`, and `config` read `timbrex.yaml` from the **current working directory**, if present. They do not search the script's directory, parent directories, or your home directory. An explicit `--config` selects one file instead; a missing explicit file is an error.
 
-```sh
+```bash
 cp examples/timbrex.yaml timbrex.yaml
 ./timbrex config
 ./timbrex --config examples/timbrex.yaml check examples/expressive.tbx

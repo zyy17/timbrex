@@ -14,7 +14,7 @@ Plain text is a valid script. Tags use one form: `[name]`, `[name args]`, or `[n
 
 Requires Go 1.27, as declared in [go.mod](go.mod).
 
-```sh
+```bash
 git clone https://github.com/zyy17/timbrex.git
 cd timbrex
 make build
@@ -25,7 +25,7 @@ From the repository root, `go run .` is the same binary as `./timbrex`. There is
 
 ## Quickstart
 
-```sh
+```bash
 ./timbrex check examples/expressive.tbx
 ./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
 # Set OPENAI_API_KEY first.

@@ -61,7 +61,7 @@ In:
 - Plain text, `[tag]`, `[tag args|content]`, nested spans, speaker lines, `//` comments, YAML front matter, scene lines, raw fences
 - Cast: an `ident:` line is a turn only when that id is in `cast`, or when `cast: auto`. Otherwise it is narration
 - Value grammar: number, duration, percent, semitone, decibel, quoted string, word, and `key=value`
-- Standard vocabulary, V041 in strict mode, W040 for a near miss in a single script, W103 when a display name is used as a speaker prefix, I050 for non-ASCII acting text, V013 for `[/name]`, V012 for an unclosed tag
+- Standard vocabulary, `V041` in strict mode, `W040` for a near miss in a single script, `W103` when a display name is used as a speaker prefix, `I050` for non-ASCII acting text, `V013` for `[/name]`, `V012` for an unclosed tag
 - Explicit `[act "…"]` in strict mode. Implicit free-form tags become `act` when strict mode is off
 - Lowering to IR with typed arguments. Stub synthesis and real HTTP providers: ElevenLabs, OpenAI, MiniMax, Azure, Qwen, Gemini, and Fish Audio
 - Cast voice mappings, scene/turn/span planning, local pauses, sequential PCM synthesis into WAV
