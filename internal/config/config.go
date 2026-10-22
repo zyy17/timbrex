@@ -105,11 +105,6 @@ func loadFile(k *koanf.Koanf, path string) error {
 }
 
 func decode(k *koanf.Koanf) (Config, error) {
-	for _, key := range k.Keys() {
-		if k.Get(key) == nil {
-			return Config{}, fmt.Errorf("configuration %s must not be null", key)
-		}
-	}
 	var c Config
 	err := k.UnmarshalWithConf("", &c, koanf.UnmarshalConf{
 		DecoderConfig: &mapstructure.DecoderConfig{
@@ -119,6 +114,11 @@ func decode(k *koanf.Koanf) (Config, error) {
 	})
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid configuration: %w", err)
+	}
+	for _, key := range k.Keys() {
+		if k.Get(key) == nil {
+			return Config{}, fmt.Errorf("configuration %s must not be null", key)
+		}
 	}
 	if _, ok := providerDefaults[c.Provider]; !ok {
 		return Config{}, fmt.Errorf("unknown default provider %q", c.Provider)
