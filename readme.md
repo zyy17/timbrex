@@ -2,7 +2,7 @@
 
 [简体中文](readme.zh-cn.md)
 
-**A small DSL for expressive text-to-speech.** Write what to say and how to say it, then generate audio through ElevenLabs, OpenAI, MiniMax, Azure Speech, or Qwen.
+**A small DSL for expressive text-to-speech.** Write what to say and how to say it, then generate audio through ElevenLabs, OpenAI, MiniMax, Azure Speech, Qwen, or Gemini TTS.
 
 ```tbx
 [happy|Good to see you!] [pause 300ms] [slow|Take your time.]
@@ -10,7 +10,7 @@
 
 Plain text is valid. Tags use one shape: `[name]` or `[name|content]`. Spoken text can be in any language; tag names are English ASCII. The grammar is frozen at `timbrex: 1`. Providers and vocabulary can grow without adding syntax.
 
-Timbrex is in early development. The compiler and five HTTP adapters are implemented and covered by offline contract tests. These adapters have **not yet been validated with live provider accounts**. Model access, voices, regional availability, and the quality of acting instructions require live verification. Different providers do not promise identical performances.
+Timbrex is in early development. The compiler and HTTP adapters are implemented and covered by offline contract tests. These adapters have **not yet been validated with live provider accounts**. Model access, voices, regional availability, and the quality of acting instructions require live verification. Different providers do not promise identical performances.
 
 ## Generate your first speech
 
@@ -24,7 +24,7 @@ make build
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
-The example above works with each adapter's default model and a suitable voice. ElevenLabs additionally requires your voice ID; Qwen requires a workspace endpoint. See [provider setup](docs/providers.md) for all five services.
+The example above illustrates the existing adapters; Gemini has a dedicated [example](examples/gemini.tbx) because numeric speed is unsupported. ElevenLabs additionally requires your voice ID; Qwen requires a workspace endpoint. See [provider setup](docs/providers.md) for each service.
 
 To try the compiler without credentials or a network request:
 

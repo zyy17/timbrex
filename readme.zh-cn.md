@@ -2,7 +2,7 @@
 
 [English](readme.md)
 
-**用一个小巧的 DSL 生成富有表现力的语音。** 写下台词及其表演方式，通过 ElevenLabs、OpenAI、MiniMax、Azure Speech 或 Qwen 生成音频。
+**用一个小巧的 DSL 生成富有表现力的语音。** 写下台词及其表演方式，通过 ElevenLabs、OpenAI、MiniMax、Azure Speech、Qwen 或 Gemini TTS 生成音频。
 
 ```tbx
 [happy|很高兴见到你！] [pause 300ms] [slow|慢慢来。]
@@ -10,7 +10,7 @@
 
 纯文本就是合法脚本。标签只有一种形式：`[name]` 或 `[name|content]`。台词可以使用任意语言，标签名使用英文 ASCII。语法冻结在 `timbrex: 1`，扩展厂商和词表不需要增加语法。
 
-Timbrex 处于早期开发阶段。编译器和五个 HTTP 适配器已经实现，并有离线契约测试覆盖，但这些适配器**尚未通过真实厂商账号验证**。模型权限、音色、区域可用性和表演指令效果仍需实测。不同厂商不保证生成相同的表演效果。
+Timbrex 处于早期开发阶段。编译器和 HTTP 适配器已经实现，并有离线契约测试覆盖，但这些适配器**尚未通过真实厂商账号验证**。模型权限、音色、区域可用性和表演指令效果仍需实测。不同厂商不保证生成相同的表演效果。
 
 ## 生成第一段语音
 
@@ -24,7 +24,7 @@ make build
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
-上面的示例使用各适配器的默认模型及合适的音色即可运行。ElevenLabs 还需要你的音色 ID，Qwen 需要工作空间端点。五个服务的配置见[厂商接入](docs/providers.zh-cn.md)。
+上面的示例演示原有适配器；Gemini 不支持数值语速，因此提供了专用[示例](examples/gemini.tbx)。ElevenLabs 还需要你的音色 ID，Qwen 需要工作空间端点。各服务的配置见[厂商接入](docs/providers.zh-cn.md)。
 
 无需凭证或网络请求，也可以体验编译流程：
 

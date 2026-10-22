@@ -54,3 +54,9 @@ Azure 对文本和属性进行 XML 转义，OpenAI 将台词和指令放在不�
 所有真实适配器当前都拒绝发音包装标签（`ipa`、`pinyin`、`sub`、`say` 等）、音频文件/音效/背景音乐、`overlap`、`cut`、`duration`、`rate`、`oral`、`emovec`、标记、音色转换和原始围栏。没有自动降级或静默丢弃不支持控制的行为。命名标签参数可以解析，但尚无适配器映射。
 
 Stub 忽略表演语义，输出 8 kHz 测试音，不能验证厂商能力或语音质量。`check` 识别完整词表，但不选择适配器、不验证厂商参数范围，也不发出请求。
+
+## Gemini TTS
+
+`gemini-3.8-flash-tts` 适配器支持文本、预置角色音色、共用 voice/as/reset 作用域和本地停顿。标准情绪（含数值强度）、`act`、`style`、`role`、`accent`、`dialect`、自定义 `emotion`、`whisper`、`shout`、`emph` 及 laugh/cry/sigh span 会转换为 `speechMetadata.style` 中的**指令**。`fast` 和 `slow` 请求更快/更慢的语音，不承诺精确倍率。数值 speed、pitch 和 volume **不支持**。`lang` 是原生语言代码参数，允许的子集见接入说明。
+
+独立事件映射为 `laugh→<laugh>`、`sigh→<sigh>`、`cough→<cough>`、`breath→<breath>`、`gasp→<gasp>`；事件参数/注释及其他事件不支持。原生标记请求表演效果，不保证精确的独立声音。文本中的字面 ASCII `<`、`>` 会被保守拒绝，以避免原生标记解释；需要保留字面含义时请用 Unicode 替代。指令与台词分开传递。前述保留但未实现的功能同样适用。
