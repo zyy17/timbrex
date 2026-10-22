@@ -109,7 +109,7 @@ The vocabulary declares four kinds:
 
 Inner controls replace outer controls of the same feature. Different features coexist when the provider can represent them. The shared planner groups `speed/fast/slow`, `voice/as`, `whisper/shout`, and the emotions into their respective features. Leaving a span restores its enclosing state. Each new turn starts from scene state.
 
-`[reset]` in a turn restores scene state. `[reset speed]` restores just scene speed, or removes turn speed if no scene speed exists. A scene-line reset removes scene state. `as` selects another cast ID's voice; `voice` selects a vendor voice ID directly. Both require spans.
+`[reset]` in a turn restores scene state. `[reset speed]` restores just scene speed, or removes turn speed if no scene speed exists. A scene-line reset removes scene state. `as` selects another speaker's voice and requires a span. The target must be a `cast` ID or a speaker who already has a turn or narration paragraph in the script. A known speaker without a provider mapping still uses the default voice. An unknown target is an error, not a silent fallback. `voice` selects a vendor voice ID directly and also requires a span.
 
 The standard vocabulary includes these families. **This is a language inventory, not a provider support promise.** The executable list is [internal/vocab/vocab.go](../internal/vocab/vocab.go).
 
@@ -127,7 +127,7 @@ The standard vocabulary includes these families. **This is a language inventory,
 
 ## 6. Front matter
 
-YAML front matter is optional and must begin at the start of the file, between `---` lines.
+YAML front matter is optional and must begin at the start of the file, between `---` lines. The opening and closing `---` lines may have trailing spaces or tabs.
 
 ```yaml
 ---

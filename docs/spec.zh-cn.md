@@ -109,7 +109,7 @@ This is narration.
 
 内层控制覆盖同一特征的外层控制，不同特征可以在厂商能表达时共同生效。共享规划器分别将 `speed/fast/slow`、`voice/as`、`whisper/shout` 和情绪归为同一特征。退出 span 后恢复外层状态，每次新发言从场景状态开始。
 
-发言中的 `[reset]` 恢复场景状态。`[reset speed]` 只恢复场景语速，没有场景语速时移除本轮语速。场景行的 reset 移除场景状态。`as` 选择另一 cast ID 的音色，`voice` 直接选择厂商音色 ID，两者都必须写成 span。
+发言中的 `[reset]` 恢复场景状态。`[reset speed]` 只恢复场景语速，没有场景语速时移除本轮语速。场景行的 reset 移除场景状态。`as` 选择另一角色的音色，必须写成 span。目标必须是 `cast` ID，或脚本中已经出现过的发言/旁白角色。已知角色没有对应厂商映射时仍使用默认音色；未知目标会报错，不会静默回退。`voice` 直接选择厂商音色 ID，也必须写成 span。
 
 标准词表包含以下类别。**这是语言清单，不是厂商能力承诺。** 可执行列表见 [internal/vocab/vocab.go](../internal/vocab/vocab.go)。
 
@@ -127,7 +127,7 @@ This is narration.
 
 ## 6. Front matter
 
-YAML front matter 可选，必须位于文件开头的两行 `---` 之间。
+YAML front matter 可选，必须位于文件开头的两行 `---` 之间。开头和结尾的 `---` 行可以带有尾随空格或制表符。
 
 ```yaml
 ---
