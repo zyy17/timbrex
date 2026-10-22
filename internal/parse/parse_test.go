@@ -379,6 +379,30 @@ func TestEscapedPipeIsNotSpan(t *testing.T) {
 	}
 }
 
+func TestEscapedMarkupInUnquotedArguments(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want string
+	}{
+		{`[act left\|right]`, "left|right"},
+		{`[act left\[right]`, "left[right"},
+		{`[act left\]right]`, "left]right"},
+		{`[act [[left]]right]`, "[left]right"},
+		{`[act note=left\|right]`, "left|right"},
+	} {
+		t.Run(tc.src, func(t *testing.T) {
+			script, err := Parse("escape.tbx", tc.src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tag := script.Blocks[0].Nodes[0]
+			if tag.Span || len(tag.Args) != 1 || tag.Args[0].Kind != "word" || tag.Args[0].Raw != tc.want {
+				t.Fatalf("tag = %+v", tag)
+			}
+		})
+	}
+}
+
 func TestEscapedBracketInContent(t *testing.T) {
 	script, err := Parse("t.tbx", "[whisper|a\\]b]\n")
 	if err != nil {

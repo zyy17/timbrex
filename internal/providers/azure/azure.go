@@ -70,7 +70,7 @@ func build(seg providers.Segment) (string, error) {
 			text = fmt.Sprintf(`<prosody rate="%g">%s</prosody>`, speed, text)
 		case "pitch":
 			var pitch float64
-			pitch, err = providers.Number(n, "st", -12, 12)
+			pitch, err = providers.Number(n, "st", -12, 12*math.Log2(1.5))
 			text = fmt.Sprintf(`<prosody pitch="%+gst">%s</prosody>`, pitch, text)
 		case "volume":
 			var db float64

@@ -157,8 +157,10 @@ func isValueCont(c byte) bool {
 func scanWord(s string, i int) (string, int) {
 	start := i
 	for i < len(s) {
+		// The lexer already consumed header delimiters. Any brackets or pipes
+		// left in this text were escaped and belong to the argument.
 		switch s[i] {
-		case ' ', '\t', '[', ']', '|', '=', '"':
+		case ' ', '\t', '=', '"':
 			return s[start:i], i
 		}
 		_, w := utf8.DecodeRuneInString(s[i:])

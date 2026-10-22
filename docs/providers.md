@@ -60,7 +60,7 @@ References: [Create speech](https://elevenlabs.io/docs/api-reference/text-to-spe
 ./timbrex synth examples/expressive.tbx --provider minimax -o minimax.wav
 ```
 
-Calls `POST https://api.minimax.io/v1/t2a_v2` with bearer authentication, non-streaming hex output, and PCM audio settings. It checks `base_resp.status_code`, completion status, and hex decoding. Each text segment must be shorter than 10000 characters.
+Calls `POST https://api.minimax.io/v1/t2a_v2` with bearer authentication, non-streaming hex output, and PCM audio settings. It requires an explicit successful `base_resp.status_code`, checks completion status and hex decoding, and rejects conflicting sample rate, channel count, format, or decoded byte count in optional `extra_info` audio metadata. Each text segment must be shorter than 10000 characters.
 
 The default `speech-2.8-hd` supports the mapped nonverbal events. Whisper is supported by the adapter only with `speech-2.6-hd` or `speech-2.6-turbo`. Whisper cannot be combined with another emotion in the same segment. Pitch requires whole semitones. Language hints currently map `zh en ja ko fr de es ru pt it ar hi th id vi yue`; `zh-HK` and `zh-MO` map to Cantonese. Other hints fail locally. This subset describes the adapter, not the vendor's full language coverage.
 
@@ -98,7 +98,7 @@ References: [HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-au
 
 Each HTTP request has a two-minute timeout and a 64 MiB response limit. The final PCM output is limited to 1 GiB. All speech segments are validated before requests start. Runtime failures report the provider and segment number. HTTP errors include status codes; MiniMax/Qwen API errors include vendor error codes. Response bodies and signed URL query strings are omitted from diagnostics.
 
-Audio responses must contain raw 24 kHz mono S16LE PCM. Conflicting media types, recognizable audio containers, and empty or odd-length PCM are rejected. Raw PCM has no metadata, so these checks cannot independently verify its sample rate, channel count, or sound quality; those rely on the requested vendor format.
+Audio responses must contain raw 24 kHz mono S16LE PCM. Conflicting media types or explicit `rate`/`channels` media-type parameters, recognizable audio containers (including FLAC and MP4), and empty or odd-length PCM are rejected. HTTP 206 partial responses and interrupted bodies are rejected; synthesis is not retried automatically. Missing optional format metadata remains accepted. Raw PCM bytes do not identify their sample rate or channel count, so without explicit metadata these checks rely on the requested vendor format; they cannot verify sound quality.
 
 The renderer uses a temporary file beside the destination and renames it only after success. Cancellation or failure removes temporary output and preserves an existing destination. The parent directory must exist. Earlier requests may already have incurred charges; there is no retry, fallback, cache, or resumable rendering.
 

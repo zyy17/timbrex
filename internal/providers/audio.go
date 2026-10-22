@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -46,7 +47,11 @@ func Render(ctx context.Context, id string, opt Options, segments []Segment, syn
 			}
 			// PCM has no header. Reject recognizable audio containers, including
 			// those returned as application/octet-stream or decoded from JSON.
-			if kind := http.DetectContentType(pcm); strings.HasPrefix(kind, "audio/") || kind == "application/ogg" {
+			kind := http.DetectContentType(pcm)
+			if bytes.HasPrefix(pcm, []byte("fLaC")) {
+				kind = "audio/flac"
+			}
+			if strings.HasPrefix(kind, "audio/") || strings.HasPrefix(kind, "video/") || kind == "application/ogg" {
 				return Result{}, fmt.Errorf("%s segment %d: expected raw PCM, got %s", id, i+1, kind)
 			}
 		}

@@ -9,7 +9,7 @@ This table describes Timbrex's current adapters, not everything the vendors offe
 | Text and cast voices | Yes | Yes | Yes | Yes | Yes |
 | `pause`, `silence`, `break`, nonnegative `gap` | Local silence | Local silence | Local silence | Local silence | Local silence |
 | `speed`, `fast`, `slow` | Parameter: 0.25–4× | Parameter: 0.7–1.2×; unsupported on v4/v4 Turbo | Parameter: 0.5–2× | SSML: 0.5–2× | Parameter: 0.5–2× |
-| `pitch` | Unsupported | Unsupported | Integer −12…+12 st | SSML −12…+12 st | Parameter −12…+12 st |
+| `pitch` | Unsupported | Unsupported | Integer −12…+12 st | SSML −12…about +7.01955 st | Parameter −12…+12 st |
 | `volume` | Unsupported | Unsupported | Parameter −60…+20 dB | SSML −60…+20 dB | Parameter −60…about +6.02 dB |
 | Standard emotions | Instruction | Audio-tag instruction | Seven mapped emotions | Mapped styles | Instruction |
 | Emotion intensity, e.g. `happy 0.8` | Text instruction | Text instruction | Unsupported | Unsupported | Text instruction |
@@ -39,7 +39,7 @@ ElevenLabs events: `laugh`, `sigh`, `gasp`, `clear-throat`, `giggle`, `cough`. Q
 
 `[laugh|Hello]` asks for speech while laughing. `[laugh]` requests a standalone event. Those are different capabilities. An instruction does not guarantee a precise nonverbal duration or an isolated sound.
 
-Volume converts dB to a linear amplitude ratio with `10^(dB/20)`. MiniMax receives that ratio; Azure receives a relative percentage; Qwen receives a rounded integer scaled from its default volume of 50. Qwen pitch converts semitones to a ratio with `2^(st/12)`. These are parameter mappings, not measurements of rendered loudness or pitch accuracy.
+Volume converts dB to a linear amplitude ratio with `10^(dB/20)`. MiniMax receives that ratio; Azure receives a relative percentage; Qwen receives a rounded integer scaled from its default volume of 50. Qwen pitch converts semitones to a ratio with `2^(st/12)`. Azure pitch is limited to its documented frequency ratio of 0.5–1.5, whose upper bound is `12*log2(1.5)` semitones, to avoid requesting values the service may clamp or substitute. These are parameter mappings, not measurements of rendered loudness or pitch accuracy.
 
 ## Literal text
 

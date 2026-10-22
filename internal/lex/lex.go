@@ -136,11 +136,15 @@ func (s *scanner) atFence() bool {
 	if !s.bol || s.depth > 0 {
 		return false
 	}
-	i := 0
-	for s.peekAt(i) == ' ' || s.peekAt(i) == '\t' {
+	return strings.HasPrefix(s.src[s.indentEnd():], "```")
+}
+
+func (s *scanner) indentEnd() int {
+	i := s.i
+	for i < len(s.src) && (s.src[i] == ' ' || s.src[i] == '\t') {
 		i++
 	}
-	return s.peekAt(i) == '`' && s.peekAt(i+1) == '`' && s.peekAt(i+2) == '`'
+	return i
 }
 
 func (s *scanner) fence() (Token, error) {
@@ -178,24 +182,15 @@ func (s *scanner) fence() (Token, error) {
 }
 
 func (s *scanner) closingFence() bool {
-	i := 0
-	for s.peekAt(i) == ' ' || s.peekAt(i) == '\t' {
-		i++
-	}
-	if s.peekAt(i) != '`' || s.peekAt(i+1) != '`' || s.peekAt(i+2) != '`' {
+	i := s.indentEnd()
+	if !strings.HasPrefix(s.src[i:], "```") {
 		return false
 	}
 	i += 3
-	for {
-		r := s.peekAt(i)
-		if r == 0 || r == '\n' {
-			return true
-		}
-		if r != ' ' && r != '\t' {
-			return false
-		}
+	for i < len(s.src) && (s.src[i] == ' ' || s.src[i] == '\t') {
 		i++
 	}
+	return i == len(s.src) || s.src[i] == '\n'
 }
 
 func (s *scanner) eatFenceLine() {
@@ -211,19 +206,12 @@ func (s *scanner) tryComment() (Token, bool) {
 	if !s.bol || s.depth > 0 {
 		return Token{}, false
 	}
-	i := 0
-	for {
-		r := s.peekAt(i)
-		if r != ' ' && r != '\t' {
-			break
-		}
-		i++
-	}
-	if s.peekAt(i) != '/' || s.peekAt(i+1) != '/' {
+	i := s.indentEnd()
+	if !strings.HasPrefix(s.src[i:], "//") {
 		return Token{}, false
 	}
 	line, col := s.line, s.col
-	s.skip(i + 2)
+	s.skip(i - s.i + 2)
 	start := s.i
 	for s.i < len(s.src) && s.peek() != '\n' {
 		s.advance()
