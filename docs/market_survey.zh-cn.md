@@ -12,6 +12,7 @@
 | [Azure Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice) | SSML 音色、韵律、style 和 role，支持情况取决于音色 | 转义 XML，区分语法支持与实际音色能力 |
 | [Qwen-Audio-TTS](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api) | 工作空间端点、指令与数值控制、可下载音频 | 要求正确的工作空间端点，区分认证合成请求与签名下载 |
 | [Gemini TTS](https://ai.google.dev/gemini-api/docs/speech-generation) | 结构化 `speech_metadata.style`、行内发声标记、WAV 或原始 PCM | 将回合级风格与台词分开；在共享 PCM 渲染前解开 WAV |
+| [Fish Audio](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech) | Bearer `POST /v1/tts`、`model` 请求头、`reference_id`、S2 方括号标记、WAV/PCM/MP3/Opus | 要求显式音色 ID；映射文档中的标记子集；在共享 PCM 渲染前解开 WAV |
 
 这些适配器均可得到兼容 PCM，因此能用小型顺序 WAV 渲染器实现，而无需拼接压缩音频或引入转码依赖。这是实现选择，不意味着厂商的其他音频格式不合适。
 

@@ -41,10 +41,10 @@ providers:
 | `providers.<id>.api_key` | 对应厂商的凭证，建议使用其环境变量 |
 | `providers.<id>.model` | 默认模型；Azure 通过音色选择模型，指定模型会报错 |
 | `providers.<id>.voice` | 未配置 cast 映射的角色使用的兜底音色 |
-| `providers.<id>.endpoint` | OpenAI、ElevenLabs、MiniMax、Gemini 的 API 基础 URL；Azure、Qwen 的完整请求 URL |
+| `providers.<id>.endpoint` | OpenAI、ElevenLabs、MiniMax、Gemini、Fish 的 API 基础 URL；Azure、Qwen 的完整请求 URL |
 | `providers.azure.region` | 未设置端点时使用的 Azure 区域 |
 
-厂商 ID 为 `stub`、`openai`、`elevenlabs`、`minimax`、`azure`、`qwen`、`gemini`。默认值和支持的环境变量名见[厂商接入](providers.zh-cn.md)。[完整示例](../examples/timbrex.yaml)包含各语音服务。stub 忽略语音设置。
+厂商 ID 为 `stub`、`openai`、`elevenlabs`、`minimax`、`azure`、`qwen`、`gemini`、`fish`。默认值和支持的环境变量名见[厂商接入](providers.zh-cn.md)。[完整示例](../examples/timbrex.yaml)包含各语音服务。stub 忽略语音设置。
 
 端点必须是 HTTP(S) URL，不能嵌入凭证、查询参数或 fragment。凭证会发送至配置的端点，应使用可信服务或网关。Azure 显式端点优先于区域配置。检查脚本和查看配置不要求凭证，合成时验证所选厂商的凭证和端点。
 

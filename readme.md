@@ -2,7 +2,7 @@
 
 [简体中文](readme.zh-cn.md)
 
-**A small DSL for expressive text-to-speech.** Write what to say and how to say it, then generate audio through ElevenLabs, OpenAI, MiniMax, Azure Speech, Qwen, or Gemini TTS.
+**A small DSL for expressive text-to-speech.** Write what to say and how to say it, then generate audio through ElevenLabs, OpenAI, MiniMax, Azure Speech, Qwen, Gemini TTS, or Fish Audio.
 
 ```tbx
 [happy|Good to see you!] [pause 300ms] [slow|Take your time.]
@@ -24,7 +24,7 @@ make build
 ./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
 ```
 
-The example above illustrates the existing adapters; Gemini has a dedicated [example](examples/gemini.tbx) because numeric speed is unsupported. ElevenLabs additionally requires your voice ID; Qwen requires a workspace endpoint. See [provider setup](docs/providers.md) for each service.
+The example above illustrates the existing adapters; Gemini has a dedicated [example](examples/gemini.tbx) because numeric speed is unsupported. Fish Audio has a dedicated [example](examples/fish.tbx) and requires your voice reference ID. ElevenLabs additionally requires your voice ID; Qwen requires a workspace endpoint. See [provider setup](docs/providers.md) for each service.
 
 To try the compiler without credentials or a network request:
 

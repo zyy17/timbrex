@@ -41,10 +41,10 @@ The file contains one YAML mapping. Keys are case-sensitive. Unknown keys, unkno
 | `providers.<id>.api_key` | Credential for that provider; prefer its environment variable |
 | `providers.<id>.model` | Default model; Azure selects models through its voice and rejects a model |
 | `providers.<id>.voice` | Fallback voice for speakers without cast mappings |
-| `providers.<id>.endpoint` | API base URL for OpenAI, ElevenLabs, MiniMax, and Gemini; full request URL for Azure and Qwen |
+| `providers.<id>.endpoint` | API base URL for OpenAI, ElevenLabs, MiniMax, Gemini, and Fish; full request URL for Azure and Qwen |
 | `providers.azure.region` | Azure region used when no endpoint is set |
 
-Provider IDs are `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, `qwen`, and `gemini`. Defaults and the supported environment variable names are listed in [provider setup](providers.md). The [complete example](../examples/timbrex.yaml) includes the speech services. The stub ignores speech settings.
+Provider IDs are `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, `qwen`, `gemini`, and `fish`. Defaults and the supported environment variable names are listed in [provider setup](providers.md). The [complete example](../examples/timbrex.yaml) includes the speech services. The stub ignores speech settings.
 
 Endpoints must be HTTP(S) URLs without embedded credentials, query strings, or fragments. Credentials are sent to the configured endpoint; use a trusted service or gateway. Azure's explicit endpoint takes priority over its region. Checking scripts and displaying configuration do not require credentials; synthesis checks the selected provider's credentials and endpoint.
 

@@ -12,6 +12,7 @@ Review date: **2026-10-22**. This document records API design differences releva
 | [Azure Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice) | SSML voice, prosody, style, and role with voice-dependent support | Escape XML and distinguish supported syntax from actual voice capabilities |
 | [Qwen-Audio-TTS](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api) | Workspace endpoint, instruction and numeric controls, downloadable audio | Require the correct workspace endpoint and separate authenticated synthesis from signed downloads |
 | [Gemini TTS](https://ai.google.dev/gemini-api/docs/speech-generation) | Structured `speech_metadata.style`, inline vocal tags, WAV or raw PCM | Keep turn-level style out of the transcript; unwrap WAV before the shared PCM renderer |
+| [Fish Audio](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech) | Bearer `POST /v1/tts`, `model` header, `reference_id`, S2 bracket cues, WAV/PCM/MP3/Opus | Require an explicit voice ID; map a documented cue subset; unwrap WAV before the shared PCM renderer |
 
 These adapters provide a path to compatible PCM, allowing a small sequential WAV renderer without compressed-audio concatenation or a transcoding dependency. This is an implementation choice, not a claim that the vendors' other audio formats are unsuitable.
 

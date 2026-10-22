@@ -28,7 +28,7 @@ var vendors = []vendorTest{
 
 func clearProviderDefaults(t *testing.T) {
 	t.Helper()
-	for _, name := range []string{"OPENAI_MODEL", "ELEVENLABS_MODEL", "MINIMAX_MODEL", "QWEN_MODEL", "OPENAI_VOICE", "ELEVENLABS_VOICE_ID", "MINIMAX_VOICE_ID", "AZURE_SPEECH_VOICE", "QWEN_VOICE"} {
+	for _, name := range []string{"OPENAI_MODEL", "ELEVENLABS_MODEL", "MINIMAX_MODEL", "QWEN_MODEL", "GEMINI_MODEL", "FISH_MODEL", "OPENAI_VOICE", "ELEVENLABS_VOICE_ID", "MINIMAX_VOICE_ID", "AZURE_SPEECH_VOICE", "QWEN_VOICE", "GEMINI_VOICE", "FISH_VOICE_ID"} {
 		t.Setenv(name, "")
 	}
 }

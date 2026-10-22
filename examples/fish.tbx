@@ -1,0 +1,9 @@
+---
+provider: fish
+model: s2.1-pro
+strict_tags: true
+---
+// Select your own reference ID through FISH_VOICE_ID or --voice.
+[happy] Welcome. [pause 300ms] [speed 0.9|Take your time.]
+
+[whisper] Listen carefully. [sigh]

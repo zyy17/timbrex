@@ -96,7 +96,7 @@ func TestRejectInvalidConfigurationWithoutLeakingValues(t *testing.T) {
 
 func TestMalformedProviderSettingsDoNotLeakCredentials(t *testing.T) {
 	const secret = "FAKE-SECRET-DO-NOT-LOG"
-	for _, id := range []string{"stub", "openai", "elevenlabs", "minimax", "azure", "qwen", "gemini"} {
+	for _, id := range []string{"stub", "openai", "elevenlabs", "minimax", "azure", "qwen", "gemini", "fish"} {
 		for _, tt := range []struct {
 			name, settings string
 		}{
@@ -155,7 +155,7 @@ func TestSelectedProviderRequirementsAndAzureEndpoint(t *testing.T) {
 }
 
 func TestRedactedOutputPreservesCredentials(t *testing.T) {
-	for _, id := range []string{"stub", "openai", "elevenlabs", "minimax", "azure", "qwen", "gemini"} {
+	for _, id := range []string{"stub", "openai", "elevenlabs", "minimax", "azure", "qwen", "gemini", "fish"} {
 		t.Run(id, func(t *testing.T) {
 			c, err := loadTest(t, "providers:\n  "+id+": {api_key: FAKE-SECRET-DO-NOT-LOG}\n")
 			if err != nil {
