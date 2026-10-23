@@ -22,6 +22,8 @@ make build
 
 ## 找到需要修改的代码
 
+[架构指南](docs/architecture.zh-cn.md)用一份脚本贯穿编译器、请求规划和 WAV 输出，配有图表与源码链接。
+
 主要处理流程是 `internal/lex` → `internal/parse` 和 `internal/ast` → `internal/check` → `internal/lower` 和 `internal/ir` → `internal/providers`。标准标签位于 `internal/vocab`，命令组装位于 `internal/cli`，YAML 配置和环境变量映射位于 `internal/config`。测试与对应代码放在一起。
 
 从源码开始的 lowering 测试和基准测试必须依次调用 `parse.Parse` → `check.Apply` → `check.Failed` → `lower.Script`，仅在检查通过后转换为 IR。专门验证无效输入的 planner 测试应直接构造 IR。IR 通过 utterance 的 speaker 区分场景行与语音，通过节点种类区分状态与事件，并用成对的 span 标记界定局部作用域，不再另设 scope 字段。

@@ -68,6 +68,7 @@ make build
 | 想要了解的内容 | 指南 |
 | --- | --- |
 | 编写并合成第一份脚本 | [教程](docs/tutorial.zh-cn.md) |
+| 理解编译器与合成实现 | [整体架构](docs/architecture.zh-cn.md) |
 | 查询语法、作用域或诊断 | [DSL 规范 v1](docs/spec.zh-cn.md) |
 | 配置默认值、凭证和覆盖项 | [配置](docs/configuration.zh-cn.md) |
 | 选择厂商并查询支持的控制 | [厂商接入](docs/providers.zh-cn.md) · [能力表](docs/capabilities.zh-cn.md) |
