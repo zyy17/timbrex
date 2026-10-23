@@ -27,5 +27,12 @@
         "path": "./syntaxes/tbx.tmLanguage.json"
       }
     ]
+  },
+  "scripts": {
+    "test": "node --test test/*.test.cjs"
+  },
+  "devDependencies": {
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
   }
 }

@@ -1,3 +1,5 @@
 /timbrex
 .env
 /timbrex.yaml
+
+/editors/vscode/node_modules/

@@ -31,7 +31,7 @@ func TestDocumentationExamplesAndLinks(t *testing.T) {
 			return err
 		}
 		if entry.IsDir() {
-			if strings.HasPrefix(entry.Name(), ".") && path != "." {
+			if path != "." && (strings.HasPrefix(entry.Name(), ".") || entry.Name() == "node_modules") {
 				return filepath.SkipDir
 			}
 			return nil
@@ -73,7 +73,7 @@ func TestBilingualDocPairs(t *testing.T) {
 			return err
 		}
 		if entry.IsDir() {
-			if strings.HasPrefix(entry.Name(), ".") && path != "." {
+			if path != "." && (strings.HasPrefix(entry.Name(), ".") || entry.Name() == "node_modules") {
 				return filepath.SkipDir
 			}
 			return nil
@@ -114,7 +114,7 @@ func TestMarkdownFencesAndTables(t *testing.T) {
 			return err
 		}
 		if entry.IsDir() {
-			if strings.HasPrefix(entry.Name(), ".") && path != "." {
+			if path != "." && (strings.HasPrefix(entry.Name(), ".") || entry.Name() == "node_modules") {
 				return filepath.SkipDir
 			}
 			return nil
