@@ -177,7 +177,7 @@ References: [TTS endpoint](https://docs.fish.audio/api-reference/endpoint/openap
 
 All speech segments are checked against the adapter before the first request. This catches unsupported controls and invalid local settings, but does not test account access or guarantee that the service will accept the request. Timbrex does not automatically split text to fit a vendor's token limit; use shorter paragraphs for long speech.
 
-Each HTTP request has a two-minute timeout and a 64 MiB response limit. The final PCM output is limited to 1 GiB. Runtime failures identify the provider and segment number. HTTP errors include the status; MiniMax and Qwen business errors include the vendor error code. Diagnostics omit response bodies and signed URL query strings. HTTP 206 partial responses and interrupted bodies fail. No request is retried automatically.
+Each HTTP request has a two-minute timeout and a 64 MiB response limit. Responses whose known content length exceeds this limit are rejected without reading the body. Unknown-length and automatically decompressed bodies remain subject to the same limit while reading. The final PCM output is limited to 1 GiB. Runtime failures identify the provider and segment number. HTTP errors include the status; MiniMax and Qwen business errors include the vendor error code. Diagnostics omit response bodies and signed URL query strings. HTTP 206 partial responses and interrupted bodies fail. No request is retried automatically.
 
 ### Audio format checks
 

@@ -79,6 +79,9 @@ func Request(ctx context.Context, client *http.Client, method, endpoint, content
 			return nil, err
 		}
 	}
+	if res.ContentLength > MaxResponseBytes {
+		return nil, fmt.Errorf("response exceeds %d bytes", MaxResponseBytes)
+	}
 	data, err := io.ReadAll(io.LimitReader(res.Body, MaxResponseBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("read response: %w", err)
