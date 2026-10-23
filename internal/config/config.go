@@ -18,6 +18,8 @@ import (
 	"github.com/knadh/koanf/providers/env/v2"
 	"github.com/knadh/koanf/v2"
 	"go.yaml.in/yaml/v3"
+
+	"github.com/zyy17/timbrex/internal/inputfile"
 )
 
 type Config struct {
@@ -77,7 +79,7 @@ func loadFile(k *koanf.Koanf, path string) error {
 	if !explicit {
 		path = "timbrex.yaml"
 	}
-	data, err := os.ReadFile(path)
+	data, err := inputfile.Read(path)
 	if errors.Is(err, os.ErrNotExist) && !explicit {
 		return nil
 	}

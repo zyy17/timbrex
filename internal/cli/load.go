@@ -3,12 +3,12 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/zyy17/timbrex/internal/ast"
 	"github.com/zyy17/timbrex/internal/check"
+	"github.com/zyy17/timbrex/internal/inputfile"
 	"github.com/zyy17/timbrex/internal/parse"
 )
 
@@ -19,7 +19,7 @@ func addStrictFlags(cmd *cobra.Command) {
 }
 
 func loadScript(cmd *cobra.Command, path string, defaultStrict bool) (*ast.Script, []check.Diag, error) {
-	src, err := os.ReadFile(path)
+	src, err := inputfile.Read(path)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -8,6 +8,8 @@ The CLI loads configuration once per `check`, `synth`, or `config` invocation. `
 
 By default, `check`, `synth`, and `config` read `timbrex.yaml` from the **current working directory**, if present. They do not search the script directory, parent directories, or the home directory. `--config` selects one file. A missing explicit file is an error.
 
+Scripts and configuration inputs must be regular files; symlinks to regular files are supported. Named pipes (FIFOs), devices, and directories are rejected. This file-only input contract does not guarantee that every filesystem operation is interruptible.
+
 ```bash
 cp examples/timbrex.yaml timbrex.yaml
 ./timbrex config
