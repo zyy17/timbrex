@@ -61,6 +61,26 @@ func TestConfigFileDiscovery(t *testing.T) {
 	}
 }
 
+func TestConfigRegularFileInputs(t *testing.T) {
+	for _, body := range []string{"", "strict_tags: true\n"} {
+		t.Run(body, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			if err := os.WriteFile("settings.yaml", []byte(body), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink("settings.yaml", "timbrex.yaml"); err != nil {
+				t.Fatal(err)
+			}
+			for _, path := range []string{"settings.yaml", "timbrex.yaml", ""} {
+				cfg, err := load(path, func() []string { return nil })
+				if err != nil || cfg.Provider != "stub" || cfg.StrictTags != (body != "") {
+					t.Fatalf("load(%q) = %+v, %v", path, cfg, err)
+				}
+			}
+		})
+	}
+}
+
 func TestRejectInvalidConfigurationWithoutLeakingValues(t *testing.T) {
 	for _, body := range []string{
 		"strict_tgas: true",
