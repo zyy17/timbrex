@@ -1,24 +1,35 @@
 package lower
 
 import (
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/zyy17/timbrex/internal/ast"
 	"github.com/zyy17/timbrex/internal/check"
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/parse"
 )
 
-func TestLowerDeepSpans(t *testing.T) {
-	const depth = 12000
-	script, err := parse.Parse("deep.tbx", strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth))
+func checkedScript(t testing.TB, src string, strict bool) *ast.Script {
+	t.Helper()
+	script, err := parse.Parse("test.tbx", src)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diags := check.Apply(script, true); check.Failed(diags) != nil {
+	if script == nil {
+		t.Fatal("parse succeeded without a script")
+	}
+	if diags := check.Apply(script, strict); check.Failed(diags) != nil {
 		t.Fatal(diags)
 	}
+	return script
+}
+
+func TestLowerDeepSpans(t *testing.T) {
+	const depth = 12000
+	script := checkedScript(t, strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth), true)
 	doc := Script(script)
 	nodes := doc.Utterances[0].Nodes
 	if len(nodes) != 2*depth+1 || nodes[depth].Kind != ir.Text || nodes[depth].Text != "hello" {
@@ -34,10 +45,7 @@ func TestLowerDeepSpans(t *testing.T) {
 func BenchmarkLowerDeepSpans(b *testing.B) {
 	for _, depth := range []int{400, 4000} {
 		b.Run(strconv.Itoa(depth), func(b *testing.B) {
-			script, err := parse.Parse("deep.tbx", strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth))
-			if err != nil {
-				b.Fatal(err)
-			}
+			script := checkedScript(b, strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth), true)
 			b.ReportAllocs()
 			for b.Loop() {
 				Script(script)
@@ -48,10 +56,7 @@ func BenchmarkLowerDeepSpans(b *testing.B) {
 
 func TestLowerDeepSpansAllocationGrowth(t *testing.T) {
 	const depth = 1000
-	script, err := parse.Parse("deep.tbx", strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth))
-	if err != nil {
-		t.Fatal(err)
-	}
+	script := checkedScript(t, strings.Repeat("[happy|", depth)+"hello"+strings.Repeat("]", depth), true)
 	// Empty-argument spans only need space in the output buffer; building a
 	// separate descendant slice for every span makes memory use quadratic.
 	allocs := testing.AllocsPerRun(1, func() { Script(script) })
@@ -60,146 +65,146 @@ func TestLowerDeepSpansAllocationGrowth(t *testing.T) {
 	}
 }
 
-func TestNarratorConfig(t *testing.T) {
-	src := "---\nnarrator: host\ncast:\n  lin: { name: Lin }\n---\nHello\nlin: Hi\n"
-	script, err := parse.Parse("t.tbx", src)
-	if err != nil {
-		t.Fatal(err)
+func TestLowerCompilerBoundary(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		strict bool
+		want   ir.Document
+	}{
+		{
+			name: "implicit acting and nested spans",
+			src:  "[strong French accent]\nShe [holding back tears] says [thoughtfully|very [softly spoken|quiet]] now\n",
+			want: ir.Document{
+				Voices: map[string]map[string]string{},
+				Utterances: []ir.Utterance{
+					{Nodes: []ir.Node{{Kind: ir.State, Name: "act", Note: "strong French accent", Args: []ir.Arg{}}}},
+					{Speaker: "narrator", Nodes: []ir.Node{
+						{Kind: ir.Text, Text: "She "},
+						{Kind: ir.State, Name: "act", Note: "holding back tears", Args: []ir.Arg{}},
+						{Kind: ir.Text, Text: " says "},
+						{Kind: ir.SpanStart, Name: "act", Note: "thoughtfully", Args: []ir.Arg{}},
+						{Kind: ir.Text, Text: "very "},
+						{Kind: ir.SpanStart, Name: "act", Note: "softly spoken", Args: []ir.Arg{}},
+						{Kind: ir.Text, Text: "quiet"},
+						{Kind: ir.SpanEnd, Name: "act"},
+						{Kind: ir.SpanEnd, Name: "act"},
+						{Kind: ir.Text, Text: " now"},
+					}},
+				},
+			},
+		},
+		{
+			name:   "explicit acting and quoted decoding",
+			src:    `Say [ACT "hold \"steady\" \\ now"] [act holding back tears|hi]`,
+			strict: true,
+			want: ir.Document{
+				Voices: map[string]map[string]string{},
+				Utterances: []ir.Utterance{{Speaker: "narrator", Nodes: []ir.Node{
+					{Kind: ir.Text, Text: "Say "},
+					{Kind: ir.State, Name: "act", Args: []ir.Arg{{Raw: `hold "steady" \ now`, Kind: "quoted"}}},
+					{Kind: ir.Text, Text: " "},
+					{Kind: ir.SpanStart, Name: "act", Note: "holding back tears", Args: []ir.Arg{}},
+					{Kind: ir.Text, Text: "hi"},
+					{Kind: ir.SpanEnd, Name: "act"},
+				}}},
+			},
+		},
+		{
+			name:   "mixed case names notes and nested spans",
+			src:    `Start [LaUgH nervously level=50%|one [WhIsPeR|two] three] [QuIcK_BrEaTh] [PaUsE 250ms]`,
+			strict: true,
+			want: ir.Document{
+				Voices: map[string]map[string]string{},
+				Utterances: []ir.Utterance{{Speaker: "narrator", Nodes: []ir.Node{
+					{Kind: ir.Text, Text: "Start "},
+					{Kind: ir.SpanStart, Name: "laugh", Note: "nervously", Args: []ir.Arg{{Key: "level", Raw: "50%", Kind: "percent"}}},
+					{Kind: ir.Text, Text: "one "},
+					{Kind: ir.SpanStart, Name: "whisper", Args: []ir.Arg{}},
+					{Kind: ir.Text, Text: "two"},
+					{Kind: ir.SpanEnd, Name: "whisper"},
+					{Kind: ir.Text, Text: " three"},
+					{Kind: ir.SpanEnd, Name: "laugh"},
+					{Kind: ir.Text, Text: " "},
+					{Kind: ir.Event, Name: "quick-breath", Args: []ir.Arg{}},
+					{Kind: ir.Text, Text: " "},
+					{Kind: ir.Event, Name: "pause", Args: []ir.Arg{{Raw: "250ms", Kind: "duration"}}},
+				}}},
+			},
+		},
+		{
+			name:   "all positional and named argument kinds",
+			src:    `[bgm rain.wav -3 250ms +50% -2st -22dB "say \"hi\" \\ there" file=wind.wav amount=0.5 delay=1s ratio=10% pitch=+3st vol=-10dB label="a|b [c]"]`,
+			strict: true,
+			want: ir.Document{
+				Voices: map[string]map[string]string{},
+				Utterances: []ir.Utterance{{Nodes: []ir.Node{{Kind: ir.Event, Name: "bgm", Args: []ir.Arg{
+					{Raw: "rain.wav", Kind: "word"},
+					{Raw: "-3", Kind: "number"},
+					{Raw: "250ms", Kind: "duration"},
+					{Raw: "+50%", Kind: "percent"},
+					{Raw: "-2st", Kind: "semitone"},
+					{Raw: "-22dB", Kind: "decibel"},
+					{Raw: `say "hi" \ there`, Kind: "quoted"},
+					{Key: "file", Raw: "wind.wav", Kind: "word"},
+					{Key: "amount", Raw: "0.5", Kind: "number"},
+					{Key: "delay", Raw: "1s", Kind: "duration"},
+					{Key: "ratio", Raw: "10%", Kind: "percent"},
+					{Key: "pitch", Raw: "+3st", Kind: "semitone"},
+					{Key: "vol", Raw: "-10dB", Kind: "decibel"},
+					{Key: "label", Raw: "a|b [c]", Kind: "quoted"},
+				}}}}},
+			},
+		},
+		{
+			name: "front matter scene turn and raw fence",
+			src: "---\nprovider: stub\nmodel: demo\nvoice: default\nlang: zh-CN\nnarrator: host\ncast:\n" +
+				"  host: {name: Host, voices: {stub: host-voice, azure: en-US-JennyNeural}}\n" +
+				"  lin: {name: Lin, voices: {stub: lin-voice}}\n---\n" +
+				"// dropped\n[SlOw]\nHello\nlin: [HaPpY] Hi\n```ssml azure\n<speak>hi</speak>\n```\n",
+			strict: true,
+			want: ir.Document{
+				Provider: "stub", Model: "demo", Voice: "default", Lang: "zh-CN",
+				Voices: map[string]map[string]string{
+					"host": {"stub": "host-voice", "azure": "en-US-JennyNeural"},
+					"lin":  {"stub": "lin-voice"},
+				},
+				Utterances: []ir.Utterance{
+					{Nodes: []ir.Node{{Kind: ir.State, Name: "slow", Args: []ir.Arg{}}}},
+					{Speaker: "host", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}},
+					{Speaker: "lin", Nodes: []ir.Node{
+						{Kind: ir.State, Name: "happy", Args: []ir.Arg{}},
+						{Kind: ir.Text, Text: " Hi"},
+					}},
+					{Nodes: []ir.Node{{Kind: ir.Raw, Name: "ssml azure", Text: "<speak>hi</speak>\n"}}},
+				},
+			},
+		},
+		{
+			name:   "turn timing remains events on scene and speaker lines",
+			src:    "---\ncast: auto\n---\n[overlap -200ms]\nlin: [gap 1s] Hello\n[gap 500ms]\nlin: Again\n[pause]\n",
+			strict: true,
+			want: ir.Document{
+				Voices: map[string]map[string]string{},
+				Utterances: []ir.Utterance{
+					{Nodes: []ir.Node{{Kind: ir.Event, Name: "overlap", Args: []ir.Arg{{Raw: "-200ms", Kind: "duration"}}}}},
+					{Speaker: "lin", Nodes: []ir.Node{
+						{Kind: ir.Event, Name: "gap", Args: []ir.Arg{{Raw: "1s", Kind: "duration"}}},
+						{Kind: ir.Text, Text: " Hello"},
+					}},
+					{Nodes: []ir.Node{{Kind: ir.Event, Name: "gap", Args: []ir.Arg{{Raw: "500ms", Kind: "duration"}}}}},
+					{Speaker: "lin", Nodes: []ir.Node{{Kind: ir.Text, Text: "Again"}}},
+					{Nodes: []ir.Node{{Kind: ir.Event, Name: "pause", Args: []ir.Arg{}}}},
+				},
+			},
+		},
 	}
-	if script.Front.Narrator != "host" {
-		t.Fatalf("narrator = %q", script.Front.Narrator)
-	}
-	doc := Script(script)
-	if len(doc.Utterances) != 2 || doc.Utterances[0].Speaker != "host" || doc.Utterances[1].Speaker != "lin" {
-		t.Fatalf("doc = %+v", doc)
-	}
-}
-
-func TestLowerHello(t *testing.T) {
-	src := "---\ncast:\n  lin: { name: Lin }\n---\nlin: [laugh] Hi [whisper|there]\n"
-	script, err := parse.Parse("t.tbx", src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc := Script(script)
-	if len(doc.Utterances) != 1 || doc.Utterances[0].Speaker != "lin" {
-		t.Fatalf("doc = %+v", doc)
-	}
-	kinds := make([]ir.Kind, len(doc.Utterances[0].Nodes))
-	for i, node := range doc.Utterances[0].Nodes {
-		kinds[i] = node.Kind
-	}
-	want := []ir.Kind{ir.Event, ir.Text, ir.SpanStart, ir.Text, ir.SpanEnd}
-	if len(kinds) != len(want) {
-		t.Fatalf("kinds = %v", kinds)
-	}
-	for i := range want {
-		if kinds[i] != want[i] {
-			t.Fatalf("kinds = %v, want %v", kinds, want)
-		}
-	}
-	if doc.Utterances[0].Nodes[0].Name != "laugh" {
-		t.Fatalf("event = %+v", doc.Utterances[0].Nodes[0])
-	}
-}
-
-func TestLowerSceneFenceAndArgs(t *testing.T) {
-	src := "" +
-		"---\nprovider: stub\n---\n" +
-		"// dropped\n" +
-		"[bgm rain.wav vol=-22dB]\n" +
-		"She waited [act \"holding back tears\"]\n" +
-		"```ssml azure\n<speak>hi</speak>\n```\n"
-	script, err := parse.Parse("t.tbx", src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc := Script(script)
-	if doc.Provider != "stub" || len(doc.Utterances) != 3 {
-		t.Fatalf("doc = %+v", doc)
-	}
-	scene := doc.Utterances[0].Nodes
-	if len(scene) != 1 || scene[0].Kind != ir.Event || scene[0].Scope != "scene" || len(scene[0].Args) != 2 || scene[0].Args[0].Raw != "rain.wav" || scene[0].Args[1].Key != "vol" || scene[0].Args[1].Raw != "-22dB" {
-		t.Fatalf("scene = %+v", scene)
-	}
-	act := doc.Utterances[1].Nodes
-	if doc.Utterances[1].Speaker != "narrator" || len(act) != 2 || act[1].Kind != ir.State || act[1].Scope != "turn" || act[1].Args[0].Raw != "holding back tears" {
-		t.Fatalf("act = %+v speaker %q", act, doc.Utterances[1].Speaker)
-	}
-	raw := doc.Utterances[2].Nodes
-	if len(raw) != 1 || raw[0].Kind != ir.Raw || raw[0].Name != "ssml azure" || raw[0].Text != "<speak>hi</speak>\n" {
-		t.Fatalf("raw = %+v", raw)
-	}
-}
-
-func TestLowerTurnTagsAreTurnScope(t *testing.T) {
-	src := "---\ncast:\n  lin: { name: Lin }\n---\n[overlap -200ms]\nlin: [gap 1s] Hello\n[pause]\n"
-	script, err := parse.Parse("t.tbx", src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diags := check.Apply(script, false); check.Failed(diags) != nil {
-		t.Fatal(diags)
-	}
-	doc := Script(script)
-	if len(doc.Utterances) != 3 {
-		t.Fatalf("doc = %+v", doc)
-	}
-	overlap := doc.Utterances[0].Nodes[0]
-	if overlap.Kind != ir.Event || overlap.Name != "overlap" || overlap.Scope != "turn" || overlap.Args[0].Raw != "-200ms" {
-		t.Fatalf("overlap = %+v", overlap)
-	}
-	gap := doc.Utterances[1].Nodes[0]
-	if doc.Utterances[1].Speaker != "lin" || gap.Kind != ir.Event || gap.Name != "gap" || gap.Scope != "turn" || gap.Args[0].Raw != "1s" {
-		t.Fatalf("gap = %+v", gap)
-	}
-	if strings.TrimSpace(doc.Utterances[1].Nodes[1].Text) != "Hello" {
-		t.Fatalf("turn = %+v", doc.Utterances[1].Nodes)
-	}
-	pause := doc.Utterances[2].Nodes[0]
-	if pause.Kind != ir.Event || pause.Scope != "scene" || pause.Name != "pause" {
-		t.Fatalf("pause = %+v", pause)
-	}
-}
-
-func TestLowerCanonicalName(t *testing.T) {
-	script, err := parse.Parse("t.tbx", "Say [PAUSE 1s]\n")
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc := Script(script)
-	ev := doc.Utterances[0].Nodes[1]
-	if ev.Kind != ir.Event || ev.Name != "pause" || ev.Scope != "here" || ev.Args[0].Raw != "1s" {
-		t.Fatalf("event = %+v", ev)
-	}
-}
-
-func TestLowerStateEventAndSpanNote(t *testing.T) {
-	src := "[slow]\n[pause]\nShe [laugh nervously|while laughing] now\n"
-	script, err := parse.Parse("t.tbx", src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diags := check.Apply(script, false); check.Failed(diags) != nil {
-		t.Fatal(diags)
-	}
-	doc := Script(script)
-	if len(doc.Utterances) != 3 {
-		t.Fatalf("doc = %+v", doc)
-	}
-	slow := doc.Utterances[0].Nodes[0]
-	if slow.Kind != ir.State || slow.Name != "slow" || slow.Scope != "scene" {
-		t.Fatalf("slow = %+v", slow)
-	}
-	pause := doc.Utterances[1].Nodes[0]
-	if pause.Kind != ir.Event || pause.Name != "pause" || pause.Scope != "scene" {
-		t.Fatalf("pause = %+v", pause)
-	}
-	laugh := doc.Utterances[2].Nodes[1]
-	if doc.Utterances[2].Speaker != "narrator" || laugh.Kind != ir.SpanStart || laugh.Note != "nervously" || laugh.Name != "laugh" {
-		t.Fatalf("laugh = %+v", laugh)
-	}
-	if doc.Utterances[2].Nodes[2].Text != "while laughing" || doc.Utterances[2].Nodes[3].Kind != ir.SpanEnd {
-		t.Fatalf("span = %+v", doc.Utterances[2].Nodes)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Script(checkedScript(t, tt.src, tt.strict))
+			if !reflect.DeepEqual(*got, tt.want) {
+				t.Fatalf("document = %#v\nwant = %#v", *got, tt.want)
+			}
+		})
 	}
 }

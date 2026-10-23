@@ -1,10 +1,12 @@
 package parse
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/zyy17/timbrex/internal/check"
+	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/lower"
 )
 
@@ -24,6 +26,10 @@ func FuzzParse(f *testing.F) {
 		"lin\\: not\r\nnext\n",
 		"\uFEFFhello\r\n",
 		"[/pinyin]\n",
+		`[thoughtfully|[ACT holding back tears "café"|[LaUgH nervously|hello]]]`,
+		`[bgm rain.wav -3 250ms +50% -2st -22dB "say \"hi\" \\ there" label="a|b [c]"]`,
+		"---\ncast: auto\n---\n[slow]\nlin: [gap 1s] Hi [happy|there]\n",
+		"---\ncast:\n  anna: {name: Ann}\n  ann: {name: Ann}\n---\nAnn: hi\n",
 		string([]byte{0xff, 0xfe, '[', 'a'}),
 	}
 	for _, seed := range seeds {
@@ -31,13 +37,62 @@ func FuzzParse(f *testing.F) {
 	}
 	f.Fuzz(func(t *testing.T, src string) {
 		script, err := Parse("fuzz.tbx", src)
-		if err != nil || script == nil {
+		again, againErr := Parse("fuzz.tbx", src)
+		if (err == nil) != (againErr == nil) {
+			t.Fatalf("parse outcome changed: %v, then %v", err, againErr)
+		}
+		if err != nil {
 			return
 		}
-		_ = check.Apply(script, false)
-		_ = check.Apply(script, true)
-		_ = lower.Script(script)
+		if script == nil || again == nil {
+			t.Fatal("parse succeeded without a script")
+		}
+		if !reflect.DeepEqual(script, again) {
+			t.Fatal("parse is not deterministic")
+		}
+		for _, strict := range []bool{false, true, false} {
+			fresh, err := Parse("fuzz.tbx", src)
+			if err != nil || fresh == nil {
+				t.Fatalf("fresh parse failed: script=%v, err=%v", fresh != nil, err)
+			}
+			want := check.Apply(fresh, strict)
+			for range 2 {
+				got := check.Apply(script, strict)
+				if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(script, fresh) {
+					t.Fatalf("strict=%v: repeated check differs from a fresh checked tree", strict)
+				}
+			}
+			if check.Failed(want) != nil {
+				continue
+			}
+			doc := lower.Script(script)
+			if !reflect.DeepEqual(doc, lower.Script(fresh)) {
+				t.Fatalf("strict=%v: lowering differs from a fresh checked tree", strict)
+			}
+			assertBalancedSpans(t, doc)
+		}
 	})
+}
+
+func assertBalancedSpans(t *testing.T, doc *ir.Document) {
+	t.Helper()
+	for i, utterance := range doc.Utterances {
+		var stack []string
+		for _, node := range utterance.Nodes {
+			switch node.Kind {
+			case ir.SpanStart:
+				stack = append(stack, node.Name)
+			case ir.SpanEnd:
+				if len(stack) == 0 || stack[len(stack)-1] != node.Name {
+					t.Fatalf("utterance %d: unmatched span end %q after %v", i, node.Name, stack)
+				}
+				stack = stack[:len(stack)-1]
+			}
+		}
+		if len(stack) != 0 {
+			t.Fatalf("utterance %d: unclosed spans %v", i, stack)
+		}
+	}
 }
 
 func TestDeepNestAndHugeTagDoNotPanic(t *testing.T) {

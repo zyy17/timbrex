@@ -10,20 +10,48 @@ import (
 )
 
 func TestApplyIsRepeatableAcrossModes(t *testing.T) {
-	script, err := parse.Parse("t.tbx", `[thoughtfully] [act holding back tears] [laugh nervously]`)
-	if err != nil {
-		t.Fatal(err)
-	}
-	first := Apply(script, false)
-	before := append([]ast.Node(nil), script.Blocks[0].Nodes...)
-	if got := Apply(script, false); !reflect.DeepEqual(first, got) || !reflect.DeepEqual(before, script.Blocks[0].Nodes) {
-		t.Fatal("repeat check changed tags or diagnostics")
-	}
-	if diags := Apply(script, true); len(diags) != 1 || diags[0].Code != "V041" {
-		t.Fatalf("strict recheck = %+v", diags)
-	}
-	if got := Apply(script, false); !reflect.DeepEqual(first, got) || !reflect.DeepEqual(before, script.Blocks[0].Nodes) {
-		t.Fatal("strict check lost free-form acting")
+	for _, tt := range []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "point tags",
+			src:  `[thoughtfully] [act holding back tears] [laugh nervously]`,
+		},
+		{
+			name: "nested notes arguments and diagnostics",
+			src: "---\ncast: auto\n---\nlin: " +
+				`[thoughtfully|[ACT holding back tears "café" intensity=50%|[LaUgH nervously volume=-3dB|hello [轻轻地]]]]`,
+		},
+		{
+			name: "nested invalid tags",
+			src:  `[thoughtfully|[laugh nervously|[pinyin] [/whisper] [pause -1s]]]`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, initialStrict := range []bool{false, true} {
+				script, err := parse.Parse("test.tbx", tt.src)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, strict := range []bool{initialStrict, initialStrict, !initialStrict, !initialStrict, initialStrict} {
+					// A shallow node copy aliases nested Content and Args. Parse an
+					// independent tree so in-place mutations cannot hide regressions.
+					fresh, err := parse.Parse("test.tbx", tt.src)
+					if err != nil {
+						t.Fatal(err)
+					}
+					want := Apply(fresh, strict)
+					got := Apply(script, strict)
+					if !reflect.DeepEqual(got, want) {
+						t.Fatalf("strict=%v: diagnostics = %#v, want %#v", strict, got, want)
+					}
+					if !reflect.DeepEqual(script, fresh) {
+						t.Fatalf("strict=%v: repeated check differs from a fresh checked tree", strict)
+					}
+				}
+			}
+		})
 	}
 }
 
