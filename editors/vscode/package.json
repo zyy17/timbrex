@@ -4,7 +4,7 @@
   "description": "Syntax highlighting for Timbrex speech scripts (.tbx)",
   "version": "0.1.0",
   "publisher": "timbrex",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "engines": {
     "vscode": "^1.80.0"
   },

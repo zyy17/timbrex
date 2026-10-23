@@ -39,3 +39,9 @@ go test ./editors/vscode -update
 ```
 
 普通测试会检查 JSON 与 YAML 是否一致，以及扩展 manifest 是否引用正确文件。语言 ID 为 `timbrex`，TextMate scope 为 `source.tbx`。兼容 TextMate 的编辑器可以复用 JSON。尚未提供供 Neovim 或 Helix 使用的 tree-sitter 语法。
+
+## 许可证
+
+Copyright (c) 2026 zyy17
+
+本扩展采用 [Apache License 2.0](license)。单独复制扩展目录时，请保留此版权声明和许可证文件。此前版本使用的 [MIT 许可证](https://github.com/zyy17/timbrex/blob/7c69ff14546744bf72ebc7f9155cb10e476d4338/license) 保留在历史记录中。

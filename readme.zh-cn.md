@@ -81,4 +81,6 @@ make build
 
 ## 许可证
 
-[MIT](license)。
+Copyright (c) 2026 zyy17
+
+采用 [Apache License 2.0](license)。此前版本使用的 [MIT 许可证](https://github.com/zyy17/timbrex/blob/7c69ff14546744bf72ebc7f9155cb10e476d4338/license) 保留在历史记录中。

@@ -58,4 +58,4 @@ make lint
 
 ## 提交 pull request
 
-每次变更尽量聚焦，提交消息使用英文 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)，例如 `fix: preserve speaker after nested span`。说明解决的问题、修改后的行为和已通过的检查；有助于理解时给出简短的前后对比，并注明兼容性变化或尚未完成的验证。不提交密钥、`.env` 文件或生成的音频。贡献适用仓库的 [MIT 许可证](license)。
+每次变更尽量聚焦，提交消息使用英文 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)，例如 `fix: preserve speaker after nested span`。说明解决的问题、修改后的行为和已通过的检查；有助于理解时给出简短的前后对比，并注明兼容性变化或尚未完成的验证。不提交密钥、`.env` 文件或生成的音频。贡献适用仓库的 [Apache License 2.0](license)。
