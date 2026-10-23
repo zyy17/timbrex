@@ -17,14 +17,13 @@ const (
 )
 
 // Node is one flattened piece of an utterance.
-// Scope is here, turn, scene, or span.
+// State and event kinds, utterance boundaries, and paired span markers carry scope.
 type Node struct {
-	Kind  Kind
-	Name  string
-	Args  []Arg
-	Note  string
-	Text  string
-	Scope string
+	Kind Kind
+	Name string
+	Args []Arg
+	Note string
+	Text string
 }
 
 type Arg struct {
@@ -34,6 +33,7 @@ type Arg struct {
 }
 
 // Utterance is one speaker turn, scene line, or raw fence after lowering.
+// An empty Speaker marks a scene line or raw fence, never spoken narration.
 type Utterance struct {
 	Speaker string
 	Nodes   []Node
