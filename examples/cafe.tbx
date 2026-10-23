@@ -1,0 +1,41 @@
+---
+timbrex: 1
+provider: elevenlabs
+model: eleven_v4
+strict_tags: true
+cast:
+  lin:
+    name: Lin
+    voices: {elevenlabs: 9lHjugDhwqoxA5MhX0az}
+  james:
+    name: James
+    voices: {elevenlabs: EkK5I93UQWFDigLMpZcX}
+  haru:
+    name: Haru
+    voices: {elevenlabs: B8gJV1IhpuegLxdpXFOE}
+  mina:
+    name: Mina
+    voices: {elevenlabs: uyVNoMrnUku1dZyVEXwD}
+---
+// Four multilingual friends take a cafe break during a trip.
+// Chinese: Anna Su - Casual, Friendly and Bright.
+// https://elevenlabs.io/app/voice-library?voiceId=9lHjugDhwqoxA5MhX0az
+// English: James - Husky Storyteller.
+// https://elevenlabs.io/app/voice-library?voiceId=EkK5I93UQWFDigLMpZcX
+// Japanese: Kuon - Cheerful, Clear and Steady.
+// https://elevenlabs.io/app/voice-library?voiceId=B8gJV1IhpuegLxdpXFOE
+// Korean: Anna Kim - Tender, Calm and Clear.
+// https://elevenlabs.io/app/voice-library?voiceId=uyVNoMrnUku1dZyVEXwD
+// Public library voice access depends on the account and plan.
+// Set ELEVENLABS_API_KEY outside this file.
+// Check: ./timbrex check examples/cafe.tbx
+// Synthesize: ./timbrex synth examples/cafe.tbx -o cafe.wav
+
+[act "warm, casual, conversational"]
+
+lin: [lang zh|这边有四个座位！喝点什么？今天我请。] [pause 180ms]
+james: [lang en|A latte for me. And that cake looks way too good to ignore.] [pause 180ms]
+haru: [lang ja|じゃあ、ケーキはみんなで分けよう。写真も撮りたいな。] [pause 180ms]
+mina: [lang ko|좋아! 사진은 내가 찍을게. 잠깐, 아직 먹지 마!] [pause 160ms]
+lin: [act "playfully defensive"] [lang zh|哎，别看我，我只是帮蛋糕调整一下角度。] [pause 220ms]
+james: [act "gently teasing"] [lang en|With a fork? Sure. Very artistic.] [pause 200ms]
