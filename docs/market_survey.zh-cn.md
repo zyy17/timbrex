@@ -24,9 +24,7 @@ Timbrex 请求格式兼容的原始 PCM 或含有 PCM 的 WAV，再将采样拼�
 
 以下项目分别与 Timbrex 的不同层次重叠。比较依据是其公开仓库和文档，并非运行或试听评估。
 
-| 项目 | 相关工作 | 说明 |
-| --- | --- | --- |
-| [Speech Markdown](https://github.com/speechmarkdown/speechmarkdown-js)（MIT） | 语音标记语法、解析器和平台 formatter | 写作语法与目标平台转换 |
-| [SSMD](https://github.com/buchwandler/ssmd)（MIT） | Markdown 风格的音色、发音和韵律标注，以及结构解析和迁移 | 作用域、诊断与语义保留 |
-| [Speech SDK](https://github.com/Jellypod-Inc/speech-sdk)（Apache-2.0） | TypeScript 合成、流式与多角色编排，区分原生对话和拼接路径 | 渲染决策与显式能力约束 |
-| [Podcastfy](https://github.com/souzatharsis/podcastfy)（Apache-2.0） | 采用多个语音后端的内容转播客工具 | 端到端写作与音频工作流 |
+- [Speech Markdown](https://github.com/speechmarkdown/speechmarkdown-js)（MIT）：语音标记语法、解析器和平台 formatter。可参考之处：写作语法与目标平台转换。
+- [SSMD](https://github.com/buchwandler/ssmd)（MIT）：Markdown 风格的音色、发音和韵律标注，以及结构解析和迁移。可参考之处：作用域、诊断与语义保留。
+- [Speech SDK](https://github.com/Jellypod-Inc/speech-sdk)（Apache-2.0）：TypeScript 合成、流式与多角色编排，区分原生对话和拼接路径。可参考之处：渲染决策与显式能力约束。
+- [Podcastfy](https://github.com/souzatharsis/podcastfy)（Apache-2.0）：采用多个语音后端的内容转播客工具。可参考之处：端到端写作与音频工作流。

@@ -24,9 +24,7 @@ Voice cloning, native multi-speaker generation, streaming, alignment, and sound-
 
 These projects overlap with different layers of Timbrex. This comparison is based on their published repositories and documentation, not a runtime or listening evaluation.
 
-| Project | Relevant work | Notes |
-| --- | --- | --- |
-| [Speech Markdown](https://github.com/speechmarkdown/speechmarkdown-js) (MIT) | Speech markup grammar, parser, and platform formatters | Authoring syntax and target-specific conversion |
-| [SSMD](https://github.com/buchwandler/ssmd) (MIT) | Markdown-style voice, pronunciation, and prosody annotations with structural parsing and migration | Scope, diagnostics, and semantic preservation |
-| [Speech SDK](https://github.com/Jellypod-Inc/speech-sdk) (Apache-2.0) | TypeScript synthesis, streaming, and multi-speaker orchestration with native-dialogue and stitch paths | Rendering decisions and explicit capability constraints |
-| [Podcastfy](https://github.com/souzatharsis/podcastfy) (Apache-2.0) | Content-to-podcast generation with multiple speech backends | End-to-end authoring and audio workflows |
+- [Speech Markdown](https://github.com/speechmarkdown/speechmarkdown-js) (MIT): Speech markup grammar, parser, and platform formatters. Relevant to Timbrex: Authoring syntax and target-specific conversion.
+- [SSMD](https://github.com/buchwandler/ssmd) (MIT): Markdown-style voice, pronunciation, and prosody annotations with structural parsing and migration. Relevant to Timbrex: Scope, diagnostics, and semantic preservation.
+- [Speech SDK](https://github.com/Jellypod-Inc/speech-sdk) (Apache-2.0): TypeScript synthesis, streaming, and multi-speaker orchestration with native-dialogue and stitch paths. Relevant to Timbrex: Rendering decisions and explicit capability constraints.
+- [Podcastfy](https://github.com/souzatharsis/podcastfy) (Apache-2.0): Content-to-podcast generation with multiple speech backends. Relevant to Timbrex: End-to-end authoring and audio workflows.
