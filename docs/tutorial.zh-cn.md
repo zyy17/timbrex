@@ -88,7 +88,7 @@ strict_tags: true
 ./timbrex check expressive.tbx
 ```
 
-文件开头的 YAML 部分称为 *front matter*，可以省略。使用时需要放在文件最前面，以两行 `---` 包围。这里的 `timbrex: 1` 指定当前 DSL 版本，`strict_tags: true` 拒绝未注册的标签名。[DSL 规范 v1](spec.zh-cn.md)描述当前规则，开发期间可能调整。
+文件开头的 YAML 部分称为 *front matter*，可以省略。使用时需要放在文件最前面，以两行 `---` 包围。这里的 `timbrex: 1` 指定当前 DSL 版本，`strict_tags: true` 拒绝未注册的标签名。[DSL 规范 v1](spec.zh-cn.md) 描述当前规则，开发期间可能调整。
 
 不开启严格模式时，未注册的标签会被当作自由表演指令。这方便编写，也可能让拼写错误被忽略。需要检查标签名时，请开启严格模式，并把自由指令明确写成 `[act "thoughtfully"]`。
 
