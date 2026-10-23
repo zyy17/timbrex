@@ -129,7 +129,7 @@ The standard vocabulary includes these families. A registered tag passes vocabul
 
 ## 6. Front matter
 
-YAML front matter is optional and must begin at the start of the file, between `---` lines. The opening and closing `---` lines may have trailing spaces or tabs.
+YAML front matter is optional and must begin at the start of the file, between `---` lines. The opening and closing `---` lines start at column zero and may have trailing spaces or tabs.
 
 ```yaml
 ---
