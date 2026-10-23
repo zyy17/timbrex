@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/zyy17/timbrex/internal/ast"
 	"github.com/zyy17/timbrex/internal/vocab"
@@ -71,31 +70,16 @@ func (c *checker) warnDisplayNames(script *ast.Script) {
 	if len(script.Front.Cast) == 0 {
 		return
 	}
+	var names *displayNameIndex
 	for i := range script.Blocks {
 		block := &script.Blocks[i]
 		if block.Kind != ast.Narration || len(block.Nodes) == 0 || block.Nodes[0].Kind != ast.Text {
 			continue
 		}
-		text := block.Nodes[0].Text
-		bestLen := 0
-		bestID, bestName, bestPrefix := "", "", ""
-		for id, member := range script.Front.Cast {
-			name := strings.TrimSpace(member.Name)
-			if name == "" {
-				continue
-			}
-			prefix, ok := displayPrefix(text, name)
-			if !ok {
-				continue
-			}
-			n := utf8.RuneCountInString(name)
-			if n > bestLen || (n == bestLen && (bestID == "" || id < bestID)) {
-				bestLen = n
-				bestID = id
-				bestName = name
-				bestPrefix = prefix
-			}
+		if names == nil {
+			names = newDisplayNameIndex(script.Front.Cast)
 		}
+		bestID, bestName, bestPrefix := names.match(block.Nodes[0].Text)
 		if bestID == "" {
 			continue
 		}
@@ -108,19 +92,6 @@ func (c *checker) warnDisplayNames(script *ast.Script) {
 			Msg:      `"` + bestPrefix + `" looks like speaker ` + bestID + ` (display name ` + bestName + `); treated as narration`,
 		})
 	}
-}
-
-func displayPrefix(text, name string) (string, bool) {
-	ascii := name + ":"
-	if strings.HasPrefix(text, ascii) {
-		return ascii, true
-	}
-	// U+FF1A is the full-width colon authors type for a speaker prefix.
-	full := name + "\uFF1A"
-	if strings.HasPrefix(text, full) {
-		return full, true
-	}
-	return "", false
 }
 
 // listAutoSpeakers reports each speaker id cast: auto accepted, once.
