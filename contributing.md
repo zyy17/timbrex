@@ -22,6 +22,8 @@ make build
 
 ## Find the code to change
 
+The [architecture guide](docs/architecture.md) follows one script through the compiler, request planning, and WAV output, with diagrams and source links.
+
 The main path is `internal/lex` → `internal/parse` and `internal/ast` → `internal/check` → `internal/lower` and `internal/ir` → `internal/providers`. The standard tags are in `internal/vocab`. Command wiring is in `internal/cli`; YAML settings and environment bindings are in `internal/config`. Tests live beside the code they exercise.
 
 Source-based lowering tests and benchmarks must follow `parse.Parse` → `check.Apply` → `check.Failed` → `lower.Script`, lowering only after checking succeeds. Build IR directly for planner tests that intentionally exercise invalid input. In IR, utterance speakers distinguish scene lines from speech, node kinds distinguish state from events, and paired span markers delimit local scope; there is no separate scope field.

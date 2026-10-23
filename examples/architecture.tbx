@@ -1,0 +1,9 @@
+---
+strict_tags: true
+provider: openai
+cast:
+  lin: {voices: {openai: coral}}
+---
+[slow]
+lin: [happy] Hello. [pause 200ms] [whisper|Come closer.] Back again.
+lin: [fast] Hurry. [reset speed] Take your time.

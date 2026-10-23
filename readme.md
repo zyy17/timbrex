@@ -68,6 +68,7 @@ The project is under development. [DSL Specification v1](docs/spec.md) describes
 | Start here when you want to… | Guide |
 | --- | --- |
 | Write and synthesize your first script | [Tutorial](docs/tutorial.md) |
+| Understand the compiler and synthesis implementation | [Architecture](docs/architecture.md) |
 | Look up syntax, scope, or diagnostics | [DSL Specification v1](docs/spec.md) |
 | Set defaults, credentials, and overrides | [Configuration](docs/configuration.md) |
 | Choose a provider and supported controls | [Provider setup](docs/providers.md) · [Capabilities](docs/capabilities.md) |

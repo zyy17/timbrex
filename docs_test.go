@@ -21,7 +21,7 @@ var (
 	inlineCode     = regexp.MustCompile("`([^`]*)`")
 	skipBilingual  = map[string]bool{"AGENTS.md": true}
 	fenceLanguages = map[string]bool{
-		"go": true, "bash": true, "tbx": true, "yaml": true, "json": true, "text": true,
+		"go": true, "bash": true, "tbx": true, "yaml": true, "json": true, "text": true, "mermaid": true,
 	}
 )
 
