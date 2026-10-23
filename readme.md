@@ -43,7 +43,7 @@ make build
 
 ### Generate speech
 
-For the OpenAI voices in this example, configure `OPENAI_API_KEY` in your environment, or set `providers.openai.api_key` in your [configuration file](docs/configuration.md). Keep the key out of the script and source control. Then, from the same repository directory, run:
+For the OpenAI voices in this example, configure `OPENAI_API_KEY` in your environment, or set `providers.openai.api_key` in your [configuration file](docs/configuration.md). You can copy [.env.example](.env.example) to `.env`, fill only the settings you need, and [load it manually](docs/configuration.md#local-environment-file); Timbrex does not load it automatically. Keep keys out of scripts, source control, and chat. Then, from the same repository directory, run:
 
 ```bash
 ./timbrex synth examples/dialogue.tbx --provider openai --model gpt-4o-mini-tts -o dialogue.wav

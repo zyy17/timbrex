@@ -1,5 +1,7 @@
 /timbrex
 .env
+.env.*
+!.env.example
 /timbrex.yaml
 
 /editors/vscode/node_modules/
