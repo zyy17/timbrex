@@ -28,6 +28,7 @@ type request struct {
 	Normalize   bool    `json:"normalize"`
 	Prosody     prosody `json:"prosody"`
 }
+
 type prosody struct {
 	Speed             float64 `json:"speed"`
 	Volume            float64 `json:"volume"`
@@ -38,6 +39,7 @@ var cues = map[string]string{
 	"happy": "happy", "sad": "sad", "angry": "angry", "fear": "scared", "surprise": "surprised", "disgust": "disgusted", "calm": "calm", "excited": "excited",
 	"whisper": "whispering", "shout": "shouting", "emph": "emphasis",
 }
+
 var events = map[string]string{
 	"laugh": "[laughing]", "chuckle": "[chuckling]", "sigh": "[sighing]", "groan": "[groaning]", "pant": "[panting]", "gasp": "[gasping]", "yawn": "[yawning]", "snore": "[snoring]", "clear-throat": "[clear throat]",
 }
@@ -57,6 +59,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		return providers.DecodeWAV(wav)
 	})
 }
+
 func build(seg providers.Segment, model string) (request, error) {
 	r := request{ReferenceID: seg.Voice, Format: "wav", SampleRate: providers.SampleRate, Normalize: false, Prosody: prosody{Speed: 1, NormalizeLoudness: true}}
 	// Unknown model headers silently fall back at the service; never allow that.

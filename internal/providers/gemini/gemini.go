@@ -27,43 +27,54 @@ type request struct {
 	Contents         []content        `json:"contents"`
 	GenerationConfig generationConfig `json:"generationConfig"`
 }
+
 type content struct {
 	Role  string `json:"role"`
 	Parts []part `json:"parts"`
 }
+
 type part struct {
 	Text           string   `json:"text"`
 	SpeechMetadata metadata `json:"speechMetadata"`
 }
+
 type metadata struct {
 	Style string `json:"style,omitempty"`
 }
+
 type generationConfig struct {
 	ResponseModalities []string       `json:"responseModalities"`
 	ResponseFormat     responseFormat `json:"responseFormat"`
 	SpeechConfig       speechConfig   `json:"speechConfig"`
 }
+
 type responseFormat struct {
 	Audio audioFormat `json:"audio"`
 }
+
 type audioFormat struct {
 	MIMEType   string `json:"mimeType"`
 	SampleRate int    `json:"sampleRate"`
 	Delivery   string `json:"delivery"`
 }
+
 type speechConfig struct {
 	VoiceConfig  voiceConfig `json:"voiceConfig"`
 	LanguageCode string      `json:"languageCode,omitempty"`
 }
+
 type voiceConfig struct {
 	PrebuiltVoiceConfig prebuiltVoice `json:"prebuiltVoiceConfig"`
 }
+
 type prebuiltVoice struct {
 	VoiceName string `json:"voiceName"`
 }
 
 var voices = strings.Fields("Zephyr Puck Charon Kore Fenrir Leda Orus Aoede Callirrhoe Autonoe Enceladus Iapetus Umbriel Algieba Despina Erinome Algenib Rasalgethi Laomedeia Achernar Alnilam Schedar Gacrux Pulcherrima Achird Zubenelgenubi Vindemiatrix Sadachbia Sadaltager Sulafat")
+
 var languages = strings.Fields("de-DE en-AU en-GB en-IN en-US es-US fr-FR hi-IN pt-BR ar-XA es-ES fr-CA id-ID it-IT ja-JP tr-TR vi-VN bn-IN gu-IN kn-IN ml-IN mr-IN ta-IN te-IN nl-NL ko-KR cmn-CN pl-PL ru-RU th-TH")
+
 var events = map[string]string{"laugh": "<laugh>", "sigh": "<sigh>", "cough": "<cough>", "breath": "<breath>", "gasp": "<gasp>"}
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
@@ -80,6 +91,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		return decode(data)
 	})
 }
+
 func build(seg providers.Segment, model string) (request, error) {
 	var r request
 	if model != "gemini-3.8-flash-tts" {
@@ -131,6 +143,7 @@ func build(seg providers.Segment, model string) (request, error) {
 	}
 	return r, nil
 }
+
 func decode(data []byte) ([]byte, error) {
 	var res struct {
 		Error          json.RawMessage `json:"error"`

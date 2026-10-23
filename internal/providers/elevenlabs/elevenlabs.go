@@ -27,6 +27,7 @@ type request struct {
 	Language string    `json:"language_code,omitempty"`
 	Settings *settings `json:"voice_settings,omitempty"`
 }
+
 type settings struct {
 	Speed float64 `json:"speed"`
 }

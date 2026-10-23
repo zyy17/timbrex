@@ -24,6 +24,7 @@ func fixtureWAV() []byte {
 	b, _ := hex.DecodeString("524946462800000057415645666d74201000000001000100c05d000080bb000002001000646174610400000001000200")
 	return b
 }
+
 func TestRequestJSONMatchesOfficialFields(t *testing.T) {
 	r, err := build(providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello"}}}, "s2.1-pro")
 	if err != nil {
@@ -50,6 +51,7 @@ func TestRequestJSONMatchesOfficialFields(t *testing.T) {
 		t.Fatalf("prosody=%v", prosody)
 	}
 }
+
 func TestBuildContract(t *testing.T) {
 	seg := providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello (world) "}, {Kind: ir.Event, Name: "sigh"}}, Controls: []ir.Node{{Name: "happy"}, {Name: "whisper"}, {Name: "speed", Args: []ir.Arg{{Raw: "125%", Kind: "percent"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "-6dB", Kind: "decibel"}}}}}
 	r, err := build(seg, "s2.1-pro")
@@ -79,6 +81,7 @@ func TestBuildContract(t *testing.T) {
 		}
 	}
 }
+
 func TestBuildRejectsUnsupported(t *testing.T) {
 	base := providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello"}}}
 	for _, model := range []string{"s1", "s2-pro", "s2.1-pro-free", "drama-3", "unknown", ""} {
@@ -131,6 +134,7 @@ func TestBuildRejectsUnsupported(t *testing.T) {
 		t.Fatal("cue omitted from length limit")
 	}
 }
+
 func TestFailurePreservesOutput(t *testing.T) {
 	for _, kind := range []string{"json error", "http 400", "http 401", "http 402", "http 429", "http 503", "partial", "redirect", "truncated", "streaming size", "wrong rate", "cancel"} {
 		t.Run(kind, func(t *testing.T) {
