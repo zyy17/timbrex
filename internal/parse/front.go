@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/adrg/frontmatter"
 	"go.yaml.in/yaml/v3"
 
 	"github.com/zyy17/timbrex/internal/ast"
@@ -17,14 +16,29 @@ import (
 const grammarVersion = 1
 
 type frontDoc struct {
-	Timbrex    *int      `yaml:"timbrex"`
-	Provider   string    `yaml:"provider"`
-	Model      string    `yaml:"model"`
-	Voice      string    `yaml:"voice"`
-	Lang       string    `yaml:"lang"`
-	StrictTags *bool     `yaml:"strict_tags"`
-	Narrator   string    `yaml:"narrator"`
-	Cast       *castYAML `yaml:"cast"`
+	Timbrex    *frontVersion `yaml:"timbrex"`
+	Provider   string        `yaml:"provider"`
+	Model      string        `yaml:"model"`
+	Voice      string        `yaml:"voice"`
+	Lang       string        `yaml:"lang"`
+	StrictTags *bool         `yaml:"strict_tags"`
+	Narrator   string        `yaml:"narrator"`
+	Cast       *castYAML     `yaml:"cast"`
+}
+
+// frontVersion rejects YAML floats before they can be truncated into an int.
+type frontVersion int
+
+func (v *frontVersion) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.ScalarNode || value.ShortTag() != "!!int" {
+		return fmt.Errorf("timbrex must be an integer")
+	}
+	var version int
+	if err := value.Decode(&version); err != nil {
+		return err
+	}
+	*v = frontVersion(version)
+	return nil
 }
 
 type frontCast struct {
@@ -45,15 +59,21 @@ func (c *castYAML) UnmarshalYAML(value *yaml.Node) error {
 		}
 		return fmt.Errorf("cast must be a map or auto")
 	}
-	data, err := yaml.Marshal(value)
-	if err != nil {
+	// Resolve aliases and merges on the original graph, retaining yaml.v3's
+	// whole-cast alias limits. Node.Decode has no KnownFields option.
+	var members map[string]map[string]any
+	if err := value.Decode(&members); err != nil {
 		return err
 	}
-	return decodeFront(data, &c.Members)
+	for _, member := range members {
+		for key := range member {
+			if key != "name" && key != "voices" {
+				return fmt.Errorf("unknown cast field %q", key)
+			}
+		}
+	}
+	return value.Decode(&c.Members)
 }
-
-// yamlFence is the only front matter form the grammar allows.
-var yamlFence = frontmatter.NewFormat("---", "---", decodeFront)
 
 func decodeFront(data []byte, value any) error {
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
@@ -72,20 +92,19 @@ func decodeFront(data []byte, value any) error {
 }
 
 func splitFront(file, src string) (ast.Front, string, error) {
-	src, ok := yamlFrontMatterSource(src)
-	if !ok {
+	opening, rest, ok := strings.Cut(src, "\n")
+	if !ok || !yamlFenceLine(opening) {
 		return ast.Front{}, src, nil
 	}
-	var doc frontDoc
-	rest, err := frontmatter.Parse(strings.NewReader(src), &doc, yamlFence)
-	if err != nil {
-		return ast.Front{}, "", &Error{File: file, Line: 1, Col: 1, Msg: "front matter: " + err.Error()}
-	}
-	body := string(rest)
-	if body == src {
+	metadata, body, closed := closeFrontMatter(rest)
+	if !closed {
 		return ast.Front{}, "", &Error{File: file, Line: 1, Col: 1, Msg: "unclosed front matter"}
 	}
-	if doc.Timbrex != nil && *doc.Timbrex != grammarVersion {
+	var doc frontDoc
+	if err := decodeFront([]byte(metadata), &doc); err != nil {
+		return ast.Front{}, "", &Error{File: file, Line: 1, Col: 1, Msg: "front matter: " + err.Error()}
+	}
+	if doc.Timbrex != nil && int(*doc.Timbrex) != grammarVersion {
 		return ast.Front{}, "", &Error{
 			File: file,
 			Line: 1,
@@ -102,7 +121,7 @@ func splitFront(file, src string) (ast.Front, string, error) {
 		Narrator:   strings.TrimSpace(doc.Narrator),
 	}
 	if doc.Timbrex != nil {
-		front.Timbrex = *doc.Timbrex
+		front.Timbrex = int(*doc.Timbrex)
 	}
 	if front.Narrator != "" && identLen(front.Narrator) != len(front.Narrator) {
 		return ast.Front{}, "", &Error{File: file, Line: 1, Col: 1, Msg: "narrator must be an ASCII identifier"}
@@ -122,22 +141,22 @@ func splitFront(file, src string) (ast.Front, string, error) {
 	return front, body, nil
 }
 
-// yamlFrontMatterSource reports whether src starts with a YAML fence.
-// The opening --- line may have trailing spaces or tabs, matching the
-// TextMate grammar. Other trailing characters keep the file as body text.
-func yamlFrontMatterSource(src string) (string, bool) {
-	if !strings.HasPrefix(src, "---") {
-		return src, false
+// closeFrontMatter preserves indentation: an indented --- can be YAML scalar
+// content, not a closing delimiter. The body remains a suffix for line offsets.
+func closeFrontMatter(src string) (metadata, body string, closed bool) {
+	for offset := 0; offset <= len(src); {
+		line, rest, newline := strings.Cut(src[offset:], "\n")
+		if yamlFenceLine(line) {
+			return src[:offset], rest, true
+		}
+		if !newline {
+			break
+		}
+		offset += len(line) + 1
 	}
-	i := 3
-	for i < len(src) && (src[i] == ' ' || src[i] == '\t') {
-		i++
-	}
-	if i >= len(src) || src[i] != '\n' {
-		return src, false
-	}
-	if i == 3 {
-		return src, true
-	}
-	return "---\n" + src[i+1:], true
+	return "", "", false
+}
+
+func yamlFenceLine(line string) bool {
+	return strings.TrimRight(line, " \t") == "---"
 }

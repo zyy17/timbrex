@@ -129,7 +129,7 @@ This is narration.
 
 ## 6. Front matter
 
-YAML front matter 可选，必须位于文件开头的两行 `---` 之间。开头和结尾的 `---` 行可以带有尾随空格或制表符。
+YAML front matter 可选，必须位于文件开头的两行 `---` 之间。开头和结尾的 `---` 必须从行首开始，可以带有尾随空格或制表符。
 
 ```yaml
 ---
