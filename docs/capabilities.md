@@ -2,27 +2,154 @@
 
 [简体中文](capabilities.zh-cn.md) · [Setup and official references](providers.md) · [Tutorial](tutorial.md)
 
-This table describes Timbrex's current adapters, not everything the vendors offer. **Parameter** means a numeric API field or SSML control. **Instruction** means a requested performance that the model may interpret approximately. **Unsupported** means a local error when used by a speech segment. Voice/model restrictions still apply; these mappings have offline contract coverage, not live acoustic verification.
-
-| Control | OpenAI | ElevenLabs | MiniMax | Azure | Qwen | Gemini | Fish |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Text and cast voices | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| `pause`, `silence`, `break`, nonnegative `gap` | Local silence | Local silence | Local silence | Local silence | Local silence | Local silence | Local silence |
-| `speed`, `fast`, `slow` | Parameter: 0.25–4× | Parameter: 0.7–1.2×; unsupported on v4/v4 Turbo | Parameter: 0.5–2× | SSML: 0.5–2× | Parameter: 0.5–2× | Instruction for `fast`/`slow`; numeric unsupported | Parameter: 0.5–2× |
-| `pitch` | Unsupported | Unsupported | Integer −12…+12 st | SSML −12…about +7.01955 st | Parameter −12…+12 st | Unsupported | Unsupported |
-| `volume` | Unsupported | Unsupported | Parameter −60…+20 dB | SSML −60…+20 dB | Parameter −60…about +6.02 dB | Unsupported | Parameter −60…+20 dB (local bound) |
-| Standard emotions | Instruction | Audio-tag instruction | Seven mapped emotions | Mapped styles | Instruction | Instruction | Selected S2 cues |
-| Emotion intensity, e.g. `happy 0.8` | Text instruction | Text instruction | Unsupported | Unsupported | Text instruction | Text instruction | Unsupported |
-| `whisper` / `shout` | Instruction | Audio tags | Whisper on 2.6 only; no shout | Voice-dependent styles | Instruction | Instruction | S2 cues |
-| `act`, `accent`, `dialect`, custom `emotion` | Instruction | Audio-tag instruction | Unsupported | Unsupported | Instruction | Instruction | Unsupported |
-| `style`, `role` | Instruction | Audio-tag instruction | Unsupported | SSML; role requires style | Instruction | Instruction | Unsupported |
-| `emph` | Instruction | Audio-tag instruction | Unsupported | Voice-dependent emphasis | Instruction | Instruction | S2 cue |
-| `laugh`, `cry`, `sigh` **spans** | Instruction | Audio-tag instruction | Unsupported | Unsupported | Instruction | Instruction | Unsupported |
-| Standalone nonverbal events | Unsupported | Selected events | Selected events on 2.8 | Unsupported | Selected events | Selected events | Selected events |
-| `lang` span / front matter | Instruction | Language code | Language boost | SSML locale | Language hint | Native language-code | Unsupported |
-| `voice`, `as` spans; `reset` | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner |
+The tables below describe Timbrex's current adapters, not everything the vendors offer. **Parameter** means a numeric API field or SSML control. **Instruction** means a requested performance that the model may interpret approximately. **Unsupported** means a local error when used by a speech segment. Voice/model restrictions still apply; these mappings have offline contract coverage, not live acoustic verification.
 
 OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. Explicit speed controls are rejected on `eleven_v4` and `eleven_v4_turbo`, which do not support the speed setting. For other models, the adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](providers.md). ElevenLabs language hints fail locally on `eleven_multilingual_v2`, when the primary subtag is empty, or when it is not `en` on English-only `eleven_flash_v2` / `eleven_turbo_v2`. Other models' language support is not queried, and unsupported codes may be ignored by the service.
+
+## Controls by provider
+
+[OpenAI](#openai) · [ElevenLabs](#elevenlabs) · [MiniMax](#minimax) · [Azure](#azure) · [Qwen](#qwen) · [Gemini](#gemini) · [Fish](#fish)
+
+### OpenAI
+
+| Control | Support |
+| --- | --- |
+| Text and cast voices | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence |
+| `speed`, `fast`, `slow` | Parameter: 0.25–4× |
+| `pitch` | Unsupported |
+| `volume` | Unsupported |
+| Standard emotions | Instruction |
+| Emotion intensity, e.g. `happy 0.8` | Text instruction |
+| `whisper` / `shout` | Instruction |
+| `act`, `accent`, `dialect`, custom `emotion` | Instruction |
+| `style`, `role` | Instruction |
+| `emph` | Instruction |
+| `laugh`, `cry`, `sigh` **spans** | Instruction |
+| Standalone nonverbal events | Unsupported |
+| `lang` span / front matter | Instruction |
+| `voice`, `as` spans; `reset` | Shared planner |
+
+### ElevenLabs
+
+| Control | Support |
+| --- | --- |
+| Text and cast voices | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence |
+| `speed`, `fast`, `slow` | Parameter: 0.7–1.2×; unsupported on v4/v4 Turbo |
+| `pitch` | Unsupported |
+| `volume` | Unsupported |
+| Standard emotions | Audio-tag instruction |
+| Emotion intensity, e.g. `happy 0.8` | Text instruction |
+| `whisper` / `shout` | Audio tags |
+| `act`, `accent`, `dialect`, custom `emotion` | Audio-tag instruction |
+| `style`, `role` | Audio-tag instruction |
+| `emph` | Audio-tag instruction |
+| `laugh`, `cry`, `sigh` **spans** | Audio-tag instruction |
+| Standalone nonverbal events | Selected events |
+| `lang` span / front matter | Language code |
+| `voice`, `as` spans; `reset` | Shared planner |
+
+### MiniMax
+
+| Control | Support |
+| --- | --- |
+| Text and cast voices | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence |
+| `speed`, `fast`, `slow` | Parameter: 0.5–2× |
+| `pitch` | Integer −12…+12 st |
+| `volume` | Parameter −60…+20 dB |
+| Standard emotions | Seven mapped emotions |
+| Emotion intensity, e.g. `happy 0.8` | Unsupported |
+| `whisper` / `shout` | Whisper on 2.6 only; no shout |
+| `act`, `accent`, `dialect`, custom `emotion` | Unsupported |
+| `style`, `role` | Unsupported |
+| `emph` | Unsupported |
+| `laugh`, `cry`, `sigh` **spans** | Unsupported |
+| Standalone nonverbal events | Selected events on 2.8 |
+| `lang` span / front matter | Language boost |
+| `voice`, `as` spans; `reset` | Shared planner |
+
+### Azure
+
+| Control | Support |
+| --- | --- |
+| Text and cast voices | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence |
+| `speed`, `fast`, `slow` | SSML: 0.5–2× |
+| `pitch` | SSML −12…about +7.01955 st |
+| `volume` | SSML −60…+20 dB |
+| Standard emotions | Mapped styles |
+| Emotion intensity, e.g. `happy 0.8` | Unsupported |
+| `whisper` / `shout` | Voice-dependent styles |
+| `act`, `accent`, `dialect`, custom `emotion` | Unsupported |
+| `style`, `role` | SSML; role requires style |
+| `emph` | Voice-dependent emphasis |
+| `laugh`, `cry`, `sigh` **spans** | Unsupported |
+| Standalone nonverbal events | Unsupported |
+| `lang` span / front matter | SSML locale |
+| `voice`, `as` spans; `reset` | Shared planner |
+
+### Qwen
+
+| Control | Support |
+| --- | --- |
+| Text and cast voices | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence |
+| `speed`, `fast`, `slow` | Parameter: 0.5–2× |
+| `pitch` | Parameter −12…+12 st |
+| `volume` | Parameter −60…about +6.02 dB |
+| Standard emotions | Instruction |
+| Emotion intensity, e.g. `happy 0.8` | Text instruction |
+| `whisper` / `shout` | Instruction |
+| `act`, `accent`, `dialect`, custom `emotion` | Instruction |
+| `style`, `role` | Instruction |
+| `emph` | Instruction |
+| `laugh`, `cry`, `sigh` **spans** | Instruction |
+| Standalone nonverbal events | Selected events |
+| `lang` span / front matter | Language hint |
+| `voice`, `as` spans; `reset` | Shared planner |
+
+### Gemini
+
+| Control | Support |
+| --- | --- |
+| Text and cast voices | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence |
+| `speed`, `fast`, `slow` | Instruction for `fast`/`slow`; numeric unsupported |
+| `pitch` | Unsupported |
+| `volume` | Unsupported |
+| Standard emotions | Instruction |
+| Emotion intensity, e.g. `happy 0.8` | Text instruction |
+| `whisper` / `shout` | Instruction |
+| `act`, `accent`, `dialect`, custom `emotion` | Instruction |
+| `style`, `role` | Instruction |
+| `emph` | Instruction |
+| `laugh`, `cry`, `sigh` **spans** | Instruction |
+| Standalone nonverbal events | Selected events |
+| `lang` span / front matter | Native language-code |
+| `voice`, `as` spans; `reset` | Shared planner |
+
+### Fish
+
+| Control | Support |
+| --- | --- |
+| Text and cast voices | Yes |
+| `pause`, `silence`, `break`, nonnegative `gap` | Local silence |
+| `speed`, `fast`, `slow` | Parameter: 0.5–2× |
+| `pitch` | Unsupported |
+| `volume` | Parameter −60…+20 dB (local bound) |
+| Standard emotions | Selected S2 cues |
+| Emotion intensity, e.g. `happy 0.8` | Unsupported |
+| `whisper` / `shout` | S2 cues |
+| `act`, `accent`, `dialect`, custom `emotion` | Unsupported |
+| `style`, `role` | Unsupported |
+| `emph` | S2 cue |
+| `laugh`, `cry`, `sigh` **spans** | Unsupported |
+| Standalone nonverbal events | Selected events |
+| `lang` span / front matter | Unsupported |
+| `voice`, `as` spans; `reset` | Shared planner |
+
 
 ## Exact mappings
 

@@ -19,7 +19,6 @@ var (
 	atxHeadings    = regexp.MustCompile(`(?m)^(#{1,6}) `)
 	fenceLine      = regexp.MustCompile("^(`{3,})([^`]*)$")
 	inlineCode     = regexp.MustCompile("`([^`]*)`")
-	specVersion    = []byte("SPEC v0.3.4")
 	skipBilingual  = map[string]bool{"AGENTS.md": true, "REVIEW_ROUNDS.md": true}
 	fenceLanguages = map[string]bool{
 		"go": true, "bash": true, "tbx": true, "yaml": true, "json": true, "text": true,
@@ -180,13 +179,16 @@ func unescapedPipe(s string) bool {
 }
 
 func TestSpecVersionLabel(t *testing.T) {
-	for _, path := range []string{"docs/spec.md", "docs/spec.zh-cn.md"} {
+	for path, title := range map[string]string{
+		"docs/spec.md":       "# DSL Specification v1\n",
+		"docs/spec.zh-cn.md": "# DSL 规范 v1\n",
+	} {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(string(data), string(specVersion)) {
-			t.Errorf("%s: missing %s", path, specVersion)
+		if !strings.HasPrefix(string(data), title) {
+			t.Errorf("%s: expected title %q", path, strings.TrimSpace(title))
 		}
 	}
 }

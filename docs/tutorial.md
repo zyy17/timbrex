@@ -1,12 +1,12 @@
 # Tutorial
 
-[简体中文](tutorial.zh-cn.md) · [Language reference](spec.md)
+[简体中文](tutorial.zh-cn.md) · [DSL Specification v1](spec.md)
 
-Timbrex compiles a `.tbx` script to a WAV file. This page runs `check` and `synth` against the current CLI (`timbrex 0.1.0`). The CLI has no `compile` or `inspect` command.
+This tutorial takes you from a short script to a WAV file, then adds speakers and performance directions. The local steps need no account. The speech example requires a TTS provider and may incur charges.
 
-## Prerequisites
+## Build the CLI
 
-Requires Go 1.27 ([go.mod](../go.mod)).
+Install Go 1.27 and `make`. Run these commands in a terminal:
 
 ```bash
 git clone https://github.com/zyy17/timbrex.git
@@ -15,37 +15,17 @@ make build
 ./timbrex version
 ```
 
-```text
-timbrex 0.1.0
-```
+Run the remaining commands from the repository root, where `./timbrex` was built.
 
-From the repository root, `go run .` is the same program as `./timbrex`. There is no `cmd/timbrex` package. Later steps use `./timbrex` after `make build`.
+## Write and check a script
 
-## Write a script
-
-Create `hello.tbx`. Plain text is a valid script. Tags are optional.
+Create a file named `hello.tbx` with this content:
 
 ```tbx
 Hello. [pause 300ms] Welcome home.
 ```
 
-Markup is `[name]`, `[name args]`, or `[name args|content]`. Tag names are English ASCII. Spoken text may be any language.
-
-The following script matches [examples/expressive.tbx](../examples/expressive.tbx):
-
-```tbx
----
-timbrex: 1
-strict_tags: true
----
-[happy|Good to see you!] [pause 300ms] [slow|Take your time.]
-```
-
-`timbrex: 1` is the frozen grammar version ([SPEC v0.3.4](spec.md)). `strict_tags: true` rejects unknown tag names. Front matter is optional. If present, it must begin at the start of the file between `---` lines. The opening and closing `---` lines may have trailing spaces or tabs.
-
-## Check a script
-
-`check` parses the file and resolves tags. It does not use credentials or the network.
+Ordinary text is spoken; `[pause 300ms]` requests a 300-millisecond pause. Tags are optional, so a file containing only `Hello.` is also valid.
 
 ```bash
 ./timbrex check hello.tbx
@@ -55,97 +35,9 @@ strict_tags: true
 ok
 ```
 
-Repository examples:
+`check` parses the script and checks its tags without contacting a provider. Errors fail the command. Warnings and informational messages go to stderr and do not prevent `ok` on stdout. Passing this check does not establish that a particular provider supports every direction in the script.
 
-```bash
-./timbrex check examples/hello.tbx
-./timbrex check examples/expressive.tbx
-./timbrex check examples/dialogue.tbx
-./timbrex check examples/gemini.tbx
-./timbrex check examples/fish.tbx
-```
-
-Success prints `ok` on stdout. Warnings and info go to stderr and still print `ok`. An error fails the command.
-
-Unknown names become free-form acting unless strict mode is on. `--strict-tags` and `--no-strict-tags` override front matter and configuration.
-
-```bash
-./timbrex check hello.tbx --strict-tags
-```
-
-The following line is invalid in strict mode. The block is fenced as `text` so `go test` does not parse it as a script:
-
-```text
-[thoughtfully] Hello.
-```
-
-```text
-script.tbx:1:1: error[V041]: unregistered tag "thoughtfully"; for free-form acting write [act "thoughtfully"]
-error: check failed
-```
-
-Write free-form acting as `[act "thoughtfully"]`.
-
-## Inspect configuration
-
-`check` validates language. `config` prints merged file and environment settings. Configured API keys are shown as `REDACTED`. `config` does not read a script or apply `synth` flags.
-
-```bash
-./timbrex config
-```
-
-Without provider environment variables, built-in defaults are:
-
-```yaml
-provider: stub
-strict_tags: false
-providers:
-    azure:
-        voice: en-US-JennyNeural
-    elevenlabs:
-        model: eleven_v3
-        endpoint: https://api.elevenlabs.io/v1
-    fish:
-        model: s2.1-pro
-        endpoint: https://api.fish.audio/v1
-    gemini:
-        model: gemini-3.8-flash-tts
-        voice: Kore
-        endpoint: https://generativelanguage.googleapis.com/v1beta
-    minimax:
-        model: speech-2.8-hd
-        voice: English_expressive_narrator
-        endpoint: https://api.minimax.io/v1
-    openai:
-        model: gpt-4o-mini-tts
-        voice: coral
-        endpoint: https://api.openai.com/v1
-    qwen:
-        model: qwen-audio-3.1-tts-flash
-        voice: longanhuan_v3.1
-    stub: {}
-```
-
-`check` accepts `cast: auto` and lists each discovered speaker once on stderr:
-
-```tbx
----
-timbrex: 1
-cast: auto
----
-lin: Hello.
-chen: Hi.
-```
-
-```text
-script.tbx:5:1: info: cast auto recognized speaker "lin"
-script.tbx:6:1: info: cast auto recognized speaker "chen"
-ok
-```
-
-## Synthesize with stub
-
-`stub` is the default provider. It writes an 8 kHz tone from the script's rune count. It is not a speech engine and does not require a key.
+## Produce a test file
 
 ```bash
 ./timbrex synth hello.tbx --provider stub -o tone.wav
@@ -155,48 +47,107 @@ ok
 tone.wav
 ```
 
-Stdout is the output path. `-o` / `--out` must end in `.wav`. If `-o` is omitted, the default is the script path with `.wav` (here `hello.wav`). The source script cannot be overwritten.
+Open `tone.wav` in an audio player. You will hear a test tone, not the words from the script: `stub` tests file generation and does not perform speech or insert the requested pauses. It is the default provider and needs no credentials.
+
+`-o` / `--out` chooses the output path, which must end in `.wav`. Its parent directory must exist. Without `-o`, `hello.tbx` produces `hello.wav` beside the script. Timbrex rejects an output path that would replace the source script.
+
+## Generate speech
+
+Choose a provider from [provider setup](providers.md). For an OpenAI example, supply your key through `OPENAI_API_KEY` **or** the `providers.openai.api_key` configuration field. Then run:
 
 ```bash
-./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
+# Configure your OpenAI credentials before running this command.
+./timbrex synth hello.tbx --provider openai --voice coral -o speech.wav
 ```
 
-```text
-tone.wav
-```
-
-`file tone.wav` reports `WAVE audio, Microsoft PCM, 16 bit, mono 8000 Hz`. HTTP adapters write 24 kHz WAV.
-
-## Synthesize with OpenAI
-
-HTTP adapters require credentials. OpenAI requires `OPENAI_API_KEY`. Without it, `synth` fails before any request:
-
-```bash
-./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
-```
+A successful run prints `speech.wav`. If neither credential source is set, it fails before sending a request:
 
 ```text
 error: set providers.openai.api_key or its documented environment variable
 ```
 
-```bash
-export OPENAI_API_KEY=your-key
-./timbrex synth examples/expressive.tbx --provider openai --voice coral -o speech.wav
-```
+Keep keys out of scripts and source control. See [configuration](configuration.md) for file and environment settings. The OpenAI adapter's default model is `gpt-4o-mini-tts`; check its [service limits and lifecycle notice](providers.md#openai) before relying on it. Other adapters have different model, voice, and endpoint requirements.
 
-On success, stdout is the output path (`speech.wav`). The default model is `gpt-4o-mini-tts`. Live account compatibility and acoustic quality have not been verified in this repository.
+Real adapters produce 24 kHz mono 16-bit PCM WAV files. They synthesize speech segments sequentially and add pauses locally. Their request contracts have offline tests; live account compatibility and acoustic quality have not been verified in this repository.
 
-Provider selection: `--provider`, then front matter `provider:`, then configuration (default `stub`). [examples/dialogue.tbx](../examples/dialogue.tbx) sets `provider: openai`. Pass `--provider stub` to write a local tone from that file.
+## Add directions and strict checking
 
-Other adapters require additional settings: ElevenLabs and Fish need a voice ID; Azure needs a region or endpoint; Qwen needs a workspace endpoint; Gemini rejects numeric speed. See [provider setup](providers.md).
+Tags have three forms: `[name]`, `[name args]`, and `[name args|content]`. Tag names use ASCII identifiers; spoken text can use any language.
 
-## Declare speakers
-
-A line that starts with `id:` is a turn only when that id is in `cast`, or when `cast: auto`. Otherwise it is narration. Narration uses speaker `narrator` unless front matter sets `narrator:`.
+Create `expressive.tbx` with the following content. It uses the same tag structure as [examples/expressive.tbx](../examples/expressive.tbx):
 
 ```tbx
 ---
 timbrex: 1
+strict_tags: true
+---
+[happy|Good to see you!] [pause 300ms] [slow|Take your time.]
+```
+
+```bash
+./timbrex check expressive.tbx
+```
+
+The YAML section at the beginning is called *front matter*. It is optional. When present, it starts at the beginning of the file between two `---` lines. Here, `timbrex: 1` selects the current DSL version and `strict_tags: true` rejects unregistered names. [DSL Specification v1](spec.md) describes the current rules, which may change during development.
+
+Without strict mode, unregistered tags become free-form acting directions. This is convenient while writing, but can hide spelling mistakes. Use strict mode when you want names checked, and write free-form directions explicitly as `[act "thoughtfully"]`.
+
+To see the difference, create `unknown.tbx` containing this line:
+
+```text
+[thoughtfully] Hello.
+```
+
+```bash
+./timbrex check unknown.tbx --strict-tags
+```
+
+```text
+unknown.tbx:1:1: error[V041]: unregistered tag "thoughtfully"; for free-form acting write [act "thoughtfully"]
+error: check failed
+```
+
+Replacing `[thoughtfully]` with `[act "thoughtfully"]` makes this strict check pass. `--strict-tags` and `--no-strict-tags` override both front matter and configuration.
+
+## Understand scope
+
+Directions such as `happy` or `slow` can apply at three levels:
+
+- A span, such as `[slow|Take your time.]`, applies only to its enclosed text. Nested spans restore the surrounding state when they end.
+- A point tag inside speech, such as `Hello. [sad] I missed you.`, applies from that point to the end of the turn. An unprefixed paragraph is a narration turn; a blank line ends it.
+- A line containing only point tags is a scene line. State set there applies to later turns until another scene line changes it. An event such as `[pause 1s]` occurs once rather than becoming persistent state.
+
+Create `emotion.tbx`:
+
+```tbx
+---
+strict_tags: true
+---
+[happy]
+Hello. [sad] I missed you. [reset] Welcome back.
+
+[slow|Take your time.] [act "quietly relieved"|You made it.]
+[reset]
+Goodbye.
+```
+
+```bash
+./timbrex check emotion.tbx
+./timbrex synth emotion.tbx --provider stub -o emotion.wav
+```
+
+The first `[happy]` sets the scene's emotion. Inside the first paragraph, `[sad]` changes it and `[reset]` restores the scene's `happy`. The second paragraph also inherits `happy`; its spans add local directions. The final standalone `[reset]` clears scene controls, so `Goodbye.` has none of those directions.
+
+Inside speech, `[reset]` restores scene defaults, even inside a nested span. It does not mean “restore the immediately enclosing span.” A named reset, such as `[reset speed]`, affects only that control. See the [scope reference](spec.md) for details.
+
+The stub command above checks file generation only. To hear the directions, use a provider that supports them. Numeric controls and performance instructions are different: for example, Gemini's `slow` is an approximate style request, while its numeric `speed` control is unsupported. Consult the [capability reference](capabilities.md) before changing providers.
+
+## Use more than one speaker
+
+Create `cast.tbx`:
+
+```tbx
+---
 cast:
   lin:
     name: Lin
@@ -210,26 +161,21 @@ chen: [slow|I've got something to tell you.]
 ```
 
 ```bash
-./timbrex check examples/dialogue.tbx
-./timbrex synth examples/dialogue.tbx --provider stub -o dialogue.wav
+./timbrex check cast.tbx
+./timbrex synth cast.tbx --provider stub -o cast.wav
 ```
 
-```text
-ok
-dialogue.wav
-```
+For actual dialogue, select `--provider openai` after configuring credentials. Each `voices.openai` value selects that character's voice. `--voice` only supplies a fallback for speakers without a cast mapping; it does not override these two entries.
 
-`cast.<id>.voices.<provider>` selects that speaker's voice. `--voice` is a fallback; it does not replace cast mappings. A display name is not a speaker alias. `Lin:` in the body remains narration and may emit `W103`.
+A leading `id:` starts a speaker turn only if the ID is in `cast`, or if front matter sets `cast: auto`. Otherwise the prefix remains ordinary text: it continues the current speaker’s turn, or starts narration in a new paragraph. A display name is not an alias: use `lin:`, not `Lin:`. Unprefixed narration uses `narrator` unless front matter selects another ID with `narrator:`.
+
+`cast: auto` recognizes speaker prefixes without declaring them and reports each discovered ID during `check`. It does not choose distinct voices. Use explicit cast mappings when voices matter. `[as lin|text]` uses a known speaker's mapping; `[voice "vendor-id"|text]` selects a vendor voice directly.
 
 ## Insert pauses
 
-`pause`, `silence`, `break`, and a nonnegative `gap` become local silence in the shared PCM renderer used by HTTP adapters. They are not sent to the vendor. `stub` does not insert silence; it writes one tone from rune count. Default pause is 250 ms. `short`, `medium`, and `long` are 250 ms, 500 ms, and 1 s. Explicit durations use `ms`, `s`, or `min`, from `0ms` to `1min`. Write zero as `0ms`. `[pause 0]` is a number, not a duration, and `check` rejects it.
+Create `pauses.tbx`:
 
 ```tbx
----
-timbrex: 1
-strict_tags: true
----
 Wait. [pause 500ms] Now go. [pause short] One more beat.
 ```
 
@@ -238,44 +184,23 @@ Wait. [pause 500ms] Now go. [pause short] One more beat.
 ./timbrex synth pauses.tbx --provider stub -o pauses.wav
 ```
 
-```text
-ok
-pauses.wav
-```
+With a real provider, `pause`, `silence`, `break`, and nonnegative `gap` insert local silence. `gap` must be at the beginning of a turn or on a scene line. The default is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations use `ms`, `s`, or `min`, from `0ms` to `1min`. Write zero as `0ms`: `[pause 0]` is a number rather than a duration and fails `check`.
 
-There is no implicit pause between turns. `overlap` is reserved. HTTP adapters reject it.
+There is no implicit pause between turns. Use a pause where one is needed. Overlapping speech is not implemented. The stub output above does not reproduce pauses; switch to a real provider to hear them.
 
-## Set emotion and style
+## Reuse settings
 
-A point tag lasts to the end of the turn. A span applies only to its content. A line that contains only tags without spans sets scene state for later turns. `[reset]` restores scene state.
+Provider, model, fallback voice, and strict mode can come from configuration instead of being repeated on each command. Their priority is flags, script front matter, environment, the selected YAML file, then defaults. Cast voice mappings still take priority over the fallback voice.
 
-```tbx
----
-timbrex: 1
-strict_tags: true
----
-[happy]
-[happy|Good to see you!] [pause 300ms] [slow|Take your time.]
-[act "holding back tears"|I'm fine.]
-```
+By default, configuration comes from `timbrex.yaml` in the current working directory. `--config` selects a different file. To inspect the merged file and environment settings:
 
 ```bash
-./timbrex check emotion.tbx --strict-tags
-./timbrex synth emotion.tbx --provider stub -o emotion.wav
+./timbrex config
 ```
 
-```text
-ok
-emotion.wav
-```
+Configured API keys appear as `REDACTED`. This command does not read a script, apply `synth` flags, or test credentials. The [configuration reference](configuration.md) covers all fields and overrides; [provider setup](providers.md) lists each adapter's defaults and environment variables.
 
-`[happy]` on its own line is scene state. The next narration line inherits it. `[happy|…]` is a local span. `[act "…"]` is the explicit acting form required in strict mode.
-
-Adapters map these tags differently. OpenAI, Qwen, and Gemini send many of them as instructions. MiniMax maps seven emotions. Azure maps styles. ElevenLabs uses audio tags on v3/v4 models. Fish maps a subset of S2 cues. `stub` ignores performance and writes a tone. See [capabilities](capabilities.md) before targeting an HTTP adapter.
-
-## Synthesize multiple scripts
-
-There is no batch command. Use a shell loop. `--provider stub` is required here because [examples/dialogue.tbx](../examples/dialogue.tbx), [examples/gemini.tbx](../examples/gemini.tbx), and [examples/fish.tbx](../examples/fish.tbx) set a real provider.
+Some repository examples select a real provider in their front matter. To check all examples and produce local test files without making speech requests:
 
 ```bash
 mkdir -p out
@@ -285,56 +210,15 @@ for f in examples/*.tbx; do
 done
 ```
 
-```text
-ok
-out/dialogue.wav
-ok
-out/expressive.wav
-ok
-out/fish.wav
-ok
-out/gemini.wav
-ok
-out/hello.wav
-```
+## Troubleshoot a result
 
-`check` does not use the network. `synth` without `stub` requires that provider's credentials.
-
-## Diagnostics
-
-| Code | Severity | Meaning |
-| --- | --- | --- |
-| `V012` | error | Unclosed tag |
-| `V013` | error | `[/name]` is invalid; spans use `[name\|...]` |
-| `V041` | error | Unregistered tag in strict mode |
-| `W040` | warning | Unknown single-word tag close to a registered name |
-| `W103` | warning | Cast display name used as a speaker prefix |
-| `I050` | info | Non-ASCII free-form acting text |
-
-Parse errors (such as `V012`) print as `file:line:col: …`. Check failures add `error: check failed`.
-
-## Glossary
-
-| Term | Meaning |
+| Symptom | What to check |
 | --- | --- |
-| `.tbx` / `.timbrex` | Script extensions for the same language |
-| tag | `[name]`, `[name args]`, or `[name args\|content]` |
-| front matter | Optional YAML between opening and closing `---` lines |
-| cast | Declared speaker ids; `cast: auto` accepts every leading ASCII id |
-| turn | A line (and following lines) spoken by a declared speaker |
-| narration | Unprefixed paragraphs; speaker `narrator` by default |
-| scene line | A line of tags without spans; sets or emits between turns |
-| span | `[name\|content]`; local scope |
-| `check` | Parse and resolve tags; print `ok` or diagnostics |
-| `synth` | Same check, then write a WAV |
-| `config` | Print merged settings with keys redacted |
-| `stub` | Default provider; 8 kHz test tone, not speech |
-| strict mode | Unknown tags are `V041`; write `[act "…"]` instead |
-| provider | `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, `qwen`, `gemini`, or `fish` |
+| `check` prints `ok`, but `synth` reports an unsupported control | Language validation and adapter support are separate. Check the selected model in the [capability reference](capabilities.md). |
+| The output is just a tone | You used `stub`, which is the default. Configure and select a real provider. |
+| `--voice` does not change a character's voice | The character has a cast mapping, or a `voice`/`as` direction is active. `--voice` is only the fallback. |
+| A name followed by `:` is spoken aloud | Declare that exact ID in `cast`, or use `cast: auto`. Display names are not aliases. |
+| Synthesis asks for a key despite an exported variable | Check the selected provider and its documented variable name; inspect merged settings with `config`. A key for one provider cannot configure another. |
+| No output file is created | Read stderr. Check the output directory, script diagnostics, and provider error. A failed real synthesis preserves an existing destination; earlier requests may already have incurred charges. |
 
-## See also
-
-- [SPEC v0.3.4](spec.md) — grammar, vocabulary, diagnostics
-- [Configuration](configuration.md) — flags, files, environment
-- [Providers](providers.md) — credentials and request shapes
-- [Capabilities](capabilities.md) — adapter mappings
+Diagnostics include a file, line, and column where available. `V041` means an unregistered strict-mode tag, `V012` an unclosed tag, and `W103` a display name used as a speaker prefix. The [DSL reference](spec.md) lists diagnostics; [provider setup](providers.md) explains service failures and limits.

@@ -2,7 +2,7 @@
 
 [简体中文](configuration.zh-cn.md) · [Provider setup](providers.md) · [Tutorial](tutorial.md)
 
-The CLI loads configuration once per `check`, `synth`, or `config` invocation. `internal/config` merges defaults, one YAML file, and environment variables through [koanf](https://github.com/knadh/koanf). Adapters receive resolved options. They do not read files or environment variables.
+Use configuration to set a default provider, model, voice, and strict mode. `check`, `synth`, and `config` load one YAML file and the documented environment variables. Scripts and command-line flags can override the relevant defaults; credentials and endpoints come only from configuration or the environment.
 
 ## File discovery
 
@@ -11,10 +11,9 @@ By default, `check`, `synth`, and `config` read `timbrex.yaml` from the **curren
 Scripts and configuration inputs must be regular files; symlinks to regular files are supported. Named pipes (FIFOs), devices, and directories are rejected. This file-only input contract does not guarantee that every filesystem operation is interruptible.
 
 ```bash
-cp examples/timbrex.yaml timbrex.yaml
-./timbrex config
+./timbrex --config examples/timbrex.yaml config
 ./timbrex --config examples/timbrex.yaml check examples/expressive.tbx
-./timbrex synth examples/expressive.tbx --config timbrex.yaml --provider openai -o speech.wav
+./timbrex --config examples/timbrex.yaml synth examples/expressive.tbx --provider stub -o tone.wav
 ```
 
 `--config` is a global flag and works before or after the command. Help, version, and shell completion do not load configuration. Timbrex does not load `.env` files, expand `${VARIABLE}` in YAML, or watch files for changes.
@@ -40,7 +39,7 @@ The file contains one YAML mapping. Keys are case-sensitive. Unknown keys, unkno
 | --- | --- |
 | `provider` | Default provider; initially `stub` |
 | `strict_tags` | Default tag checking mode; initially `false` |
-| `providers.<id>.api_key` | Credential for that provider; use its environment variable |
+| `providers.<id>.api_key` | Credential for that provider; its environment variable is an alternative |
 | `providers.<id>.model` | Default model; Azure selects models through its voice and rejects a model |
 | `providers.<id>.voice` | Fallback voice for speakers without cast mappings |
 | `providers.<id>.endpoint` | API base URL for OpenAI, ElevenLabs, MiniMax, Gemini, and Fish; full request URL for Azure and Qwen |

@@ -2,40 +2,60 @@
 
 [简体中文](contributing.zh-cn.md)
 
-Read the [tutorial](docs/tutorial.md), [SPEC v0.3.4](docs/spec.md), and [repository rules](AGENTS.md). The grammar is frozen. Extend the vocabulary and adapters. Do not add syntax.
+This guide covers local development, tests, and pull requests. Read the [tutorial](docs/tutorial.md) to try the language, the [DSL Specification v1](docs/spec.md) for its rules, and [AGENTS.md](AGENTS.md) for package boundaries. The language is still developing; proposed rule changes should explain their effect on existing scripts.
 
-## Before opening a change
+## Set up a checkout
 
-For a bug, include a minimal `.tbx` example, command, expected result, actual result, and tool version. For provider issues, include the model and region and redact credentials, private text, and signed audio URLs. API acceptance and audio quality are separate observations; describe both when relevant.
-
-Discuss substantial syntax, architecture, or compatibility changes in an issue before implementing them. A focused bug fix or a documented provider addition can be proposed directly as a pull request.
-
-## Development checks
-
-Use the Go version in `go.mod` and golangci-lint **v2.14.0**. CI runs on Linux and macOS.
+Install the Go version declared in [go.mod](go.mod) and golangci-lint **v2.14.0**, the version used in CI. Fork the repository if you plan to submit a pull request, then clone your fork. To explore the upstream checkout:
 
 ```bash
+git clone https://github.com/zyy17/timbrex.git
+cd timbrex
+make build
+./timbrex check examples/hello.tbx
+./timbrex synth examples/hello.tbx --provider stub -o hello.wav
+```
+
+`check` prints `ok` for this example. The `stub` provider writes a short test tone without credentials or a network request. It exercises the output path, not speech quality. The entry point is repository-root `main.go`; you can also run `go run . check examples/hello.tbx`.
+
+## Find the code to change
+
+The main path is `internal/lex` → `internal/parse` and `internal/ast` → `internal/check` → `internal/lower` and `internal/ir` → `internal/providers`. The standard tags are in `internal/vocab`. Command wiring is in `internal/cli`; YAML settings and environment bindings are in `internal/config`. Tests live beside the code they exercise.
+
+Use short, idiomatic Go functions and follow existing patterns. Keep parsing independent of providers and I/O. Only `internal/cli` imports Cobra. Adapters receive resolved configuration and IR; they do not reload settings or parse scripts. Identifiers, errors, help text, and code comments use English. Comments should explain a constraint or a non-obvious decision rather than restate the code.
+
+For a bug report, include a minimal `.tbx` script, the command, expected and actual results, and `timbrex version` output. Provider reports also need the model and region; remove credentials, private text, and signed audio URLs. Discuss substantial syntax, architecture, or compatibility changes in an issue before implementing them. A focused fix or a documented provider addition can go directly to a pull request.
+
+## Run the checks
+
+Run a relevant package while iterating, for example `go test ./internal/parse`. Before submitting, run the same checks as CI:
+
+```bash
+make tidy
 make test
 make lint
-make tidy
 ```
 
-Tests must be offline by default. Use `httptest` for vendor contracts; never require credentials or spend money in the normal test suite. Add regression coverage for behavioral fixes and boundary cases. If changing the TextMate YAML source, regenerate its packaged JSON with:
+`make tidy` reports whether `go.mod` or `go.sum` would change without rewriting them. `make test` builds `./timbrex` and runs `go test ./...`. `make lint` runs golangci-lint and its formatter check. Use `make fmt` to apply Go formatting. CI runs the test suite on Linux and macOS.
 
-```bash
-go test ./editors/vscode -update
-```
+Tests must be offline by default. Use `httptest` for vendor requests, and add regression coverage for behavioral fixes and boundary cases. Normal tests must not require credentials or spend money. If you edit the TextMate YAML grammar, regenerate its packaged JSON with `go test ./editors/vscode -update`; see the [editor guide](editors/vscode/readme.md).
 
-Live validation is separate and opt-in. Record the model, voice, region, request parameters, date, and result without recording secrets. Do not describe mock tests as proof that a vendor service works.
+Live validation is separate and opt-in. Record the model, voice, region, request parameters, date, and result without secrets. Distinguish API acceptance from the quality of the resulting audio; mocked requests establish neither.
 
-## Adding a provider
+## Add a provider
 
-Read the official API documentation first and link it from the adapter and setup guide. Match the actual authentication, request schema, audio format, and completion/error responses. Put the implementation in `internal/providers/<name>`, register from `init`, and blank-import it in the CLI. Add defaults and environment bindings in `internal/config`; adapters consume resolved options. Keep vendor code independent of configuration loading, parsing, and Cobra.
+Read the official API documentation first and link it from the adapter and [setup guide](docs/providers.md). Match its authentication, request schema, audio format, and completion/error responses. Implement `Provider` in `internal/providers/<name>`, register it from `init`, and blank-import it in the CLI. Add defaults and environment bindings in `internal/config`.
 
-Document supported models, environment variables, tag mappings, ranges, language hints, and limitations. Reject unrepresentable controls rather than dropping them. Test the full CLI-to-request path as well as malformed responses and failures. Shared code belongs in `internal/providers` only when it has a concrete shared use.
+Document supported models, credentials, tag mappings, ranges, language hints, and limitations in both the setup guide and [capability reference](docs/capabilities.md). Reject controls the adapter cannot represent. Test the full CLI-to-request path, malformed responses, and failure handling. Move code into `internal/providers` only when it has a concrete shared use.
 
-## Documentation and review
+## Write and review documentation
 
-Use lowercase documentation filenames; `AGENTS.md` keeps its name for tool discovery. Update English and `.zh-cn.md` companions in the same change. Keep examples executable: every fenced `tbx` block and every `.tbx` file must parse under `go test`. Distinguish implemented features, approximations, and plans. Cite primary sources for vendor-specific behavior; avoid unsupported price, licensing, quality, or deprecation claims.
+Keep each page focused: README for an overview and first run, tutorial for a guided script, specification for language rules, configuration and provider pages for setup, and design notes for tradeoffs. Link to the detailed reference instead of repeating it.
 
-Use short, idiomatic Go with clear package boundaries. Only `internal/cli` imports Cobra. Prefer existing patterns over new abstractions. Use English identifiers, errors, help text, comments, and Conventional Commit messages. Keep commits focused, include validation results, and never commit keys or `.env` files. Contributions are covered by the repository's [MIT license](license).
+Write for a developer encountering the project for the first time. Explain what a feature does, show a small example, and state relevant limits where they affect its use. Avoid slogans, claims without evidence, and promises about future compatibility. Chinese text should read naturally rather than follow English sentence structure; keep identifiers and useful technical terms in English. Distinguish implemented behavior, approximations, and proposals. Cite official sources for vendor behavior.
+
+Update English and `.zh-cn.md` companions together, with the same examples and technical meaning. Use lowercase documentation filenames except `AGENTS.md`. Documentation tests parse every fenced `tbx` example and `.tbx` file, check local file links and paired headings, and check Markdown fences and table escaping. They do not prove provider support or audio quality; verify those claims against adapter code and tests.
+
+## Open a pull request
+
+Keep the change focused and use English [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) messages, such as `fix: preserve speaker after nested span`. Explain the problem, the resulting behavior, and which checks passed. Include a small before/after example when it helps, and call out compatibility changes or missing validation. Do not commit keys, `.env` files, or generated audio. Contributions are covered by the repository's [MIT license](license).

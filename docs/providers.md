@@ -6,36 +6,25 @@ Timbrex uses synchronous HTTP APIs directly. The adapters are based on the offic
 
 ## Configuration
 
-Settings come from YAML and environment variables. See [configuration](configuration.md). Store credentials in the environment or a secret manager. Timbrex does not load `.env` files. Do not put keys in `.tbx` files or commit them. The table lists environment-based setup. Equivalent `providers.<id>` file fields are also valid.
+Settings come from YAML and environment variables. See [configuration](configuration.md). Store credentials in the environment or a secret manager. Timbrex does not load `.env` files. Do not put keys in `.tbx` files or commit them. Each provider section lists its environment-based setup. Equivalent `providers.<id>` file fields are also valid.
 
-| Provider ID | Required environment | Default model | Default voice |
-| --- | --- | --- | --- |
-| `openai` | `OPENAI_API_KEY` | `gpt-4o-mini-tts` | `coral` |
-| `elevenlabs` | `ELEVENLABS_API_KEY`, plus a voice selection | `eleven_v3` | None; set `ELEVENLABS_VOICE_ID`, `--voice`, front matter, or cast mapping |
-| `minimax` | `MINIMAX_API_KEY` | `speech-2.8-hd` | `English_expressive_narrator` |
-| `azure` | `AZURE_SPEECH_KEY`, and region or endpoint | Selected by voice | `en-US-JennyNeural` |
-| `qwen` | `DASHSCOPE_API_KEY`, `QWEN_ENDPOINT` | `qwen-audio-3.1-tts-flash` | `longanhuan_v3.1` |
-| `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` | `Kore` |
-| `fish` | `FISH_API_KEY`, voice/reference ID | `s2.1-pro` | None; set `FISH_VOICE_ID`, `--voice`, front matter, or cast mapping |
-| `stub` | None | None | None; test tone |
+[OpenAI](#openai) · [ElevenLabs](#elevenlabs) · [MiniMax](#minimax) · [Azure Speech](#azure-speech) · [Qwen](#qwen) · [Gemini TTS](#gemini-tts) · [Fish Audio](#fish-audio)
 
-Optional environment defaults:
-
-| Provider | Model | Voice | Endpoint override |
-| --- | --- | --- | --- |
-| OpenAI | `OPENAI_MODEL` | `OPENAI_VOICE` | `OPENAI_BASE_URL` (base URL including `/v1`) |
-| ElevenLabs | `ELEVENLABS_MODEL` | `ELEVENLABS_VOICE_ID` | `ELEVENLABS_BASE_URL` (base URL including `/v1`) |
-| MiniMax | `MINIMAX_MODEL` | `MINIMAX_VOICE_ID` | `MINIMAX_BASE_URL` (base URL including `/v1`) |
-| Azure | — | `AZURE_SPEECH_VOICE` | `AZURE_SPEECH_ENDPOINT` (full request URL), otherwise `AZURE_SPEECH_REGION` |
-| Qwen | `QWEN_MODEL` | `QWEN_VOICE` | `QWEN_ENDPOINT` (required full request URL) |
-| Gemini | `GEMINI_MODEL` | `GEMINI_VOICE` | `GEMINI_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`) |
-| Fish | `FISH_MODEL` | `FISH_VOICE_ID` | `FISH_BASE_URL` (`https://api.fish.audio/v1`) |
+The `stub` provider needs no environment variables and has no model or voice; it writes a test tone.
 
 `--model` and `--voice` override front matter, which overrides environment settings, which override YAML configuration and built-in defaults. Cast voice mappings override the default voice. A `[voice "vendor-id"|text]` span selects a voice directly. `[as lin|text]` uses Lin's mapping; a known speaker without a mapping still uses the default voice, and an unknown target is an error. Changing provider does not translate a model or voice ID belonging to another vendor.
 
 Endpoint overrides target a regional service or a trusted compatible gateway. API credentials are sent to that endpoint. Use HTTPS for remote services. HTTP is accepted for local testing. Requests do not follow redirects.
 
 ## OpenAI
+
+- Provider ID: `openai`.
+- Environment setup: `OPENAI_API_KEY`.
+- Default model: `gpt-4o-mini-tts`.
+- Default voice: `coral`.
+- Optional model default: `OPENAI_MODEL`.
+- Optional voice default: `OPENAI_VOICE`.
+- Endpoint override: `OPENAI_BASE_URL` (base URL including `/v1`).
 
 ```bash
 # OPENAI_API_KEY must already be set.
@@ -52,6 +41,14 @@ References: [Create speech](https://developers.openai.com/api/reference/resource
 
 ## ElevenLabs
 
+- Provider ID: `elevenlabs`.
+- Environment setup: `ELEVENLABS_API_KEY`, plus a voice selection.
+- Default model: `eleven_v3`.
+- Default voice: None; set `ELEVENLABS_VOICE_ID`, `--voice`, front matter, or cast mapping.
+- Optional model default: `ELEVENLABS_MODEL`.
+- Optional voice default: `ELEVENLABS_VOICE_ID`.
+- Endpoint override: `ELEVENLABS_BASE_URL` (base URL including `/v1`).
+
 ```bash
 # ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID must already be set.
 ./timbrex synth examples/expressive.tbx --provider elevenlabs -o elevenlabs.wav
@@ -65,6 +62,14 @@ References: [Create speech](https://elevenlabs.io/docs/api-reference/text-to-spe
 
 ## MiniMax
 
+- Provider ID: `minimax`.
+- Environment setup: `MINIMAX_API_KEY`.
+- Default model: `speech-2.8-hd`.
+- Default voice: `English_expressive_narrator`.
+- Optional model default: `MINIMAX_MODEL`.
+- Optional voice default: `MINIMAX_VOICE_ID`.
+- Endpoint override: `MINIMAX_BASE_URL` (base URL including `/v1`).
+
 ```bash
 # MINIMAX_API_KEY must already be set.
 ./timbrex synth examples/expressive.tbx --provider minimax -o minimax.wav
@@ -77,6 +82,14 @@ The default `speech-2.8-hd` supports the mapped nonverbal events. Whisper is sup
 Reference: [Synchronous speech synthesis API](https://platform.minimax.io/docs/api-reference/speech-t2a-http).
 
 ## Azure Speech
+
+- Provider ID: `azure`.
+- Environment setup: `AZURE_SPEECH_KEY`, and region or endpoint.
+- Default model: Selected by voice.
+- Default voice: `en-US-JennyNeural`.
+- Optional model default: —.
+- Optional voice default: `AZURE_SPEECH_VOICE`.
+- Endpoint override: `AZURE_SPEECH_ENDPOINT` (full request URL), otherwise `AZURE_SPEECH_REGION`.
 
 ```bash
 # AZURE_SPEECH_KEY must already be set.
@@ -94,6 +107,14 @@ References: [REST API](https://learn.microsoft.com/en-us/azure/ai-services/speec
 
 ## Qwen
 
+- Provider ID: `qwen`.
+- Environment setup: `DASHSCOPE_API_KEY`, `QWEN_ENDPOINT`.
+- Default model: `qwen-audio-3.1-tts-flash`.
+- Default voice: `longanhuan_v3.1`.
+- Optional model default: `QWEN_MODEL`.
+- Optional voice default: `QWEN_VOICE`.
+- Endpoint override: `QWEN_ENDPOINT` (required full request URL).
+
 ```bash
 # DASHSCOPE_API_KEY must already be set; replace the workspace placeholder.
 export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer'
@@ -106,17 +127,15 @@ The workspace endpoint is required. Singapore uses `ap-southeast-1`; Beijing use
 
 References: [HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api), [models and usage restrictions](https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide).
 
-## Failures and limits
-
-Each HTTP request has a two-minute timeout and a 64 MiB response limit. The final PCM output is limited to 1 GiB. All speech segments are validated before requests start. Runtime failures report the provider and segment number. HTTP errors include status codes; MiniMax/Qwen API errors include vendor error codes. Response bodies and signed URL query strings are omitted from diagnostics.
-
-Audio responses must contain raw 24 kHz mono S16LE PCM. Conflicting media types or explicit `rate`/`channels` media-type parameters, recognizable audio containers (including FLAC and MP4), and empty or odd-length PCM are rejected. HTTP 206 partial responses and interrupted bodies are rejected; synthesis is not retried automatically. Missing optional format metadata remains accepted. Raw PCM bytes do not identify their sample rate or channel count, so without explicit metadata these checks rely on the requested vendor format; they cannot verify sound quality.
-
-The renderer uses a temporary file beside the destination and renames it only after success. Cancellation or failure removes temporary output and preserves an existing destination. The parent directory must exist. Earlier requests may already have incurred charges; there is no retry, fallback, cache, or resumable rendering.
-
-For troubleshooting, check the selected model, voice, region, and key permissions against the linked vendor docs. A successful offline test establishes the implemented contract, not service availability or speech quality. Long input should be split into paragraphs; Timbrex does not automatically chunk it to vendor token limits.
-
 ## Gemini TTS
+
+- Provider ID: `gemini`.
+- Environment setup: `GEMINI_API_KEY`.
+- Default model: `gemini-3.8-flash-tts`.
+- Default voice: `Kore`.
+- Optional model default: `GEMINI_MODEL`.
+- Optional voice default: `GEMINI_VOICE`.
+- Endpoint override: `GEMINI_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`).
 
 ```bash
 # GEMINI_API_KEY must already be set.
@@ -127,11 +146,19 @@ Uses the **Google Gemini API**, not Google Cloud Text-to-Speech or Interactions:
 
 Spoken text and `speechMetadata.style` are separate. `fast`/`slow`, acting, emotions and delivery controls are approximate style instructions; numeric `speed`, `pitch` and `volume` are rejected. Selected events use native angle-bracket cues. Explicit `lang` maps to `speechConfig.languageCode` and must be one of the API reference's supported BCP-47 codes (for example `en-US` or `cmn-CN`, not `en` or `zh-CN`); without it the model detects language. The adapter limits text plus style to 4096 Unicode characters as a local resource bound. This is **not** token counting; the service's 8192-token input budget still applies.
 
-Requests explicitly select `AUDIO_WAV`, `INLINE` and 24000 Hz. A response must contain exactly one `STOP` candidate and one inline `audio/wav` part, without prompt/output blocking. Unexpected parts, multiple candidates, malformed JSON/base64 and API error objects fail. The shared decoder requires complete RIFF lengths, PCM1, mono, 24 kHz, 16-bit, alignment 2 and byte rate 48000; unknown-size WAV, duplicate audio chunks and other encodings fail. Extra RIFF metadata chunks are allowed. The 64 MiB HTTP limit includes JSON/base64 overhead. This adapter unwraps WAV before the shared renderer; the raw-PCM restrictions above apply to the other adapters.
+Requests explicitly select `AUDIO_WAV`, `INLINE` and 24000 Hz. A response must contain exactly one `STOP` candidate and one inline `audio/wav` part, without prompt/output blocking. Unexpected parts, multiple candidates, malformed JSON/base64 and API error objects fail. Documented non-payload metadata may accompany the audio; thought-marked audio and extra payloads are rejected. The 64 MiB HTTP limit includes JSON/base64 overhead. WAV decoding follows the shared format checks below.
 
 References: [GenerateContent TTS guide](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation), [GenerateContent schema](https://ai.google.dev/api/generate-content), [model and limits](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts). The [current product TTS guide](https://ai.google.dev/gemini-api/docs/speech-generation) leads with the Interactions API, which this adapter does not call. Offline fixtures verify the selected schema and rejection behavior; no real account or acoustic verification has been performed.
 
 ## Fish Audio
+
+- Provider ID: `fish`.
+- Environment setup: `FISH_API_KEY`, voice/reference ID.
+- Default model: `s2.1-pro`.
+- Default voice: None; set `FISH_VOICE_ID`, `--voice`, front matter, or cast mapping.
+- Optional model default: `FISH_MODEL`.
+- Optional voice default: `FISH_VOICE_ID`.
+- Endpoint override: `FISH_BASE_URL` (`https://api.fish.audio/v1`).
 
 ```bash
 # FISH_API_KEY and FISH_VOICE_ID must already be set to your own resources.
@@ -142,6 +169,26 @@ Calls `POST https://api.fish.audio/v1/tts` with bearer authentication, the `mode
 
 Speed maps to the documented 0.5–2 multiplier and volume is passed in dB. Volume has a local −60…+20 dB bound, not a claimed vendor limit. Loudness normalization is explicitly enabled. Text normalization is explicitly disabled to avoid the API's additional number/date/unit rewriting. Speech pronunciation is still model-dependent. Explicit `lang` fails: Fish's `language` field only affects normalization/timestamp alignment and cannot select spoken language or accent. Selected S2 emotion and event cues use square brackets; free-form acting, numeric emotion intensity, pitch and unsupported controls fail before any HTTP call. Text including generated cues has a local 4096-character bound, not a claimed vendor maximum.
 
-Requests specify `format: wav` and `sample_rate: 24000`. The bounded decoder walks RIFF chunks instead of dropping a fixed 44-byte header, and accepts only complete PCM1, mono, 24 kHz, 16-bit WAV with matching alignment, byte rate and sizes. JSON errors in a successful HTTP response, truncated/unknown-length WAV, duplicate audio chunks and other formats fail. This adapter unwraps WAV before rendering; the raw-PCM restrictions above apply to the other adapters. A valid WAV does not prove the model recited every word. Official HTTP errors include 400, 401, 402, 403, 404, 429, and 5xx; they fail without retry, and response bodies stay out of diagnostics.
+Requests specify `format: wav` and `sample_rate: 24000`. WAV decoding follows the shared format checks below. JSON errors in a successful HTTP response also fail. A valid WAV does not prove the model recited every word. Official HTTP errors include 400, 401, 402, 403, 404, 429, and 5xx; they fail without retry, and response bodies stay out of diagnostics.
 
 References: [TTS endpoint](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech), [OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json), [errors](https://docs.fish.audio/api-reference/errors), [model choice](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model), [S2 emotion and event cues](https://docs.fish.audio/developer-guide/core-features/emotions). Offline fixtures cover requests and rejection paths. Live account access, complete-WAV interoperability and acoustic behavior remain unverified; streaming sentinel sizes are deliberately rejected rather than guessed.
+
+## Failures and limits
+
+All speech segments are checked against the adapter before the first request. This catches unsupported controls and invalid local settings, but does not test account access or guarantee that the service will accept the request. Timbrex does not automatically split text to fit a vendor's token limit; use shorter paragraphs for long speech.
+
+Each HTTP request has a two-minute timeout and a 64 MiB response limit. The final PCM output is limited to 1 GiB. Runtime failures identify the provider and segment number. HTTP errors include the status; MiniMax and Qwen business errors include the vendor error code. Diagnostics omit response bodies and signed URL query strings. HTTP 206 partial responses and interrupted bodies fail. No request is retried automatically.
+
+### Audio format checks
+
+OpenAI, ElevenLabs, MiniMax, Azure, and Qwen request raw 24 kHz mono S16LE PCM. The adapters reject conflicting media types or mismatched explicit `rate`/`channels` metadata. The renderer also rejects recognizable audio containers, empty PCM, and odd byte counts. Missing optional metadata remains accepted: raw PCM bytes do not identify their sample rate or channel count, so the format still depends on the vendor honoring the request.
+
+Gemini and Fish request WAV and extract its PCM before rendering. Their decoder requires complete RIFF lengths, a single PCM1 format chunk and audio data chunk, mono 24 kHz 16-bit samples, block alignment 2, and byte rate 48000. Extra RIFF metadata chunks are allowed. Truncated files, unknown-size streaming WAV, duplicate audio chunks, and other encodings fail. Complete-WAV interoperability with live services remains unverified.
+
+These checks detect container and format problems. They cannot prove that a model spoke every word or followed a direction accurately. See each provider's section for further limits, including Azure's ten-minute cutoff.
+
+### Output and recovery
+
+The renderer creates a temporary file beside the destination and replaces the destination only after successful synthesis and writing. A reported cancellation or failure removes temporary output and preserves an existing destination. The parent directory must already exist. Earlier requests may have incurred charges; there is no automatic retry, fallback, cache, or resume.
+
+When a request fails, check the model, voice, region, and key permissions against the provider's official reference. Offline tests validate Timbrex's request construction and response handling; they do not establish service availability or speech quality.

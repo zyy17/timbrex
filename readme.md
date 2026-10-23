@@ -2,71 +2,83 @@
 
 [简体中文](readme.zh-cn.md)
 
-Timbrex is an English-ASCII tag language for expressive speech. A `.tbx` script compiles to audio through a TTS provider.
+Timbrex is a scripting language and CLI for turning written dialogue into speech. Put the words, speakers, delivery directions, and pauses in a text file, then render it to WAV through a text-to-speech (TTS) provider.
+
+A TTS API handles speech generation. Timbrex handles the script around those calls: which voice speaks each line, which directions apply to a passage, and where to insert silence. Those choices stay beside the dialogue in a file you can edit, review, and version in Git; the adapter builds the requests and assembles the audio.
+
+Use it for narrated tutorials, voiceover drafts, or scripted dialogue prototypes where you want to revise the performance along with the words.
+
+## A script at a glance
+
+This dialogue assigns two OpenAI voices and adds a pause and delivery directions:
 
 ```tbx
-[happy|Good to see you!] [pause 300ms] [slow|Take your time.]
+---
+strict_tags: true
+cast:
+  lin: {voices: {openai: coral}}
+  chen: {voices: {openai: onyx}}
+---
+lin: [happy] You came! [pause 300ms] [whisper|Come inside.]
+chen: [slow|I've got something to tell you.]
 ```
 
-Plain text is a valid script. Tags use one form: `[name]`, `[name args]`, or `[name args|content]`. Spoken text may be any language; tag names stay English ASCII. The grammar is frozen at `timbrex: 1` ([SPEC v0.3.4](docs/spec.md)).
+The `cast` section makes `lin:` and `chen:` speaker turns and maps them to `coral` and `onyx`; those voice IDs are specific to OpenAI. `[happy]` applies through Lin's turn, `[whisper|…]` and `[slow|…]` apply to their enclosed words, and `[pause 300ms]` inserts local silence between phrases.
 
-## Install
+The runnable version is [examples/dialogue.tbx](examples/dialogue.tbx). Scripts use `.tbx` or `.timbrex`; plain text works too, and spoken text can use any language. Supported languages, voices, and directions depend on the selected provider and model.
 
-Requires Go 1.27, as declared in [go.mod](go.mod).
+## Quick start
+
+Install Git, Go 1.27, and `make`. In a terminal, run:
 
 ```bash
 git clone https://github.com/zyy17/timbrex.git
 cd timbrex
 make build
-./timbrex version
+./timbrex check examples/dialogue.tbx
+./timbrex synth examples/dialogue.tbx --provider stub -o tone.wav
 ```
 
-From the repository root, `go run .` is the same binary as `./timbrex`. There is no `cmd/timbrex` package.
+`check` prints `ok` without contacting a speech service. The last command prints `tone.wav` and creates a file you can open in an audio player. The `stub` provider needs no credentials and makes no speech requests: it produces a test tone, without speaking the dialogue or reproducing its pauses and directions.
 
-## Get started
+### Generate speech
+
+For the OpenAI voices in this example, configure `OPENAI_API_KEY` in your environment, or set `providers.openai.api_key` in your [configuration file](docs/configuration.md). Keep the key out of the script and source control. Then, from the same repository directory, run:
 
 ```bash
-./timbrex check examples/expressive.tbx
-./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
-# Set OPENAI_API_KEY first.
-./timbrex synth examples/expressive.tbx --provider openai -o speech.wav
+./timbrex synth examples/dialogue.tbx --provider openai --model gpt-4o-mini-tts -o dialogue.wav
 ```
 
-`check` prints `ok` or diagnostics. `stub` writes an 8 kHz test tone, not speech, and needs no key. HTTP adapters write one 24 kHz mono 16-bit PCM WAV. They have offline contract tests and have not been validated with live accounts.
+This command sends requests to OpenAI and may incur charges. On success, it prints `dialogue.wav`. Check the [OpenAI setup and model lifecycle notice](docs/providers.md#openai) before using the service. To use another provider, follow its [setup guide](docs/providers.md) and supply compatible voice IDs and controls.
 
-## Providers
+The [tutorial](docs/tutorial.md) walks through writing your own script, adding speakers, and changing delivery within a passage.
 
-| ID | Required setup | Default model |
-| --- | --- | --- |
-| `stub` | None | Test tone (not speech) |
-| `openai` | `OPENAI_API_KEY` | `gpt-4o-mini-tts` |
-| `elevenlabs` | `ELEVENLABS_API_KEY` and a voice ID | `eleven_v3` |
-| `minimax` | `MINIMAX_API_KEY` | `speech-2.8-hd` |
-| `azure` | `AZURE_SPEECH_KEY` and region or endpoint | Selected by voice |
-| `qwen` | `DASHSCOPE_API_KEY` and `QWEN_ENDPOINT` | `qwen-audio-3.1-tts-flash` |
-| `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` |
-| `fish` | `FISH_API_KEY` and a voice/reference ID | `s2.1-pro` |
+## Providers and current scope
 
-Gemini rejects numeric speed; use [examples/gemini.tbx](examples/gemini.tbx). Fish requires a voice reference ID; use [examples/fish.tbx](examples/fish.tbx). A registered tag is not necessarily synthesizable. Unsupported controls fail before requests. They are not dropped. See [providers](docs/providers.md) and [capabilities](docs/capabilities.md).
+Adapters are included for **OpenAI, ElevenLabs, MiniMax, Azure Speech, Qwen, Gemini TTS, and Fish Audio**. Each supports a different subset of controls: some become numeric API parameters, while others become approximate performance instructions. Changing providers does not promise the same voice or delivery. See the [capability reference](docs/capabilities.md) for the supported mappings.
 
-## Commands
+Real adapters validate all planned speech segments before sending synthesis requests. Passing `check` establishes language validity, not provider support; an unsupported control used by a speech segment fails during synthesis preparation.
 
-`version`, `check`, `synth`, `config`. Priority: flags, script front matter, environment, `./timbrex.yaml` or `--config`, then defaults. The default provider is `stub`. See [configuration](docs/configuration.md).
+Speech is synthesized sequentially, with pauses added locally, into a **24 kHz mono 16-bit PCM WAV**. Mixing, overlapping dialogue, streaming output, automatic provider fallback, and voice creation or cloning are not implemented.
+
+The project is under development. [DSL Specification v1](docs/spec.md) describes the current language and may evolve. Adapters have offline request and response tests; live account compatibility and acoustic quality remain unverified.
 
 ## Documentation
 
-Procedure: [tutorial](docs/tutorial.md). Development: [contributing](contributing.md).
+| Start here when you want to… | Guide |
+| --- | --- |
+| Write and synthesize your first script | [Tutorial](docs/tutorial.md) |
+| Look up syntax, scope, or diagnostics | [DSL Specification v1](docs/spec.md) |
+| Set defaults, credentials, and overrides | [Configuration](docs/configuration.md) |
+| Choose a provider and supported controls | [Provider setup](docs/providers.md) · [Capabilities](docs/capabilities.md) |
+| Enable syntax highlighting | [VS Code / Cursor](editors/vscode/readme.md) |
 
-| Document | English | 简体中文 |
-| --- | --- | --- |
-| Tutorial | [Tutorial](docs/tutorial.md) | [教程](docs/tutorial.zh-cn.md) |
-| Language reference | [SPEC v0.3.4](docs/spec.md) | [语言参考](docs/spec.zh-cn.md) |
-| Configuration | [Configuration](docs/configuration.md) | [配置](docs/configuration.zh-cn.md) |
-| Provider setup | [Providers](docs/providers.md) | [厂商接入](docs/providers.zh-cn.md) |
-| Implemented controls | [Capabilities](docs/capabilities.md) | [能力表](docs/capabilities.zh-cn.md) |
-| Provider research | [Research](docs/market_survey.md) | [厂商调研](docs/market_survey.zh-cn.md) |
-| Design rationale | [Design](docs/reflection.md) | [设计思路](docs/reflection.zh-cn.md) |
-| Contributing | [Contributing](contributing.md) | [参与贡献](contributing.zh-cn.md) |
-| Editor highlighting | [VS Code / Cursor](editors/vscode/readme.md) | [VS Code / Cursor](editors/vscode/readme.zh-cn.md) |
+## Contributing
 
-MIT licensed. See [license](license).
+Bug reports, documentation improvements, and provider contributions are welcome. A useful bug report includes a minimal script, the command, and the expected and actual results, with credentials and private text removed.
+
+The [contributor guide](contributing.md) covers development setup, package boundaries, offline tests, and pull requests. For the reasoning behind the language and implementation, see the [design notes](docs/reflection.md).
+
+## License
+
+[MIT](license).
