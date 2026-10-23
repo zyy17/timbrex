@@ -37,6 +37,7 @@ Load configuration once through the Cobra entry point. Keep environment bindings
 ## Code style
 
 - Idiomatic Go: community naming, short functions, flat structs. Avoid deep nesting.
+- Separate standalone top-level declarations with a blank line; keep each declaration's doc comment attached.
 - Teachability first. Prefer the smallest clear code. Do not pad scope.
 - Comments should explain constraints or decisions, such as a parsing boundary or a vendor requirement. Do not restate the code.
 - Pass `make test` and `make lint` before you claim done. `make test` builds `./timbrex` and runs `go test ./...`. `make lint` runs golangci-lint v2.14.0 and `golangci-lint fmt --diff`. CI uses the Go version in `go.mod` and that same linter.

@@ -25,10 +25,12 @@ func testWave() []byte {
 	b, _ := hex.DecodeString("524946462800000057415645666d74201000000001000100c05d000080bb000002001000646174610400000001000200")
 	return b
 }
+
 func response(pcm []byte) []byte {
 	b, _ := json.Marshal(map[string]any{"candidates": []any{map[string]any{"finishReason": "STOP", "content": map[string]any{"parts": []any{map[string]any{"inlineData": map[string]string{"mimeType": "audio/wav", "data": base64.StdEncoding.EncodeToString(pcm)}}}}}}})
 	return b
 }
+
 func TestBuildContract(t *testing.T) {
 	seg := providers.Segment{Voice: "Kore", Lang: "en-GB", Nodes: []ir.Node{{Text: "Hello"}, {Kind: ir.Event, Name: "sigh"}}, Controls: []ir.Node{{Name: "act", Args: []ir.Arg{{Raw: "speak gently", Kind: "quoted"}}}, {Name: "slow"}}}
 	r, err := build(seg, "gemini-3.8-flash-tts")
@@ -46,6 +48,7 @@ func TestBuildContract(t *testing.T) {
 		}
 	}
 }
+
 func TestBuildRejectsUnsupported(t *testing.T) {
 	base := providers.Segment{Voice: "Kore", Nodes: []ir.Node{{Text: "Hello"}}}
 	for _, name := range []string{"speed", "pitch", "volume", "sfx", "oral"} {
@@ -87,6 +90,7 @@ func TestBuildRejectsUnsupported(t *testing.T) {
 		t.Fatal("style omitted from bound")
 	}
 }
+
 func TestDecode(t *testing.T) {
 	good := response(testWave())
 	got, err := decode(good)
@@ -129,6 +133,7 @@ func TestDecode(t *testing.T) {
 		})
 	}
 }
+
 func TestFailuresPreserveOutput(t *testing.T) {
 	for _, kind := range []string{"blocked", "partial", "redirect", "cancel"} {
 		t.Run(kind, func(t *testing.T) {
@@ -176,6 +181,7 @@ func TestFailuresPreserveOutput(t *testing.T) {
 		})
 	}
 }
+
 func FuzzDecode(f *testing.F) {
 	f.Add(response(testWave()))
 	f.Add([]byte(`{}`))

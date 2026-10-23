@@ -14,6 +14,7 @@ func waveChunks(chunks ...[]byte) []byte {
 	binary.LittleEndian.PutUint32(b[4:], uint32(len(b)-8))
 	return b
 }
+
 func waveChunk(id string, data []byte) []byte {
 	b := append([]byte(id), make([]byte, 4)...)
 	binary.LittleEndian.PutUint32(b[4:], uint32(len(data)))
@@ -23,6 +24,7 @@ func waveChunk(id string, data []byte) []byte {
 	}
 	return b
 }
+
 func TestDecodeWAV(t *testing.T) {
 	format := wavHeader(4)[20:36]
 	pcm := []byte{0, 1, 2, 3}
@@ -37,6 +39,7 @@ func TestDecodeWAV(t *testing.T) {
 		}
 	}
 }
+
 func TestDecodeWAVRejectsInvalidAudio(t *testing.T) {
 	format := wavHeader(4)[20:36]
 	valid := waveChunks(waveChunk("fmt ", format), waveChunk("data", []byte{0, 1, 2, 3}))
@@ -81,6 +84,7 @@ func TestDecodeWAVRejectsInvalidAudio(t *testing.T) {
 		}
 	}
 }
+
 func FuzzDecodeWAV(f *testing.F) {
 	f.Add(append(wavHeader(4), 0, 1, 2, 3))
 	f.Add(waveChunks(waveChunk("JUNK", []byte{1})))

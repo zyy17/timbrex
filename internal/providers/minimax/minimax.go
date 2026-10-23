@@ -32,6 +32,7 @@ type request struct {
 	Voice    voiceSettings `json:"voice_setting"`
 	Audio    audioSettings `json:"audio_setting"`
 }
+
 type voiceSettings struct {
 	ID      string  `json:"voice_id"`
 	Speed   float64 `json:"speed"`
@@ -39,6 +40,7 @@ type voiceSettings struct {
 	Pitch   int     `json:"pitch"`
 	Emotion string  `json:"emotion,omitempty"`
 }
+
 type audioSettings struct {
 	Rate    int    `json:"sample_rate"`
 	Format  string `json:"format"`
@@ -46,6 +48,7 @@ type audioSettings struct {
 }
 
 var emotions = map[string]string{"happy": "happy", "sad": "sad", "angry": "angry", "fear": "fearful", "disgust": "disgusted", "surprise": "surprised", "calm": "calm"}
+
 var events = map[string]string{
 	"laugh": "(laughs)", "chuckle": "(chuckle)", "cough": "(coughs)", "clear-throat": "(clear-throat)",
 	"groan": "(groans)", "breath": "(breath)", "pant": "(pant)", "inhale": "(inhale)", "exhale": "(exhale)",

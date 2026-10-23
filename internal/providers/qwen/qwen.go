@@ -25,6 +25,7 @@ type request struct {
 	Model string `json:"model"`
 	Input input  `json:"input"`
 }
+
 type input struct {
 	Text        string   `json:"text"`
 	Voice       string   `json:"voice"`
