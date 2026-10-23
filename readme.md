@@ -59,7 +59,7 @@ Adapters are included for **OpenAI, ElevenLabs, MiniMax, Azure Speech, Qwen, Gem
 
 Real adapters validate all planned speech segments before sending synthesis requests. Passing `check` establishes language validity, not provider support; an unsupported control used by a speech segment fails during synthesis preparation.
 
-Speech is synthesized sequentially, with pauses added locally, into a **24 kHz mono 16-bit PCM WAV**. Mixing, overlapping dialogue, streaming output, automatic provider fallback, and voice creation or cloning are not implemented.
+Speech is synthesized sequentially by default, with pauses added locally, into a **24 kHz mono 16-bit PCM WAV**. Real providers can opt into [bounded concurrency](docs/providers.md#concurrent-generation) with `--concurrency 2`; audio still follows script order. Mixing, overlapping dialogue, streaming output, automatic provider fallback, and voice creation or cloning are not implemented.
 
 The project is under development. [DSL Specification v1](docs/spec.md) describes the current language and may evolve. Adapters have offline request and response tests; live account compatibility and acoustic quality remain unverified.
 

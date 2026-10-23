@@ -66,7 +66,7 @@ In:
 - Standard vocabulary, `V041` in strict mode, `W040` for a near miss in a single script, `W103` when a display name is used as a speaker prefix, `I050` for non-ASCII acting text, `V013` for `[/name]`, `V012` for an unclosed tag
 - Explicit `[act "…"]` in strict mode. Implicit free-form tags become `act` when strict mode is off
 - Lowering to IR with typed arguments. Stub synthesis and real HTTP providers: ElevenLabs, OpenAI, MiniMax, Azure, Qwen, Gemini, and Fish Audio
-- Cast voice mappings, scene/turn/span planning, local pauses, sequential PCM synthesis into WAV
+- Cast voice mappings, scene/turn/span planning, local pauses, bounded optional concurrent synthesis with ordered PCM output into WAV
 - Centralized koanf configuration, environment bindings, and Cobra command execution
 - TextMate grammar in `editors/vscode` for `.tbx`
 

@@ -91,6 +91,10 @@ A cast voice mapping still takes priority over the fallback voice, including `--
 
 `--strict-tags=false` explicitly disables strict mode; `--no-strict-tags=false` enables it. The two flag names are mutually exclusive. This preserves the distinction between an omitted boolean and an explicit `false`.
 
+## Synthesis concurrency
+
+`synth --concurrency N` controls the maximum number of in-flight speech segment jobs for real providers. It defaults to `1` (serial), accepts integers from `1` through `8`, and preserves script order in the output. `stub` only accepts `1`. This is deliberately a per-invocation CLI option, not a YAML key, front matter field, or environment variable; `timbrex config` does not display it. See [concurrent generation](providers.md#concurrent-generation) before increasing it.
+
 ## Inspect
 
 `timbrex config` prints the merged defaults, file, and environment as YAML. Configured API keys are replaced by `REDACTED`. It does not read a script, apply `synth` flags, test credentials, or contact a provider. The output is not a credential backup. The repository ignores the root `timbrex.yaml`. Do not commit credentials.

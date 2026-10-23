@@ -15,10 +15,11 @@ import (
 )
 
 type synthFlags struct {
-	provider string
-	out      string
-	model    string
-	voice    string
+	provider    string
+	out         string
+	model       string
+	voice       string
+	concurrency int
 }
 
 func synthCmd(cfg *config.Config) *cobra.Command {
@@ -35,11 +36,15 @@ func synthCmd(cfg *config.Config) *cobra.Command {
 	cmd.Flags().StringVarP(&flags.out, "out", "o", "", "output audio file (default: script path with .wav)")
 	cmd.Flags().StringVar(&flags.model, "model", "", "provider model (overrides front matter and configuration)")
 	cmd.Flags().StringVar(&flags.voice, "voice", "", "default voice for speakers without a cast voice mapping")
+	cmd.Flags().IntVar(&flags.concurrency, "concurrency", 1, "maximum simultaneous speech requests (1-8; default 1)")
 	addStrictFlags(cmd)
 	return cmd
 }
 
 func synthesize(cmd *cobra.Command, path string, flags synthFlags, cfg config.Config) error {
+	if flags.concurrency < 1 || flags.concurrency > 8 {
+		return fmt.Errorf("concurrency must be between 1 and 8")
+	}
 	script, diags, err := loadScript(cmd, path, cfg.StrictTags)
 	if err != nil {
 		return err
@@ -73,7 +78,7 @@ func synthesize(cmd *cobra.Command, path string, flags synthFlags, cfg config.Co
 	}
 	opt := providers.Options{
 		Out: outPath, Model: settings.Model, Voice: settings.Voice,
-		APIKey: settings.APIKey, Endpoint: settings.Endpoint,
+		APIKey: settings.APIKey, Endpoint: settings.Endpoint, Concurrency: flags.concurrency,
 	}
 	if err := cmd.Context().Err(); err != nil {
 		return err

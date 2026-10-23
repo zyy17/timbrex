@@ -142,7 +142,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 ./timbrex synth examples/gemini.tbx -o gemini.wav
 ```
 
-使用 **Google Gemini API**，不是 Google Cloud Text-to-Speech 或 Interactions：通过 `x-goog-api-key` 调用 `POST /v1beta/models/gemini-3.8-flash-tts:generateContent`。初版仅支持该模型及官方列出的 30 个预置音色，默认 `Kore`。自定义/复制音色、创建音色、流式模式和旧模型 schema 不在本适配器范围内。角色音色按片段串行合成，不使用原生对话合成。
+使用 **Google Gemini API**，不是 Google Cloud Text-to-Speech 或 Interactions：通过 `x-goog-api-key` 调用 `POST /v1beta/models/gemini-3.8-flash-tts:generateContent`。初版仅支持该模型及官方列出的 30 个预置音色，默认 `Kore`。自定义/复制音色、创建音色、流式模式和旧模型 schema 不在本适配器范围内。各角色使用独立的片段请求，不使用原生对话合成；可选并发也不会合并这些请求。
 
 台词和 `speechMetadata.style` 分开传递。`fast`/`slow`、表演、情绪和发声控制是近似风格指令；数值 `speed`、`pitch` 和 `volume` 会被拒绝。部分事件映射到原生尖括号标记。显式 `lang` 映射到 `speechConfig.languageCode`，只接受 API 参考列出的 BCP-47 代码（如 `en-US`、`cmn-CN`，不接受 `en`、`zh-CN`）；未指定时由模型自动识别。台词加风格总计限制为 4096 个 Unicode 字符，仅作为本地资源上限，**不是** token 计数；服务端 8192-token 输入预算仍适用。
 
@@ -165,13 +165,30 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 ./timbrex synth examples/fish.tbx -o fish.wav
 ```
 
-使用 bearer 认证、`model: s2.1-pro` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。初版仅支持 `s2.1-pro`；由于服务端会对未知模型请求头静默回退，未知及其他模型均在本地拒绝。没有默认账号音色。使用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；角色音色按片段串行合成。
+使用 bearer 认证、`model: s2.1-pro` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。初版仅支持 `s2.1-pro`；由于服务端会对未知模型请求头静默回退，未知及其他模型均在本地拒绝。没有默认账号音色。使用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；各角色使用独立的片段请求，启用并发时也不例外。
 
 语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入；自由表演指令、数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
 
 请求指定 `format: wav` 和 `sample_rate: 24000`。WAV 解码遵循下文的共用格式检查。即使 HTTP 状态成功，响应中的 JSON 错误也会导致失败。有效 WAV 不能证明模型读出了每个字。官方 HTTP 错误包括 400、401、402、403、404、429 和 5xx；失败时不重试，诊断也不包含响应正文。
 
 参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，不接受用特殊长度值表示尚未结束的流式 WAV。
+
+## 并发生成
+
+真实厂商支持 `synth --concurrency N`，默认值为 `1`（串行），允许范围是 `1`–`8`。确认账号允许同时发起请求后，可先从 `2` 开始尝试。这是本地安全上限，不代表每个厂商、套餐、区域或模型都接受八个并发请求。假的 `stub` provider 会拒绝大于 `1` 的值。该选项仅通过 CLI 设置，没有配置文件、front matter 或环境变量对应项。
+
+```bash
+# 先配置 OpenAI 凭证；此命令可能产生费用。
+./timbrex synth examples/dialogue.tbx --provider openai --concurrency 2 -o dialogue.wav
+```
+
+所有语音请求都会在首次 HTTP 调用前完成准备与验证。并发只让这些已准备的片段任务并行进行，不拆分或合并片段，不改变请求文本、音色或控制，也不增加重试。无论完成顺序如何，最终 WAV 都按脚本顺序排列解码后的语音与本地停顿。停顿不发起网络请求。Qwen 的合成请求及后续音频下载属于同一个片段任务。
+
+正在执行的任务数和尚未写入的片段窗口都不超过 `N`。前面的慢片段会阻止窗口继续推进，而不是让整份脚本的后续 PCM 不断积压。在内存中等待的已完成 PCM 数据长度受“窗口大小 × 最大解码片段”约束（真实厂商每个响应最多 64 MiB），但这不是所占堆内存或进程内存预算。HTTP 缓冲、JSON/hex/base64 解码和 WAV 底层缓冲可能与 PCM 同时存在，已准备请求以及源码、AST、IR 也会留在内存中。因此，提高并发数可能明显增加内存占用。
+
+记录到第一个合成、解码或写入错误后，渲染器停止接收新任务，取消进行中的工作，等待已启动任务退出，再清理临时输出。触发取消的原始错误会被保留，不被其他任务的取消错误替代；同时发生的错误不保证按脚本顺序报告。HTTP 429 等失败不会重试，也不会自动降低并发数。取消无法撤销服务已接受的请求：已完成或结果不明的在途请求仍可能计费。在发布前失败时，已有输出文件保持不变。
+
+离线测试通过模拟响应验证请求内容、顺序、边界与清理，不能证明真实服务的提速幅度或语音逐字节一致。即使请求内容不变，厂商也可能在不同运行中生成不同的声音。
 
 ## 失败处理与限制
 
@@ -191,6 +208,6 @@ Gemini 和 Fish 请求 WAV，在渲染前提取其中的 PCM。解码器要求�
 
 所有 provider（包括 `stub`）都会在目标文件旁创建临时文件，合成、写入和关闭成功后才替换目标文件。在 POSIX 系统上，临时文件和完成后的文件使用私有的 `0600` 权限；进程的 umask 可以进一步收紧权限。替换已有文件时也会替换其权限，不保留原有模式。stub 仍生成 8 kHz、单声道、16 位测试音；真实厂商的输出仍为 24 kHz、单声道、16 位音频。
 
-取消状态会在创建输出前、真实厂商片段之间，以及最终重命名前检查。若在替换前报告取消或失败，会删除临时输出并保留已有目标文件。取消若在最后一次检查后到达，替换仍可能完成；成功替换后不会回滚。父目录需要事先存在。之前的请求可能已经计费；目前没有自动重试、厂商回退、缓存或续传。
+请求准备期间、创建输出前、调度和写入真实厂商片段时，以及最终重命名前，都会检查取消状态。进行中的 HTTP 请求也会收到取消上下文。若在替换前报告取消或失败，会删除临时输出并保留已有目标文件。取消若在最后一次检查后到达，替换仍可能完成；成功替换后不会回滚。父目录需要事先存在。之前的请求可能已经计费；目前没有自动重试、厂商回退、缓存或续传。
 
 请求失败时，请对照厂商官方参考检查模型、音色、区域和密钥权限。离线测试验证的是 Timbrex 如何构造请求、处理响应，不代表服务可用性或语音质量。

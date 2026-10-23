@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -20,15 +21,28 @@ type Segment struct {
 
 // Plan resolves scene, turn and nested span scopes before any paid requests.
 func Plan(doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
+	return plan(context.Background(), doc, id, defaultVoice)
+}
+
+func plan(ctx context.Context, doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if doc == nil {
 		return nil, fmt.Errorf("empty document")
 	}
 	// Include later turns so forward [as] references need no repeated scans.
 	speakers := make(map[string]struct{}, len(doc.Voices))
 	for speaker := range doc.Voices {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		speakers[speaker] = struct{}{}
 	}
 	for _, utt := range doc.Utterances {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if utt.Speaker != "" {
 			speakers[utt.Speaker] = struct{}{}
 		}
@@ -36,6 +50,9 @@ func Plan(doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
 	var out []Segment
 	var scene []ir.Node
 	for _, utt := range doc.Utterances {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		state := slices.Clone(scene)
 		base := scene
 		if utt.Speaker == "" {
@@ -79,6 +96,9 @@ func Plan(doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
 			return nil
 		}
 		for _, n := range utt.Nodes {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
 			switch n.Kind {
 			case ir.Text:
 				nodes = append(nodes, n)
@@ -131,6 +151,9 @@ func Plan(doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
 		if utt.Speaker == "" {
 			scene = state
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	if len(out) == 0 {
 		return nil, fmt.Errorf("script has no speech or pauses")

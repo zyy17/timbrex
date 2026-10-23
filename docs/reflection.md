@@ -16,9 +16,11 @@ A numeric speed parameter, an SSML style, and a natural-language instruction can
 
 The compiler separates parsing, vocabulary checking, and lowering to IR. Adapters receive structured arguments and the complete IR rather than reparsing the script. This keeps vendor-specific rules out of the parser and allows adapters to use different rendering strategies. A synthesis invocation uses one provider. Where the provider supports a model setting, that setting applies to the whole invocation; cast mappings choose voices within the provider.
 
-## Start with sequential rendering
+## Preserve ordered rendering
 
 The shared planner resolves scene, turn, and span state into segments. HTTP adapters prepare all segment requests before network I/O, so an unsupported control late in a script can fail before any synthesis request is sent. The renderer then concatenates compatible PCM segments and local silence into a WAV.
+
+Generation remains serial by default. Optional [bounded concurrency](providers.md#concurrent-generation) overlaps independent requests while one writer preserves segment order. The reorder window is tied to concurrency, so a slow early segment applies backpressure instead of retaining the whole script's audio. This trades some potential throughput for bounded audio retention and straightforward failure cleanup; it does not promise live speedups or repeatable acoustics.
 
 This approach is easy to inspect and test, but separate calls add latency and can produce audible boundaries. It cannot mix or overlap voices, resample audio, or guarantee continuity between segments. Providers receive the full IR, so a future adapter could preserve an utterance through native SSML or inline controls instead of splitting at each control change. That choice should follow measured provider behavior.
 

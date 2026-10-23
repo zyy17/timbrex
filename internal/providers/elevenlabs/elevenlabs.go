@@ -43,7 +43,13 @@ var (
 )
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
-	segments, requests, err := providers.Prepare(doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) {
+	if err := ctx.Err(); err != nil {
+		return providers.Result{}, err
+	}
+	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
+		return providers.Result{}, err
+	}
+	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) {
 		if seg.Voice == "" {
 			return request{}, fmt.Errorf("set --voice, providers.elevenlabs.voice, or cast voices.elevenlabs")
 		}
