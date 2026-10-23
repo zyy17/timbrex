@@ -1,6 +1,7 @@
 package providers_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"github.com/zyy17/timbrex/internal/providers"
 )
 
-func document(t *testing.T, src string) *ir.Document {
+func document(t testing.TB, src string) *ir.Document {
 	t.Helper()
 	script, err := parse.Parse("test.tbx", src)
 	if err != nil {
@@ -144,5 +145,38 @@ func TestPlanPauseUnitsAndAliases(t *testing.T) {
 		if got := segs[len(segs)-1].Pause; got != tt.want {
 			t.Errorf("%q: pause=%v, want %v", tt.arg, got, tt.want)
 		}
+	}
+}
+
+func TestPlanRepeatedAutoSpeakerForwardReference(t *testing.T) {
+	const count = 2000
+	src := "---\ncast: auto\n---\n" + strings.Repeat("[as last|Hello]\n\n", count) + "last: Bye\n"
+	segments, err := providers.Plan(document(t, src), "openai", "coral")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(segments) != count+1 {
+		t.Fatalf("segments = %d, want %d", len(segments), count+1)
+	}
+	for i, segment := range segments {
+		if segment.Voice != "coral" {
+			t.Fatalf("segment %d voice = %q", i, segment.Voice)
+		}
+	}
+}
+
+func BenchmarkPlanAutoSpeakerForwardReferences(b *testing.B) {
+	for _, count := range []int{1000, 8000, 64000} {
+		b.Run(fmt.Sprint(count), func(b *testing.B) {
+			src := "---\ncast: auto\n---\n" + strings.Repeat("[as last|Hello]\n\n", count) + "last: Bye\n"
+			doc := document(b, src)
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				if _, err := providers.Plan(doc, "openai", "coral"); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
 }

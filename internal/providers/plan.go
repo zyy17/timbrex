@@ -23,6 +23,16 @@ func Plan(doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
 	if doc == nil {
 		return nil, fmt.Errorf("empty document")
 	}
+	// Include later turns so forward [as] references need no repeated scans.
+	speakers := make(map[string]struct{}, len(doc.Voices))
+	for speaker := range doc.Voices {
+		speakers[speaker] = struct{}{}
+	}
+	for _, utt := range doc.Utterances {
+		if utt.Speaker != "" {
+			speakers[utt.Speaker] = struct{}{}
+		}
+	}
 	var out []Segment
 	var scene []ir.Node
 	for _, utt := range doc.Utterances {
@@ -50,7 +60,7 @@ func Plan(doc *ir.Document, id, defaultVoice string) ([]Segment, error) {
 					case "voice":
 						seg.Voice = v
 					case "as":
-						seg.Voice, err = asVoice(doc, id, v, defaultVoice)
+						seg.Voice, err = asVoice(doc, speakers, id, v, defaultVoice)
 						if err != nil {
 							return err
 						}
@@ -135,29 +145,17 @@ func voiceFor(doc *ir.Document, id, speaker, fallback string) string {
 	return fallback
 }
 
-func asVoice(doc *ir.Document, id, speaker, fallback string) (string, error) {
+func asVoice(doc *ir.Document, speakers map[string]struct{}, id, speaker, fallback string) (string, error) {
 	if speaker == "" {
 		return "", fmt.Errorf("[as] needs a speaker id")
 	}
 	if v := doc.Voices[speaker][id]; v != "" {
 		return v, nil
 	}
-	if knownSpeaker(doc, speaker) {
+	if _, ok := speakers[speaker]; ok {
 		return fallback, nil
 	}
 	return "", fmt.Errorf("[as %s] is not a speaker in this script", speaker)
-}
-
-func knownSpeaker(doc *ir.Document, speaker string) bool {
-	if _, ok := doc.Voices[speaker]; ok {
-		return true
-	}
-	for _, utt := range doc.Utterances {
-		if utt.Speaker == speaker {
-			return true
-		}
-	}
-	return false
 }
 
 func speakable(nodes []ir.Node) bool {
