@@ -44,4 +44,4 @@ Normal tests fail if the JSON differs from the YAML or the extension manifest po
 
 Copyright (c) 2026 zyy17
 
-This extension is licensed under the [Apache License 2.0](license). Keep this copyright notice and the license file when copying the extension directory on its own. Earlier revisions were released under the [MIT license](https://github.com/zyy17/timbrex/blob/7c69ff14546744bf72ebc7f9155cb10e476d4338/license), which remains in the project history.
+This extension is licensed under the [Apache License 2.0](license). Keep this copyright notice and the license file when copying the extension directory on its own.
