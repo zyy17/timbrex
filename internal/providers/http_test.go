@@ -1,12 +1,15 @@
 package providers
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -105,12 +108,14 @@ func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { retu
 
 type trackedBody struct {
 	io.Reader
-	read     int
-	closed   bool
-	closeErr error
+	read      int
+	readCalls int
+	closed    bool
+	closeErr  error
 }
 
 func (b *trackedBody) Read(p []byte) (int, error) {
+	b.readCalls++
 	n, err := b.Reader.Read(p)
 	b.read += n
 	return n, err
@@ -118,6 +123,9 @@ func (b *trackedBody) Read(p []byte) (int, error) {
 
 func (b *trackedBody) Close() error {
 	b.closed = true
+	if closer, ok := b.Reader.(io.Closer); ok {
+		return closer.Close()
+	}
 	return b.closeErr
 }
 
@@ -131,19 +139,19 @@ func (zeroReader) Read(p []byte) (int, error) {
 
 func TestHTTPResponseSizeBoundary(t *testing.T) {
 	for _, tt := range []struct {
-		name    string
-		size    int
-		wantErr string
+		name          string
+		size          int
+		contentLength int64
+		wantErr       string
 	}{
-		{"empty", 0, "empty response"},
-		{"exact limit", MaxResponseBytes, ""},
-		{"over limit", MaxResponseBytes + 1, fmt.Sprintf("response exceeds %d bytes", MaxResponseBytes)},
-		{"bounded consumption", MaxResponseBytes + 4096, fmt.Sprintf("response exceeds %d bytes", MaxResponseBytes)},
+		{"empty", 0, 0, "empty response"},
+		{"known exact limit", MaxResponseBytes, MaxResponseBytes, ""},
+		{"unknown over limit", MaxResponseBytes + 1, -1, fmt.Sprintf("response exceeds %d bytes", MaxResponseBytes)},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			body := &trackedBody{Reader: io.LimitReader(zeroReader{}, int64(tt.size))}
 			client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
-				return &http.Response{StatusCode: http.StatusOK, Body: body}, nil
+				return &http.Response{StatusCode: http.StatusOK, Body: body, ContentLength: tt.contentLength}, nil
 			})}
 			data, err := Request(context.Background(), client, http.MethodGet, "https://example.invalid/audio", "", nil, nil, ResponseBody)
 			if !body.closed || body.read != min(tt.size, MaxResponseBytes+1) {
@@ -162,6 +170,138 @@ func TestHTTPResponseSizeBoundary(t *testing.T) {
 	}
 }
 
+func TestHTTPRejectsDeclaredOversizeBeforeRead(t *testing.T) {
+	body := &trackedBody{Reader: zeroReader{}}
+	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusOK, Body: body, ContentLength: MaxResponseBytes + 8192}, nil
+	})}
+	data, err := Request(context.Background(), client, http.MethodGet, "https://example.invalid/audio", "", nil, nil, ResponseBody)
+	wantErr := fmt.Sprintf("response exceeds %d bytes", MaxResponseBytes)
+	if err == nil || err.Error() != wantErr || data != nil || !body.closed || body.readCalls != 0 {
+		t.Fatalf("bytes=%d error=%v closed=%t read=%d calls=%d, want nil data, %q, closed body, and no reads", len(data), err, body.closed, body.read, body.readCalls, wantErr)
+	}
+}
+
+func TestHTTPStreamedResponseSizeBoundary(t *testing.T) {
+	for _, encoding := range []string{"chunked", "gzip"} {
+		t.Run(encoding, func(t *testing.T) {
+			var compressed bytes.Buffer
+			if encoding == "gzip" {
+				zw := gzip.NewWriter(&compressed)
+				if _, err := io.CopyN(zw, zeroReader{}, MaxResponseBytes+4096); err != nil {
+					t.Fatal(err)
+				}
+				if err := zw.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if encoding == "gzip" {
+					w.Header().Set("Content-Encoding", "gzip")
+					w.Header().Set("Content-Length", strconv.Itoa(compressed.Len()))
+					_, _ = w.Write(compressed.Bytes())
+					return
+				}
+				w.(http.Flusher).Flush()
+				_, _ = io.CopyN(w, zeroReader{}, MaxResponseBytes+4096)
+			}))
+			defer srv.Close()
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			defer transport.CloseIdleConnections()
+			var body *trackedBody
+			client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				res, err := transport.RoundTrip(req)
+				if err != nil {
+					return nil, err
+				}
+				if res.ContentLength != -1 {
+					t.Errorf("length=%d, want unknown length", res.ContentLength)
+				}
+				if encoding == "gzip" && !res.Uncompressed {
+					t.Error("body was not automatically decompressed")
+				}
+				if encoding == "chunked" && (len(res.TransferEncoding) != 1 || res.TransferEncoding[0] != "chunked") {
+					t.Errorf("transfer encoding=%v, want chunked", res.TransferEncoding)
+				}
+				body = &trackedBody{Reader: res.Body}
+				res.Body = body
+				return res, nil
+			})}
+			data, err := Request(context.Background(), client, http.MethodGet, srv.URL, "", nil, nil, ResponseBody)
+			wantErr := fmt.Sprintf("response exceeds %d bytes", MaxResponseBytes)
+			if err == nil || err.Error() != wantErr || data != nil {
+				t.Fatalf("bytes=%d error=%v, want nil data and %q", len(data), err, wantErr)
+			}
+			if body == nil || !body.closed || body.read != MaxResponseBytes+1 {
+				t.Fatalf("body=%+v, want closed body and exactly %d decoded bytes read", body, MaxResponseBytes+1)
+			}
+		})
+	}
+}
+
+func TestHTTPIncompleteResponseBodies(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		cancel  bool
+		wantErr error
+	}{
+		{"short body", false, io.ErrUnexpectedEOF},
+		{"canceled after headers", true, context.Canceled},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Length", "4")
+				_, _ = io.WriteString(w, "ab")
+				w.(http.Flusher).Flush()
+				if tt.cancel {
+					<-r.Context().Done()
+				}
+			}))
+			defer srv.Close()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			defer transport.CloseIdleConnections()
+			var body *trackedBody
+			client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				res, err := transport.RoundTrip(req)
+				if err != nil {
+					return nil, err
+				}
+				body = &trackedBody{Reader: res.Body}
+				res.Body = body
+				if tt.cancel {
+					cancel()
+				}
+				return res, nil
+			})}
+			data, err := Request(ctx, client, http.MethodGet, srv.URL, "", nil, nil, ResponseBody)
+			if !errors.Is(err, tt.wantErr) || data != nil || body == nil || !body.closed {
+				t.Fatalf("data=%q error=%v body=%+v, want nil data, wrapped %v, and closed body", data, err, body, tt.wantErr)
+			}
+		})
+	}
+}
+
+func BenchmarkHTTPDeclaredOversize(b *testing.B) {
+	var body *trackedBody
+	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		body = &trackedBody{Reader: zeroReader{}}
+		return &http.Response{StatusCode: http.StatusOK, Body: body, ContentLength: MaxResponseBytes + 8192}, nil
+	})}
+	wantErr := fmt.Sprintf("response exceeds %d bytes", MaxResponseBytes)
+	var readBytes int64
+	b.ReportAllocs()
+	for b.Loop() {
+		data, err := Request(context.Background(), client, http.MethodGet, "https://example.invalid/audio", "", nil, nil, ResponseBody)
+		if err == nil || err.Error() != wantErr || data != nil || !body.closed {
+			b.Fatalf("bytes=%d error=%v closed=%t", len(data), err, body.closed)
+		}
+		readBytes += int64(body.read)
+	}
+	b.ReportMetric(float64(readBytes)/float64(b.N), "read-B/op")
+}
+
 type failingReader struct{ err error }
 
 func (r failingReader) Read([]byte) (int, error) { return 0, r.err }
@@ -171,18 +311,19 @@ func TestHTTPClosesResponsesOnFailure(t *testing.T) {
 	for _, tt := range []struct {
 		name, contentType, wantErr string
 		status                     int
+		contentLength              int64
 		reader                     io.Reader
 		wantRead                   int
 	}{
-		{"status", "", "HTTP 401 Unauthorized", 401, strings.NewReader("secret body"), 0},
-		{"partial status", "", "HTTP 206 Partial Content", 206, strings.NewReader("partial body"), 0},
-		{"content type", "application/json", "expected raw PCM response, got application/json", 200, strings.NewReader("{}"), 0},
-		{"interrupted read", "audio/pcm", "read response: interrupted body", 200, io.MultiReader(strings.NewReader("ab"), failingReader{readErr}), 2},
+		{"status", "", "HTTP 401 Unauthorized", 401, MaxResponseBytes + 1, strings.NewReader("secret body"), 0},
+		{"partial status", "", "HTTP 206 Partial Content", 206, MaxResponseBytes + 1, strings.NewReader("partial body"), 0},
+		{"content type", "application/json", "expected raw PCM response, got application/json", 200, MaxResponseBytes + 1, strings.NewReader("{}"), 0},
+		{"interrupted read", "audio/pcm", "read response: interrupted body", 200, 4, io.MultiReader(strings.NewReader("ab"), failingReader{readErr}), 2},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			body := &trackedBody{Reader: tt.reader}
 			client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
-				return &http.Response{StatusCode: tt.status, Header: http.Header{"Content-Type": {tt.contentType}}, Body: body}, nil
+				return &http.Response{StatusCode: tt.status, Header: http.Header{"Content-Type": {tt.contentType}}, Body: body, ContentLength: tt.contentLength}, nil
 			})}
 			data, err := Request(context.Background(), client, http.MethodGet, "https://example.invalid/audio", "", nil, nil, ResponsePCM)
 			if err == nil || err.Error() != tt.wantErr || data != nil || !body.closed || body.read != tt.wantRead {
