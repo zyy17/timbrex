@@ -2,58 +2,83 @@
 
 [English](readme.md)
 
-Timbrex 将脚本转换为语音。你可以用纯文本写台词，加入语气、语速和停顿等指令，再选择一个 text-to-speech（TTS）厂商生成 WAV 文件。
+Timbrex 是一门语音脚本语言和配套 CLI。将台词、角色、表演指令和停顿写在文本文件中，再通过语音合成（TTS）厂商生成 WAV 音频。
+
+TTS API 负责生成语音，Timbrex 负责组织调用这些 API 的脚本：哪句台词用哪个音色、表演指令作用于哪些文字、哪里需要停顿。这些设置与台词放在一起，可以随文本编辑、审阅并纳入 Git 版本管理；适配器负责构建请求和拼接音频。
+
+如果你在制作教程旁白、配音草稿或对话原型，希望修改台词时也能一并调整表达方式，可以使用 Timbrex。
+
+## 看一份脚本
+
+下面的对话为两个角色指定 OpenAI 音色，并加入停顿和表演指令：
 
 ```tbx
-[happy|很高兴见到你！] [pause 300ms] [slow|慢慢来。]
+---
+strict_tags: true
+cast:
+  lin: {voices: {openai: coral}}
+  chen: {voices: {openai: onyx}}
+---
+lin: [happy] 你来了！[pause 300ms] [whisper|快进来。]
+chen: [slow|我有件事想告诉你。]
 ```
 
-同一份脚本可以包含多个角色，并为各角色指定音色。标签可以作用于一段文字、一次发言或后续发言，让表演指令与台词放在一起。只写普通文本也能使用。
+`cast` 使 `lin:` 和 `chen:` 成为角色发言，并分别使用 `coral` 和 `onyx`，这两个音色 ID 仅适用于 OpenAI。`[happy]` 作用于 Lin 的这次发言，`[whisper|…]` 和 `[slow|…]` 作用于各自包含的文字，`[pause 300ms]` 则在两句话之间插入本地静音。
 
-## 本地试用
+仓库中的 [examples/dialogue.tbx](examples/dialogue.tbx) 使用相同结构和英文台词，可直接运行。脚本使用 `.tbx` 或 `.timbrex` 扩展名，也可以只写普通文本。台词可使用任意语言，实际支持的语言、音色和指令取决于所选厂商与模型。
 
-安装 Go 1.27 和 `make` 后，运行：
+## 快速开始
+
+安装 Git、Go 1.27 和 `make`，然后在终端运行：
 
 ```bash
 git clone https://github.com/zyy17/timbrex.git
 cd timbrex
 make build
-./timbrex check examples/expressive.tbx
-./timbrex synth examples/expressive.tbx --provider stub -o tone.wav
+./timbrex check examples/dialogue.tbx
+./timbrex synth examples/dialogue.tbx --provider stub -o tone.wav
 ```
 
-检查成功后打印 `ok`，生成文件后打印 `tone.wav`。`stub` 不需要账号，会写出一段 8 kHz 测试音。它用于验证文件生成流程，不会朗读台词，也不会表现脚本中的停顿和表演指令。
+`check` 打印 `ok`，不会联系语音服务。最后一条命令打印 `tone.wav` 并生成文件，可以用音频播放器打开。`stub` 不需要凭证，也不发送语音请求：它只产生一段测试音，不会朗读台词，也不会表现脚本中的停顿和表演指令。
 
-要生成语音，先配置厂商凭证，以及所需的音色或端点，再用 `--provider` 选择厂商。完整操作见[教程](docs/tutorial.zh-cn.md)，各厂商的配置见[厂商接入](docs/providers.zh-cn.md)。
+### 生成语音
 
-## 支持范围
+要使用示例中的 OpenAI 音色，在环境中配置 `OPENAI_API_KEY`，或在[配置文件](docs/configuration.zh-cn.md)中设置 `providers.openai.api_key`。不要把密钥写入脚本或提交到仓库。然后在同一仓库目录运行：
 
-Timbrex 提供 OpenAI、ElevenLabs、MiniMax、Azure Speech、Qwen、Gemini TTS 和 Fish Audio 适配器。每个适配器把支持的指令转换为对应厂商的参数或表演提示。[能力表](docs/capabilities.zh-cn.md)区分了数值控制、近似表演指令和不支持的功能。
+```bash
+./timbrex synth examples/dialogue.tbx --provider openai --model gpt-4o-mini-tts -o dialogue.wav
+```
 
-`check` 检查脚本的语言规则。`synth` 还会在发送请求前检查所选适配器的要求。因此，通过 `check` 的脚本仍可能包含该厂商不支持的控制；合成时会报错，不会悄悄删掉这些控制。
+这条命令会向 OpenAI 发送请求，可能产生费用；成功后打印 `dialogue.wav`。使用前请阅读 [OpenAI 接入说明与模型生命周期提示](docs/providers.zh-cn.md#openai)。选择其他厂商时，按对应的[接入指南](docs/providers.zh-cn.md)配置，并使用该厂商支持的音色 ID 和控制指令。
 
-真实语音适配器逐段合成，在本地插入指定的停顿，最后写出 24 kHz、单声道、16 位 PCM WAV。目前不支持混音、重叠对话、流式输出或厂商之间的自动回退。Timbrex 用于将脚本生成音频，不提供音色创建或克隆功能。
+[教程](docs/tutorial.zh-cn.md)会逐步介绍如何编写自己的脚本、添加角色，以及调整一段台词的表达方式。
 
-适配器已有离线请求与响应测试，尚未验证真实账号兼容性和声音效果。模型可用性、音色要求和服务限制见[厂商接入](docs/providers.zh-cn.md)。
+## 厂商与当前支持范围
 
-## 了解脚本语言
+目前提供 **OpenAI、ElevenLabs、MiniMax、Azure Speech、Qwen、Gemini TTS 和 Fish Audio** 适配器。各适配器支持的控制不同：有些转换为数值 API 参数，有些转换为近似的表演提示。切换厂商不保证音色或表达效果相同，具体映射见[能力表](docs/capabilities.zh-cn.md)。
 
-脚本使用 `.tbx` 或 `.timbrex` 扩展名。台词可以使用任意语言，标签名使用 ASCII 标识符。例如，`[slow|文字]` 为一段文字设置语速，`[pause 300ms]` 插入停顿。
+真实语音适配器在发送合成请求前，会验证全部计划合成的语音片段。通过 `check` 表示脚本符合语言规则，不代表厂商支持；语音片段使用了不支持的控制时，会在合成准备阶段报错。
 
-[DSL 规范 v1](docs/spec.zh-cn.md)描述当前语言规则，开发期间可能调整。front matter 中的 `timbrex: 1` 表示所用的 DSL 版本，与 CLI 的软件版本无关。
+语音逐段合成，停顿在本地插入，最终输出 **24 kHz、单声道、16 位 PCM WAV**。目前未实现混音、重叠对话、流式输出、厂商自动回退，以及音色创建或克隆。
 
-## 查找文档
+项目仍在开发中，[DSL 规范 v1](docs/spec.zh-cn.md)描述当前语言规则，后续可能调整。适配器已有离线请求与响应测试，真实账号兼容性和声音效果尚未验证。
 
-| 目标 | English | 简体中文 |
-| --- | --- | --- |
-| 编写并合成第一份脚本 | [Tutorial](docs/tutorial.md) | [教程](docs/tutorial.zh-cn.md) |
-| 查询语法、作用域或诊断 | [DSL Specification v1](docs/spec.md) | [DSL 规范 v1](docs/spec.zh-cn.md) |
-| 配置默认值、凭证和覆盖项 | [Configuration](docs/configuration.md) | [配置](docs/configuration.zh-cn.md) |
-| 接入语音厂商 | [Provider setup](docs/providers.md) | [厂商接入](docs/providers.zh-cn.md) |
-| 查询适配器支持的控制 | [Capabilities](docs/capabilities.md) | [能力表](docs/capabilities.zh-cn.md) |
-| 开发或参与贡献 | [Contributing](contributing.md) | [参与贡献](contributing.zh-cn.md) |
-| 启用编辑器高亮 | [VS Code / Cursor](editors/vscode/readme.md) | [VS Code / Cursor](editors/vscode/readme.zh-cn.md) |
+## 文档
 
-设计背景见[设计思路](docs/reflection.zh-cn.md)和[厂商调研](docs/market_survey.zh-cn.md)。
+| 想要了解的内容 | 指南 |
+| --- | --- |
+| 编写并合成第一份脚本 | [教程](docs/tutorial.zh-cn.md) |
+| 查询语法、作用域或诊断 | [DSL 规范 v1](docs/spec.zh-cn.md) |
+| 配置默认值、凭证和覆盖项 | [配置](docs/configuration.zh-cn.md) |
+| 选择厂商并查询支持的控制 | [厂商接入](docs/providers.zh-cn.md) · [能力表](docs/capabilities.zh-cn.md) |
+| 启用语法高亮 | [VS Code / Cursor](editors/vscode/readme.zh-cn.md) |
 
-采用 MIT 许可证，见 [license](license)。
+## 参与贡献
+
+欢迎提交问题报告、改进文档或完善厂商接入。报告问题时，请提供最小脚本、执行命令、预期结果与实际结果，并移除凭证和私密文本。
+
+[贡献指南](contributing.zh-cn.md)介绍开发环境、包职责、离线测试和 PR 流程；语言与实现的设计取舍见[设计思路](docs/reflection.zh-cn.md)。
+
+## 许可证
+
+[MIT](license)。
