@@ -6,11 +6,13 @@
 
 ## 准备开发环境
 
-安装 [go.mod](go.mod) 声明的 Go 版本，以及 CI 使用的 golangci-lint **v2.14.0**。若准备提交 pull request，请先 fork 仓库，再克隆自己的 fork。只想了解项目时，可直接克隆上游：
+安装 [go.mod](go.mod) 声明的 Go 版本、golangci-lint **v2.14.0** 和 Node.js **24**，与 CI 保持一致。Node.js 仅用于编辑器运行时测试。若准备提交 pull request，请先 fork 仓库，再克隆自己的 fork。只想了解项目时，可直接克隆上游：
 
 ```bash
 git clone https://github.com/zyy17/timbrex.git
 cd timbrex
+go mod download
+make editor-deps
 make build
 ./timbrex check examples/hello.tbx
 ./timbrex synth examples/hello.tbx --provider stub -o hello.wav
@@ -22,6 +24,8 @@ make build
 
 主要处理流程是 `internal/lex` → `internal/parse` 和 `internal/ast` → `internal/check` → `internal/lower` 和 `internal/ir` → `internal/providers`。标准标签位于 `internal/vocab`，命令组装位于 `internal/cli`，YAML 配置和环境变量映射位于 `internal/config`。测试与对应代码放在一起。
 
+从源码开始的 lowering 测试和基准测试必须依次调用 `parse.Parse` → `check.Apply` → `check.Failed` → `lower.Script`，仅在检查通过后转换为 IR。专门验证无效输入的 planner 测试应直接构造 IR。IR 通过 utterance 的 speaker 区分场景行与语音，通过节点种类区分状态与事件，并用成对的 span 标记界定局部作用域，不再另设 scope 字段。
+
 使用简短、符合 Go 惯例的函数，优先沿用现有写法。解析逻辑应独立于厂商和 I/O，只有 `internal/cli` 导入 Cobra。适配器接收已解析的配置和 IR，不重新加载配置或解析脚本。标识符、错误、帮助文本和代码注释使用英文。注释应解释约束或不易看出的设计原因，避免复述代码。
 
 报告 bug 时，请提供最小 `.tbx` 脚本、执行命令、预期与实际结果，以及 `timbrex version` 输出。厂商问题还需模型和区域信息，并去除凭证、私有文本和签名音频 URL。重大的语法、架构或兼容性变更请先开 issue 讨论；范围明确的修复或有文档依据的厂商接入可以直接提交 pull request。
@@ -31,12 +35,14 @@ make build
 开发过程中可先测试相关包，例如 `go test ./internal/parse`。提交前执行与 CI 一致的检查：
 
 ```bash
-make tidy
-make test
-make lint
+make verify
 ```
 
-`make tidy` 检查 `go.mod` 或 `go.sum` 是否需要变化，但不改写文件。`make test` 构建 `./timbrex` 并运行 `go test ./...`。`make lint` 运行 golangci-lint 及其格式检查；需要应用 Go 格式化时可执行 `make fmt`。CI 会在 Linux 和 macOS 上运行测试。
+`make verify` 运行 `make tidy`、`make test`、`make lint` 和 `make test-editor`。`make tidy` 检查 `go.mod` 或 `go.sum` 是否需要变化，但不改写文件。`make test` 构建 `./timbrex` 并运行 `go test ./...`。`make lint` 运行 golangci-lint 及其格式检查。`make test-editor` 运行实际的 TextMate/Oniguruma 分词器测试。需要应用 Go 格式化时可执行 `make fmt`。CI 在 Linux 和 macOS 上运行 Go 测试，在 Linux 上运行编辑器运行时测试。
+
+准备环境时，用 `go mod download` 和 `make editor-deps` 安装依赖。验证过程不会执行 `npm ci`，也不会联系 TTS 服务；Go 模块和工具已缓存后，可以离线运行。依赖变化时再重新安装。
+
+收集 Go 覆盖率时，运行 `go test -count=1 -coverprofile=coverage.out ./...`，无需跳过子进程测试。CLI 输入辅助进程只继承白名单中的运行时环境变量（包括 `GOCOVERDIR`），不继承厂商凭证或配置；Go 会将其子进程计数合并到父进程的覆盖率报告中。单独构建的 CLI 二进制、编辑器运行时测试和真实服务行为不计入该报告；语句覆盖率不能证明分支覆盖率或音频质量。
 
 默认测试必须离线。用 `httptest` 验证厂商请求，为行为修复和边界情况补充回归测试。常规测试不能要求凭证或产生费用。修改 TextMate YAML 语法后，用 `go test ./editors/vscode -update` 重新生成随包提供的 JSON，详见 [编辑器指南](editors/vscode/readme.zh-cn.md)。
 

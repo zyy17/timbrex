@@ -42,7 +42,5 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: editors/vscode/package-lock.json
-      - run: npm ci --ignore-scripts
-        working-directory: editors/vscode
-      - run: npm test
-        working-directory: editors/vscode
+      - run: make editor-deps
+      - run: make test-editor
