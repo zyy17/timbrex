@@ -36,6 +36,33 @@ func TestModelSpecificTags(t *testing.T) {
 	}
 }
 
+func TestLanguageHints(t *testing.T) {
+	for _, tc := range []struct {
+		model, lang, want string
+		wantErr           bool
+	}{
+		{"eleven_flash_v2", "", "", false},
+		{"eleven_flash_v2", "en", "en", false},
+		{"eleven_flash_v2", "en-US", "en", false},
+		{"eleven_turbo_v2", "EN-gb", "en", false},
+		{"eleven_flash_v2", "fr-FR", "", true},
+		{"eleven_turbo_v2", "fr-FR", "", true},
+		{"eleven_multilingual_v2", "en-US", "", true},
+		{"eleven_v3", "-en", "", true},
+		{"eleven_v4", "fr-FR", "fr", false},
+		{"eleven_v3", "fil", "fil", false},
+		{"eleven_v3", "yue", "yue", false},
+	} {
+		t.Run(tc.model+"/"+tc.lang, func(t *testing.T) {
+			seg := providers.Segment{Lang: tc.lang, Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}
+			r, err := build(seg, tc.model)
+			if (err != nil) != tc.wantErr || !tc.wantErr && r.Language != tc.want {
+				t.Fatalf("language=%q, error=%v", r.Language, err)
+			}
+		})
+	}
+}
+
 func TestRejectNativeMarkupInLiteralTextAndInstructions(t *testing.T) {
 	for _, seg := range []providers.Segment{
 		{Nodes: []ir.Node{{Kind: ir.Text, Text: "[laughs]"}}},
@@ -101,6 +128,9 @@ func TestInvalidLaterSegmentFailsBeforeAnyRequest(t *testing.T) {
 	}{
 		{"eleven_v4", []ir.Node{{Kind: ir.State, Name: "fast"}, {Kind: ir.Text, Text: "Later"}}},
 		{"eleven_multilingual_v2", []ir.Node{{Kind: ir.Text, Text: `Later <break time="1s" />`}}},
+		{"eleven_flash_v2", []ir.Node{{Kind: ir.SpanStart, Name: "lang", Args: []ir.Arg{{Raw: "fr-FR", Kind: "word"}}}, {Kind: ir.Text, Text: "Bonjour"}, {Kind: ir.SpanEnd, Name: "lang"}}},
+		{"eleven_turbo_v2", []ir.Node{{Kind: ir.SpanStart, Name: "lang", Args: []ir.Arg{{Raw: "fr-FR", Kind: "word"}}}, {Kind: ir.Text, Text: "Bonjour"}, {Kind: ir.SpanEnd, Name: "lang"}}},
+		{"eleven_v3", []ir.Node{{Kind: ir.SpanStart, Name: "lang", Args: []ir.Arg{{Raw: "-en", Kind: "quoted"}}}, {Kind: ir.Text, Text: "Later"}, {Kind: ir.SpanEnd, Name: "lang"}}},
 	} {
 		t.Run(tc.model, func(t *testing.T) {
 			calls := 0

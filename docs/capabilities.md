@@ -22,7 +22,7 @@ This table describes Timbrex's current adapters, not everything the vendors offe
 | `lang` span / front matter | Instruction | Language code | Language boost | SSML locale | Language hint | Native language-code | Unsupported |
 | `voice`, `as` spans; `reset` | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner | Shared planner |
 
-OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. Explicit speed controls are rejected on `eleven_v4` and `eleven_v4_turbo`, which do not support the speed setting. For other models, the adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](providers.md).
+OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. Explicit speed controls are rejected on `eleven_v4` and `eleven_v4_turbo`, which do not support the speed setting. For other models, the adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](providers.md). ElevenLabs language hints fail locally on `eleven_multilingual_v2`, when the primary subtag is empty, or when it is not `en` on English-only `eleven_flash_v2` / `eleven_turbo_v2`. Other models' language support is not queried, and unsupported codes may be ignored by the service.
 
 ## Exact mappings
 

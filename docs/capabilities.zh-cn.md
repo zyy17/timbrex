@@ -22,7 +22,7 @@
 | `lang` span / front matter | 指令 | 语言代码 | Language boost | SSML locale | 语言提示 | 原生语言代码 | 不支持 |
 | `voice`、`as` span；`reset` | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 |
 
-OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`。`eleven_v4` 和 `eleven_v4_turbo` 不支持语速设置，因此会拒绝显式语速控制；其他模型的适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见 [厂商接入](providers.zh-cn.md)。
+OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`。`eleven_v4` 和 `eleven_v4_turbo` 不支持语速设置，因此会拒绝显式语速控制；其他模型的适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见 [厂商接入](providers.zh-cn.md)。ElevenLabs 在 `eleven_multilingual_v2`、主要语言子标签为空，或仅支持英语的 `eleven_flash_v2` / `eleven_turbo_v2` 使用非 `en` 提示时，会在本地报错。适配器不会查询其他模型的语言支持，服务可能忽略不支持的代码。
 
 ## 具体映射
 
