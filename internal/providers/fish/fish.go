@@ -50,7 +50,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	headers := map[string]string{"Authorization": "Bearer " + opt.APIKey, "model": opt.Model}
 	endpoint := strings.TrimRight(opt.Endpoint, "/") + "/tts"
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		wav, err := providers.PostJSON(ctx, p.client, endpoint, headers, requests[i])
+		wav, err := providers.PostJSON(ctx, p.client, endpoint, headers, requests[i], providers.ResponseBody)
 		if err != nil {
 			return nil, err
 		}

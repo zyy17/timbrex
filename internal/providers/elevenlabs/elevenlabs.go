@@ -58,7 +58,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
 		endpoint := base + url.PathEscape(segments[i].Voice) + "?output_format=pcm_24000"
-		return providers.PostJSON(ctx, p.client, endpoint, headers, requests[i])
+		return providers.PostJSON(ctx, p.client, endpoint, headers, requests[i], providers.ResponsePCM)
 	})
 }
 

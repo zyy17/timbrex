@@ -11,11 +11,19 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
 const MaxResponseBytes = 64 << 20
+
+// ResponseKind selects transport-level validation independently of Accept.
+// JSON and WAV bodies are validated by their adapters after the bounded read.
+type ResponseKind uint8
+
+const (
+	ResponseBody ResponseKind = iota
+	ResponsePCM
+)
 
 func HTTPClient() *http.Client {
 	return &http.Client{
@@ -24,15 +32,15 @@ func HTTPClient() *http.Client {
 	}
 }
 
-func PostJSON(ctx context.Context, client *http.Client, endpoint string, headers map[string]string, body any) ([]byte, error) {
+func PostJSON(ctx context.Context, client *http.Client, endpoint string, headers map[string]string, body any, expected ResponseKind) ([]byte, error) {
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
-	return Request(ctx, client, http.MethodPost, endpoint, "application/json", headers, data)
+	return Request(ctx, client, http.MethodPost, endpoint, "application/json", headers, data, expected)
 }
 
-func Request(ctx context.Context, client *http.Client, method, endpoint, contentType string, headers map[string]string, body []byte) ([]byte, error) {
+func Request(ctx context.Context, client *http.Client, method, endpoint, contentType string, headers map[string]string, body []byte, expected ResponseKind) ([]byte, error) {
 	u, err := url.Parse(endpoint)
 	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
 		return nil, fmt.Errorf("invalid HTTP endpoint")
@@ -66,7 +74,7 @@ func Request(ctx context.Context, client *http.Client, method, endpoint, content
 	if res.StatusCode == http.StatusPartialContent || res.StatusCode < 200 || res.StatusCode >= 300 {
 		return nil, fmt.Errorf("HTTP %d %s", res.StatusCode, http.StatusText(res.StatusCode))
 	}
-	if strings.HasPrefix(req.Header.Get("Accept"), "audio/") {
+	if expected == ResponsePCM {
 		if err := checkPCMContentType(res.Header.Get("Content-Type")); err != nil {
 			return nil, err
 		}

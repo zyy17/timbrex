@@ -39,7 +39,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		"Accept":        "audio/pcm, application/octet-stream",
 	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		return providers.PostJSON(ctx, p.client, endpoint, headers, requests[i])
+		return providers.PostJSON(ctx, p.client, endpoint, headers, requests[i], providers.ResponsePCM)
 	})
 }
 

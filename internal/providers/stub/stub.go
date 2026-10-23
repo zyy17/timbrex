@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"math"
 	"os"
-	"path/filepath"
 
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/providers"
@@ -31,7 +30,7 @@ func (provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.
 		return providers.Result{}, err
 	}
 	pcm := tone(sampleCount(doc))
-	if err := writeWAV(opt.Out, pcm, sampleRate); err != nil {
+	if err := writeWAV(ctx, opt.Out, pcm, sampleRate); err != nil {
 		return providers.Result{}, err
 	}
 	return providers.Result{Path: opt.Out, Provider: "stub"}, nil
@@ -67,7 +66,7 @@ func tone(n int) []int16 {
 	return out
 }
 
-func writeWAV(path string, pcm []int16, rate int) error {
+func writeWAV(ctx context.Context, path string, pcm []int16, rate int) error {
 	data := make([]byte, 44+len(pcm)*2)
 	copy(data[0:], "RIFF")
 	binary.LittleEndian.PutUint32(data[4:], uint32(len(data)-8))
@@ -85,33 +84,8 @@ func writeWAV(path string, pcm []int16, rate int) error {
 	for i, sample := range pcm {
 		binary.LittleEndian.PutUint16(data[44+2*i:], uint16(sample))
 	}
-	// Write a sibling temp file and rename it into place. A failed write
-	// must not truncate an existing wav.
-	dir := filepath.Dir(path)
-	f, err := os.CreateTemp(dir, ".timbrex-*.partial")
-	if err != nil {
+	return providers.WriteOutput(ctx, path, func(f *os.File) error {
+		_, err := f.Write(data)
 		return err
-	}
-	tmp := f.Name()
-	ok := false
-	defer func() {
-		if !ok {
-			_ = os.Remove(tmp)
-		}
-	}()
-	if _, err := f.Write(data); err != nil {
-		_ = f.Close()
-		return err
-	}
-	if err := f.Close(); err != nil {
-		return err
-	}
-	if err := os.Chmod(tmp, 0o644); err != nil {
-		return err
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		return err
-	}
-	ok = true
-	return nil
+	})
 }

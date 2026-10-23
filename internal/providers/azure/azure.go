@@ -43,7 +43,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		"X-Microsoft-OutputFormat":  "raw-24khz-16bit-mono-pcm",
 	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		pcm, err := providers.Request(ctx, p.client, http.MethodPost, opt.Endpoint, "application/ssml+xml", headers, []byte(requests[i]))
+		pcm, err := providers.Request(ctx, p.client, http.MethodPost, opt.Endpoint, "application/ssml+xml", headers, []byte(requests[i]), providers.ResponsePCM)
 		if err != nil {
 			return nil, err
 		}

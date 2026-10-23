@@ -189,6 +189,8 @@ These checks detect container and format problems. They cannot prove that a mode
 
 ### Output and recovery
 
-The renderer creates a temporary file beside the destination and replaces the destination only after successful synthesis and writing. A reported cancellation or failure removes temporary output and preserves an existing destination. The parent directory must already exist. Earlier requests may have incurred charges; there is no automatic retry, fallback, cache, or resume.
+All providers, including `stub`, create a temporary file beside the destination and replace the destination only after successful synthesis, writing, and closing. On POSIX systems, temporary and completed files use private `0600` permissions, subject to a more restrictive process umask. Replacing an existing file replaces its permissions too; the old mode is not preserved. The stub remains an 8 kHz mono 16-bit test tone; real-provider output remains 24 kHz mono 16-bit audio.
+
+Cancellation is checked before creating output, between real-provider segments, and immediately before the final rename. A cancellation or failure reported before replacement removes temporary output and preserves an existing destination. Cancellation arriving after the final check can still finish the replacement; successful replacement is not rolled back. The parent directory must already exist. Earlier requests may have incurred charges; there is no automatic retry, fallback, cache, or resume.
 
 When a request fails, check the model, voice, region, and key permissions against the provider's official reference. Offline tests validate Timbrex's request construction and response handling; they do not establish service availability or speech quality.
