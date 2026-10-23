@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -136,5 +137,27 @@ func TestCanceledSynthesisKeepsExistingOutput(t *testing.T) {
 	files, err := os.ReadDir(filepath.Dir(path))
 	if err != nil || len(files) != 1 {
 		t.Fatalf("temporary files remain: %v, %v", files, err)
+	}
+}
+
+func TestConcurrencyRejectsWithoutReplacingOutput(t *testing.T) {
+	for _, concurrency := range []int{-1, 2, 8, 9} {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "out.wav")
+		if err := os.WriteFile(path, []byte("KEEP"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		result, err := (provider{}).Synthesize(context.Background(), nil, providers.Options{Out: path, Concurrency: concurrency})
+		if err == nil || !strings.Contains(err.Error(), "concurrency") || result != (providers.Result{}) {
+			t.Fatalf("concurrency=%d result=%+v error=%v", concurrency, result, err)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil || string(data) != "KEEP" {
+			t.Fatalf("output=%q error=%v", data, err)
+		}
+		files, err := os.ReadDir(dir)
+		if err != nil || len(files) != 1 {
+			t.Fatalf("temporary files=%v error=%v", files, err)
+		}
 	}
 }

@@ -142,7 +142,7 @@ References: [HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-au
 ./timbrex synth examples/gemini.tbx -o gemini.wav
 ```
 
-Uses the **Google Gemini API**, not Google Cloud Text-to-Speech or Interactions: `POST /v1beta/models/gemini-3.8-flash-tts:generateContent` with `x-goog-api-key`. The initial adapter supports only this model and the 30 documented prebuilt voices; the default is `Kore`. Custom/replicated voices, voice creation, streaming and legacy model schemas are outside this adapter's scope. Cast voices are synthesized sequentially, not through native conversational synthesis.
+Uses the **Google Gemini API**, not Google Cloud Text-to-Speech or Interactions: `POST /v1beta/models/gemini-3.8-flash-tts:generateContent` with `x-goog-api-key`. The initial adapter supports only this model and the 30 documented prebuilt voices; the default is `Kore`. Custom/replicated voices, voice creation, streaming and legacy model schemas are outside this adapter's scope. Cast voices use separate segment requests, not native conversational synthesis; optional concurrency does not combine them.
 
 Spoken text and `speechMetadata.style` are separate. `fast`/`slow`, acting, emotions and delivery controls are approximate style instructions; numeric `speed`, `pitch` and `volume` are rejected. Selected events use native angle-bracket cues. Explicit `lang` maps to `speechConfig.languageCode` and must be one of the API reference's supported BCP-47 codes (for example `en-US` or `cmn-CN`, not `en` or `zh-CN`); without it the model detects language. The adapter limits text plus style to 4096 Unicode characters as a local resource bound. This is **not** token counting; the service's 8192-token input budget still applies.
 
@@ -165,13 +165,30 @@ References: [GenerateContent TTS guide](https://ai.google.dev/gemini-api/docs/ge
 ./timbrex synth examples/fish.tbx -o fish.wav
 ```
 
-Calls `POST https://api.fish.audio/v1/tts` with bearer authentication, the `model: s2.1-pro` header, JSON and an explicit single-speaker `reference_id`. This initial adapter supports only `s2.1-pro`; unknown and other models fail locally because the service silently falls back for unrecognized model headers. No account voice is chosen by default. Use `FISH_VOICE_ID`, `--voice`, front matter or a `fish` cast mapping for a voice you can access. The adapter does not upload reference audio, create clones, or use native multi-speaker requests; cast voices are synthesized sequentially.
+Calls `POST https://api.fish.audio/v1/tts` with bearer authentication, the `model: s2.1-pro` header, JSON and an explicit single-speaker `reference_id`. This initial adapter supports only `s2.1-pro`; unknown and other models fail locally because the service silently falls back for unrecognized model headers. No account voice is chosen by default. Use `FISH_VOICE_ID`, `--voice`, front matter or a `fish` cast mapping for a voice you can access. The adapter does not upload reference audio, create clones, or use native multi-speaker requests; cast voices use separate segment requests, including when concurrency is enabled.
 
 Speed maps to the documented 0.5–2 multiplier and volume is passed in dB. Volume has a local −60…+20 dB bound, not a claimed vendor limit. Loudness normalization is explicitly enabled. Text normalization is explicitly disabled to avoid the API's additional number/date/unit rewriting. Speech pronunciation is still model-dependent. Explicit `lang` fails: Fish's `language` field only affects normalization/timestamp alignment and cannot select spoken language or accent. Selected S2 emotion and event cues use square brackets; free-form acting, numeric emotion intensity, pitch and unsupported controls fail before any HTTP call. Text including generated cues has a local 4096-character bound, not a claimed vendor maximum.
 
 Requests specify `format: wav` and `sample_rate: 24000`. WAV decoding follows the shared format checks below. JSON errors in a successful HTTP response also fail. A valid WAV does not prove the model recited every word. Official HTTP errors include 400, 401, 402, 403, 404, 429, and 5xx; they fail without retry, and response bodies stay out of diagnostics.
 
 References: [TTS endpoint](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech), [OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json), [errors](https://docs.fish.audio/api-reference/errors), [model choice](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model), [S2 emotion and event cues](https://docs.fish.audio/developer-guide/core-features/emotions). Offline fixtures cover requests and rejection paths. Live account access, complete-WAV interoperability and acoustic behavior remain unverified; streaming sentinel sizes are deliberately rejected rather than guessed.
+
+## Concurrent generation
+
+Real providers support `synth --concurrency N`, with a default of `1` (serial) and an allowed range of `1`–`8`. Start with `2` only if your account permits simultaneous requests. This is a local safety cap, not a claim that every provider, plan, region, or model accepts eight concurrent requests. The fake `stub` provider rejects values above `1`. The option is CLI-only; it has no configuration-file, front matter, or environment equivalent.
+
+```bash
+# Configure OpenAI credentials first; this command can incur charges.
+./timbrex synth examples/dialogue.tbx --provider openai --concurrency 2 -o dialogue.wav
+```
+
+Every speech request is prepared and validated before any HTTP call. Concurrency only overlaps those prepared segment jobs: it does not split or merge segments, change request text, voices or controls, or add retries. The final WAV always places decoded speech and local pauses in script order, regardless of completion order. Pauses make no network calls. Qwen's synthesis request and subsequent audio download belong to the same segment job.
+
+Both active jobs and the window of segments not yet written are bounded by `N`. A slow early segment can hold up that window rather than allowing later PCM to accumulate for the whole script. The byte lengths of completed PCM payloads waiting in memory are bounded by the window size times the largest decoded segment (at most 64 MiB per real-provider response). This is not a retained-heap or process-memory budget. HTTP buffers, JSON/hex/base64 decoding and WAV backing buffers can coexist with PCM; prepared requests and the source, AST and IR also remain in memory. Higher concurrency can therefore use substantially more memory.
+
+On the first recorded synthesis, decoding, or writing failure, the renderer stops admitting jobs, cancels in-flight work, and waits for started jobs to finish before removing temporary output. The error that triggers cancellation is retained rather than replaced by a sibling's cancellation error; competing failures need not be reported in script order. HTTP 429 and other failures are not retried, and concurrency is not automatically reduced. Cancellation cannot undo a request already accepted by a service: completed or uncertain in-flight requests may still be billed. Existing output is preserved on a failure before publication.
+
+Offline tests verify request contents, ordering, bounds and cleanup with simulated responses. They do not establish live-service speedups or byte-identical speech: provider generation may vary between runs even when request contents are unchanged.
 
 ## Failures and limits
 
@@ -191,6 +208,6 @@ These checks detect container and format problems. They cannot prove that a mode
 
 All providers, including `stub`, create a temporary file beside the destination and replace the destination only after successful synthesis, writing, and closing. On POSIX systems, temporary and completed files use private `0600` permissions, subject to a more restrictive process umask. Replacing an existing file replaces its permissions too; the old mode is not preserved. The stub remains an 8 kHz mono 16-bit test tone; real-provider output remains 24 kHz mono 16-bit audio.
 
-Cancellation is checked before creating output, between real-provider segments, and immediately before the final rename. A cancellation or failure reported before replacement removes temporary output and preserves an existing destination. Cancellation arriving after the final check can still finish the replacement; successful replacement is not rolled back. The parent directory must already exist. Earlier requests may have incurred charges; there is no automatic retry, fallback, cache, or resume.
+Cancellation is checked during request preparation, before creating output, while scheduling and writing real-provider segments, and immediately before the final rename. In-flight HTTP requests receive the cancellation context. A cancellation or failure reported before replacement removes temporary output and preserves an existing destination. Cancellation arriving after the final check can still finish the replacement; successful replacement is not rolled back. The parent directory must already exist. Earlier requests may have incurred charges; there is no automatic retry, fallback, cache, or resume.
 
 When a request fails, check the model, voice, region, and key permissions against the provider's official reference. Offline tests validate Timbrex's request construction and response handling; they do not establish service availability or speech quality.

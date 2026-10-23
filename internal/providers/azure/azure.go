@@ -29,10 +29,16 @@ var styles = map[string]string{
 }
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
+	if err := ctx.Err(); err != nil {
+		return providers.Result{}, err
+	}
+	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
+		return providers.Result{}, err
+	}
 	if opt.Model != "" {
 		return providers.Result{}, fmt.Errorf("azure selects its model through the voice name; omit model")
 	}
-	segments, requests, err := providers.Prepare(doc, p.ID(), opt.Voice, build)
+	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, build)
 	if err != nil {
 		return providers.Result{}, err
 	}

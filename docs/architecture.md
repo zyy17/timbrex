@@ -4,7 +4,7 @@
 
 This guide is for developers who know Go and want to follow Timbrex from a script to a WAV file, find the code responsible for a behavior, or extend an adapter without changing the language. It describes the current implementation. Use the [specification](spec.md) for language rules, [configuration](configuration.md) for settings, and [provider setup](providers.md) and [capabilities](capabilities.md) for vendor-specific contracts.
 
-Timbrex is a small compiler plus an audio renderer. The compiler converts the author's words, speakers, and directions into a provider-independent intermediate representation (IR) for request planning. A real provider adapter resolves that structure into speech requests, calls one vendor sequentially, and joins the returned PCM with local silence. Timbrex does not generate speech itself, and the same script does not promise the same performance across vendors.
+Timbrex is a small compiler plus an audio renderer. The compiler converts the author's words, speakers, and directions into a provider-independent intermediate representation (IR) for request planning. A real provider adapter resolves that structure into speech requests, calls one vendor serially by default or with optional bounded concurrency, and joins the returned PCM with local silence in script order. Timbrex does not generate speech itself, and the same script does not promise the same performance across vendors.
 
 ## The main path
 
@@ -78,7 +78,9 @@ CLI flags > script front matter > environment > selected YAML file > defaults
 This is implemented in two stages rather than by feeding everything to one merge:
 
 - `config.Load` combines defaults, one YAML file, and documented environment variables. Without `--config`, the file is `./timbrex.yaml` in the working directory, not beside the script. An explicitly selected missing file is an error. Invalid file fields are checked before environment overrides can hide them.
-- After parsing, the CLI chooses strict mode and, for synthesis, the provider, model, and default voice. `Config.Resolve` then requires the selected real provider's credentials and required endpoint/model settings. Adapters receive a `providers.Options` value containing `Out`, `Model`, `Voice`, `APIKey`, and `Endpoint`.
+- After parsing, the CLI chooses strict mode and, for synthesis, the provider, model, and default voice. `Config.Resolve` then requires the selected real provider's credentials and required endpoint/model settings. Adapters receive a `providers.Options` value containing `Out`, `Model`, `Voice`, `APIKey`, `Endpoint`, and `Concurrency`.
+
+`synth --concurrency` is CLI-only, defaults to `1`, and accepts `1`–`8`; there is no YAML, environment, or front matter setting. In direct Go calls, zero-valued `Options.Concurrency` also means serial. The separate `stub` path rejects concurrency above `1`. The cap is local, not a vendor account-limit guarantee.
 
 The precedence statement is not a promise that every setting has a CLI or front-matter form. Credentials and endpoints belong in configuration/environment, not scripts. `config` prints redacted merged settings; it does not apply a script's front matter. See the [configuration reference](configuration.md) for the exact fields and environment bindings.
 
@@ -198,7 +200,7 @@ This is segmentation by control boundaries, not a sentence tokenizer or a genera
 
 ## Preparing requests before network I/O
 
-[Prepare](../internal/providers/prepare.go) is a generic helper: it runs `Plan`, allocates a request slice aligned with segment indices, and calls the adapter's builder for every speech segment. Local pauses keep a zero-value request that is never sent. If any builder rejects a segment, no synthesis request has started.
+[Prepare](../internal/providers/prepare.go) is a generic helper: it uses context-aware planning, allocates a request slice aligned with segment indices, and calls the adapter's builder for every speech segment. Local pauses keep a zero-value request that is never sent. If any builder rejects a segment, no synthesis request has started. Preparation checks cancellation during planning and before and after each builder; an individual builder is not preempted. Prepared requests are read-only while render callbacks may run concurrently.
 
 ```mermaid
 flowchart TD
@@ -240,7 +242,7 @@ An adapter registers an implementation in `init`; the CLI blank-imports shipped 
 
 A new adapter normally needs four connected changes:
 
-- Implement its documented request and response contract in `internal/providers/<name>`, using `Prepare` and `Render` when the sequential PCM path fits. Builders must remain network-free and validate supported controls, arguments, text limits, and model restrictions before I/O.
+- Implement its documented request and response contract in `internal/providers/<name>`, using `Prepare` and `Render` when the ordered PCM path fits. Builders must remain network-free and validate supported controls, arguments, text limits, and model restrictions before I/O.
 - Register and blank-import it, then add defaults and environment bindings in `internal/config`. Configuration validation uses the known provider set too; registration alone is insufficient for CLI support.
 - Normalize successful audio to the shared PCM contract, preserve cancellation, and reject malformed or unsupported responses. Do not silently drop controls or pass through arbitrary vendor markup.
 - Add offline adapter and CLI contract tests, and update both language versions of provider setup and capabilities. Read and cite the vendor's official API documentation before implementing fields.
@@ -249,7 +251,7 @@ A new vendor normally does not require AST or grammar changes. Shared helpers be
 
 ## From HTTP responses to a complete WAV
 
-After preparation succeeds, real adapters render one segment at a time. This smaller sequence focuses on the renderer and its callback; the adapter handles HTTP and decoding, and the renderer writes to the temporary file:
+After preparation succeeds, real adapters render serially by default. This smaller sequence focuses on that default path: the adapter handles HTTP and decoding, and the renderer writes to the temporary file:
 
 ```mermaid
 sequenceDiagram
@@ -268,7 +270,9 @@ sequenceDiagram
     R->>R: Complete and publish WAV
 ```
 
-The diagram shows the success path. Speech PCM is validated before writing; final publication fills the header, closes the file, checks cancellation, and renames it. Any error returns without processing later segments or publishing the temporary file.
+The diagram shows the serial success path. Speech PCM is validated before writing; final publication fills the header, closes the file, checks cancellation, and renames it.
+
+With `--concurrency N`, up to `N` segment jobs overlap inside a rolling window, but one writer still appends speech and local silence in script order. The first recorded error stops new admission, cancels in-flight requests, and waits for started jobs before returning without publishing the temporary file.
 
 ### Transport and decoding
 
@@ -280,7 +284,7 @@ Adapters handle their own envelopes: some request raw PCM directly, others decod
 
 ### Writing and publishing
 
-[Render](../internal/providers/audio.go) reserves a 44-byte WAV header, processes one segment at a time, writes PCM to disk, and fills in the header after all segments succeed. A pause produces zero-valued samples locally. The accumulated PCM payload is capped at **1 GiB**. There is no resampling, crossfade, mixing, overlap, or audio repair.
+[Render](../internal/providers/audio.go) reserves a 44-byte WAV header, writes one segment at a time in script order, and fills in the header after all segments succeed. A pause produces zero-valued samples locally. The accumulated PCM payload is capped at **1 GiB**. There is no resampling, crossfade, mixing, overlap, or audio repair.
 
 [WriteOutput](../internal/providers/output.go) creates a `.timbrex-*.partial` file in the destination directory. It closes the complete file, checks cancellation, and publishes it with `os.Rename`; cleanup removes the temporary file on ordinary failure. An existing output is left untouched when synthesis, decoding, or writing fails before publication. New and replaced files use `CreateTemp`'s private `0600` mode before umask, rather than preserving the old destination's permissions.
 
@@ -288,15 +292,17 @@ This is complete-file publication, not a filesystem transaction or crash-durabil
 
 ## Errors and cancellation
 
-[cli.Run](../internal/cli/cli.go) derives a context from interrupt and SIGTERM. The CLI checks it before and after script loading stages, after conversion to IR, and before provider invocation; the renderer checks between segments and before final publication, while HTTP requests observe it during I/O. The internal loops for parsing, checking, IR conversion, and planning do not take a context, so cancellation is not checked at every CPU operation. Once output publication succeeds, a later cancellation does not turn that committed success into failure.
+[cli.Run](../internal/cli/cli.go) derives a context from interrupt and SIGTERM. The CLI checks it before and after script loading stages, after conversion to IR, and before provider invocation. Preparation checks during planning and around request building; the renderer checks while scheduling and writing segments and before final publication. In-flight HTTP requests receive cancellation during I/O. The internal loops for parsing, checking, and IR conversion do not take a context, and individual request builders and filesystem operations are not preempted, so cancellation is not checked at every CPU operation. Once output publication succeeds, a later cancellation does not turn that committed success into failure.
 
-Errors identify the layer that failed: parse locations and checker codes for language problems, provider-prefixed builder failures, and provider plus one-based segment index for synthesis callback failures. Planning errors pass through `Prepare` without that added prefix. Segment numbers include local pauses. The main process prints the failure to stderr and exits with status 1 rather than printing a successful output path.
+Errors identify the layer that failed: parse locations and checker codes for language problems, provider-prefixed builder failures, and provider plus one-based segment index for synthesis callback failures. Planning errors pass through `Prepare` without that added prefix. Segment numbers include local pauses. The first recorded failure is retained instead of being masked by cancellation errors from other jobs; competing failures need not be reported in script order. The main process prints the failure to stderr and exits with status 1 rather than printing a successful output path.
 
-Cancellation and failure tests verify preservation of an existing destination and cleanup of temporary output. These guarantees do not make a multi-request synthesis transactional: earlier requests may already have been processed or billed, and there is no automatic retry, resume, or rollback.
+Cancellation and failure tests verify preservation of an existing destination and cleanup of temporary output. These guarantees do not make a multi-request synthesis transactional: completed or uncertain in-flight requests may already have been processed or billed, and there is no automatic retry, resume, or rollback.
 
 ## Memory use and performance tradeoffs
 
-The implementation avoids retaining all completed audio in memory: each completed segment is written to the temporary file before the next request. However, it is **not streaming synthesis or streaming playback**. Each HTTP response is read fully within its bound, an adapter may allocate decoded copies, and the final WAV is not published until the entire render succeeds.
+The implementation avoids retaining all completed audio in memory. Serial rendering writes a segment before requesting the next. Concurrent rendering bounds both active jobs and the window of unwritten segment indices by `N`, including local pauses; later completed audio waits only inside that window. A slow first segment prevents the window from advancing rather than allowing unbounded PCM accumulation. The byte lengths of completed PCM payloads waiting in memory scale with the window size times the largest decoded segment, not total script length. This is not a retained-heap bound: a PCM slice can keep a larger WAV backing array alive.
+
+This is **not streaming synthesis or streaming playback**. Each HTTP response is read fully within its bound, HTTP buffers, JSON/hex/base64 decoding and WAV backing buffers can coexist with decoded PCM, and the final WAV is not published until the entire render succeeds.
 
 The source, AST, IR, planned segments, and all prepared request objects can also coexist. There is no global memory budget or automatic long-script partitioning. The 64 MiB response limit and 1 GiB output limit protect different resources; neither is a bound on total process memory.
 
@@ -307,7 +313,7 @@ A few implementation details avoid repeated work without introducing a compiler 
 - A checker pass reuses spelling suggestions for repeated unknown tags. Display-name warning candidates are indexed for that pass rather than scanning the whole cast for every narration block. These are local analysis optimizations, not persistent caches or cached audio.
 - The HTTP helper rejects an oversized declared response before allocating a body buffer, while retaining the bounded-read fallback for untrusted lengths.
 
-Sequential execution makes ordering, failure handling, and output assembly easy to follow. Its cost is that request latencies add up and control-heavy scripts produce many calls. Parallel scheduling, automatic request coalescing, streaming, and acoustic continuity guarantees are not implemented. See the [design notes](reflection.md) for broader language and rendering tradeoffs.
+Serial execution remains the default. Optional bounded concurrency can overlap request latency, but a slow segment can limit the rolling window, and higher concurrency increases memory use and may hit account limits. HTTP 429 and other errors are not retried; there is no automatic concurrency reduction. This does not change segment text, voices, controls, planned request count, or local pauses, and does not establish a live speedup or byte-identical speech across runs. Automatic request coalescing, streaming, and acoustic continuity guarantees are not implemented. See the [design notes](reflection.md) for broader language and rendering tradeoffs.
 
 ## Tests and a useful reading order
 

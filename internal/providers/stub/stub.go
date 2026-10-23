@@ -5,6 +5,7 @@ package stub
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"os"
 
@@ -28,6 +29,12 @@ func (provider) ID() string { return "stub" }
 func (provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
+	}
+	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
+		return providers.Result{}, err
+	}
+	if opt.Concurrency > 1 {
+		return providers.Result{}, fmt.Errorf("stub does not support concurrency greater than 1")
 	}
 	pcm := tone(sampleCount(doc))
 	if err := writeWAV(ctx, opt.Out, pcm, sampleRate); err != nil {

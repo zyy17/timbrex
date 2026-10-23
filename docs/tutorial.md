@@ -68,7 +68,9 @@ error: set providers.openai.api_key or its documented environment variable
 
 Keep keys out of scripts and source control. See [configuration](configuration.md) for file and environment settings. The OpenAI adapter's default model is `gpt-4o-mini-tts`; check its [service limits and lifecycle notice](providers.md#openai) before relying on it. Other adapters have different model, voice, and endpoint requirements.
 
-Real adapters produce 24 kHz mono 16-bit PCM WAV files. They synthesize speech segments sequentially and add pauses locally. Their request contracts have offline tests; live account compatibility and acoustic quality have not been verified in this repository.
+Real adapters produce 24 kHz mono 16-bit PCM WAV files. They synthesize speech segments sequentially by default and add pauses locally. Their request contracts have offline tests; live account compatibility and acoustic quality have not been verified in this repository.
+
+For a script with several speech segments, you can try `--concurrency 2` with a real provider to overlap requests. The default is `1`; the accepted range is `1`–`8`. Keep within your account limits: higher values can increase memory use or trigger rate limits. This does not change the segment text, voice, controls, pauses, or final audio order. `stub` only accepts `1`. See [concurrent generation](providers.md#concurrent-generation) for failure and billing limits.
 
 ## Add directions and strict checking
 

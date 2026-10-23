@@ -91,6 +91,10 @@ Cast 音色映射仍然优先于兜底音色，包括 `--voice`。`voice` 或 `a
 
 `--strict-tags=false` 显式关闭严格模式，`--no-strict-tags=false` 则开启。两个参数名互斥，从而区分“未传入”和“显式 false”。
 
+## 合成并发数
+
+`synth --concurrency N` 控制真实厂商同时进行的语音片段任务数。默认值为 `1`（串行），接受 `1` 到 `8` 的整数，输出仍按脚本顺序排列。`stub` 只接受 `1`。它刻意设计为单次运行的 CLI 参数，不是 YAML 键、front matter 字段或环境变量；`timbrex config` 不显示它。调高前请阅读[并发生成](providers.zh-cn.md#并发生成)。
+
 ## 查看
 
 `timbrex config` 将合并后的默认值、文件和环境变量以 YAML 输出。已配置的 API key 替换为 `REDACTED`。它不读取脚本、不应用 `synth` 参数、不验证凭证，也不联系厂商。输出不是凭证备份。仓库忽略根目录的 `timbrex.yaml`。不要提交凭证。

@@ -20,6 +20,8 @@ type Options struct {
 	Voice    string
 	APIKey   string
 	Endpoint string
+	// Concurrency bounds uncommitted segments; zero preserves serial synthesis.
+	Concurrency int
 }
 
 // Result is one successful synthesis.
@@ -66,4 +68,12 @@ func IDs() []string {
 	}
 	sort.Strings(ids)
 	return ids
+}
+
+// ValidateConcurrency accepts zero for callers using the serial default.
+func ValidateConcurrency(n int) error {
+	if n < 0 || n > 8 {
+		return fmt.Errorf("concurrency must be between 1 and 8 (or 0 for the serial default)")
+	}
+	return nil
 }
