@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"maps"
 	"strings"
 	"testing"
 )
@@ -50,19 +51,29 @@ func TestIndentedFenceDoesNotCloseFrontMatter(t *testing.T) {
 }
 
 func TestCastUsesFrontMatterAnchor(t *testing.T) {
-	for _, cast := range []string{
-		"lin: {voices: {openai: *default_voice}}",
-		"lin: {name: *default_voice}",
+	for _, tc := range []struct {
+		name       string
+		cast       string
+		wantName   string
+		wantVoices map[string]string
+	}{
+		{name: "provider voice", cast: "lin: {voices: {openai: *default_voice}}", wantVoices: map[string]string{"openai": "coral"}},
+		{name: "display name", cast: "lin: {name: *default_voice}", wantName: "coral"},
 	} {
-		src := "---\nvoice: &default_voice coral\ncast:\n  " + cast + "\n---\nlin: Hi"
-		script, err := Parse("anchor.tbx", src)
-		if err != nil {
-			t.Fatal(err)
-		}
-		member := script.Front.Cast["lin"]
-		if member.Name != "coral" && member.Voices["openai"] != "coral" {
-			t.Fatalf("cast = %+v", member)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			src := "---\nvoice: &default_voice coral\ncast:\n  " + tc.cast + "\n---\nlin: Hi"
+			script, err := Parse("anchor.tbx", src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			member := script.Front.Cast["lin"]
+			if member.Name != tc.wantName {
+				t.Errorf("name = %q, want %q", member.Name, tc.wantName)
+			}
+			if !maps.Equal(member.Voices, tc.wantVoices) {
+				t.Errorf("voices = %v, want %v", member.Voices, tc.wantVoices)
+			}
+		})
 	}
 }
 
