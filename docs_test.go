@@ -19,7 +19,7 @@ var (
 	atxHeadings    = regexp.MustCompile(`(?m)^(#{1,6}) `)
 	fenceLine      = regexp.MustCompile("^(`{3,})([^`]*)$")
 	inlineCode     = regexp.MustCompile("`([^`]*)`")
-	skipBilingual  = map[string]bool{"AGENTS.md": true, "REVIEW_ROUNDS.md": true}
+	skipBilingual  = map[string]bool{"AGENTS.md": true}
 	fenceLanguages = map[string]bool{
 		"go": true, "bash": true, "tbx": true, "yaml": true, "json": true, "text": true,
 	}
