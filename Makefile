@@ -1,4 +1,4 @@
-.PHONY: build test run fmt lint tidy
+.PHONY: build test run fmt lint tidy editor-deps test-editor verify
 
 build:
 	go build -o timbrex .
@@ -20,3 +20,13 @@ lint:
 # Fail when go.mod or go.sum would change. Does not rewrite them.
 tidy:
 	go mod tidy -diff
+
+# Install editor test dependencies separately from offline verification.
+editor-deps:
+	npm --prefix editors/vscode ci --ignore-scripts
+
+test-editor:
+	npm --prefix editors/vscode test
+
+# All CI checks; install Go modules and editor dependencies first.
+verify: tidy test lint test-editor

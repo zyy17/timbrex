@@ -8,7 +8,9 @@ Use configuration to set a default provider, model, voice, and strict mode. `che
 
 By default, `check`, `synth`, and `config` read `timbrex.yaml` from the **current working directory**, if present. They do not search the script directory, parent directories, or the home directory. `--config` selects one file. A missing explicit file is an error.
 
-Scripts and configuration inputs must be regular files; symlinks to regular files are supported. Named pipes (FIFOs), devices, and directories are rejected. This file-only input contract does not guarantee that every filesystem operation is interruptible.
+Scripts and configuration inputs must be regular files; symlinks to regular files are supported. Named pipes (FIFOs), devices, and directories are rejected.
+
+Interrupt and SIGTERM cancel the command context. The CLI checks cancellation between configuration loading, reading, parsing, checking, and lowering, and before reporting check success or starting synthesis. These checkpoints do not interrupt an in-progress parser, checker, or filesystem operation. Once synthesis has successfully committed the output, a later cancellation does not turn that completed operation into a failure.
 
 ```bash
 ./timbrex --config examples/timbrex.yaml config

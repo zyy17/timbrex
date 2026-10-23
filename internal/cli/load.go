@@ -19,15 +19,27 @@ func addStrictFlags(cmd *cobra.Command) {
 }
 
 func loadScript(cmd *cobra.Command, path string, defaultStrict bool) (*ast.Script, []check.Diag, error) {
+	if err := cmd.Context().Err(); err != nil {
+		return nil, nil, err
+	}
 	src, err := inputfile.Read(path)
 	if err != nil {
+		return nil, nil, err
+	}
+	if err := cmd.Context().Err(); err != nil {
 		return nil, nil, err
 	}
 	script, err := parse.Parse(path, string(src))
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := cmd.Context().Err(); err != nil {
+		return nil, nil, err
+	}
 	diags := check.Apply(script, strictMode(cmd, script.Front.StrictTags, defaultStrict))
+	if err := cmd.Context().Err(); err != nil {
+		return nil, nil, err
+	}
 	return script, diags, nil
 }
 

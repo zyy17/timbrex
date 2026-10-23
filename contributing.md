@@ -6,11 +6,13 @@ This guide covers local development, tests, and pull requests. Read the [tutoria
 
 ## Set up a checkout
 
-Install the Go version declared in [go.mod](go.mod) and golangci-lint **v2.14.0**, the version used in CI. Fork the repository if you plan to submit a pull request, then clone your fork. To explore the upstream checkout:
+Install the Go version declared in [go.mod](go.mod), golangci-lint **v2.14.0**, and Node.js **24**, matching CI. Node.js is needed only for the editor runtime tests. Fork the repository if you plan to submit a pull request, then clone your fork. To explore the upstream checkout:
 
 ```bash
 git clone https://github.com/zyy17/timbrex.git
 cd timbrex
+go mod download
+make editor-deps
 make build
 ./timbrex check examples/hello.tbx
 ./timbrex synth examples/hello.tbx --provider stub -o hello.wav
@@ -22,6 +24,8 @@ make build
 
 The main path is `internal/lex` → `internal/parse` and `internal/ast` → `internal/check` → `internal/lower` and `internal/ir` → `internal/providers`. The standard tags are in `internal/vocab`. Command wiring is in `internal/cli`; YAML settings and environment bindings are in `internal/config`. Tests live beside the code they exercise.
 
+Source-based lowering tests and benchmarks must follow `parse.Parse` → `check.Apply` → `check.Failed` → `lower.Script`, lowering only after checking succeeds. Build IR directly for planner tests that intentionally exercise invalid input. In IR, utterance speakers distinguish scene lines from speech, node kinds distinguish state from events, and paired span markers delimit local scope; there is no separate scope field.
+
 Use short, idiomatic Go functions and follow existing patterns. Keep parsing independent of providers and I/O. Only `internal/cli` imports Cobra. Adapters receive resolved configuration and IR; they do not reload settings or parse scripts. Identifiers, errors, help text, and code comments use English. Comments should explain a constraint or a non-obvious decision rather than restate the code.
 
 For a bug report, include a minimal `.tbx` script, the command, expected and actual results, and `timbrex version` output. Provider reports also need the model and region; remove credentials, private text, and signed audio URLs. Discuss substantial syntax, architecture, or compatibility changes in an issue before implementing them. A focused fix or a documented provider addition can go directly to a pull request.
@@ -31,12 +35,14 @@ For a bug report, include a minimal `.tbx` script, the command, expected and act
 Run a relevant package while iterating, for example `go test ./internal/parse`. Before submitting, run the same checks as CI:
 
 ```bash
-make tidy
-make test
-make lint
+make verify
 ```
 
-`make tidy` reports whether `go.mod` or `go.sum` would change without rewriting them. `make test` builds `./timbrex` and runs `go test ./...`. `make lint` runs golangci-lint and its formatter check. Use `make fmt` to apply Go formatting. CI runs the test suite on Linux and macOS.
+`make verify` runs `make tidy`, `make test`, `make lint`, and `make test-editor`. `make tidy` reports whether `go.mod` or `go.sum` would change without rewriting them. `make test` builds `./timbrex` and runs `go test ./...`. `make lint` runs golangci-lint and its formatter check. `make test-editor` runs the actual TextMate/Oniguruma tokenizer tests. Use `make fmt` to apply Go formatting. CI runs the Go test suite on Linux and macOS and the editor runtime tests on Linux.
+
+Install dependencies during setup with `go mod download` and `make editor-deps`. Verification does not run `npm ci` or contact TTS services; with the Go modules and tools already cached, it can run offline. Repeat dependency installation only when dependencies change.
+
+To collect Go coverage without skipping subprocess tests, run `go test -count=1 -coverprofile=coverage.out ./...`. The CLI input helper inherits an allowlist of runtime variables, including `GOCOVERDIR`, but no provider credentials or configuration. Go collects its child counters in the parent profile. Separately built CLI binaries, editor runtime tests, and live service behavior are not included; statement coverage does not establish branch coverage or audio quality.
 
 Tests must be offline by default. Use `httptest` for vendor requests, and add regression coverage for behavioral fixes and boundary cases. Normal tests must not require credentials or spend money. If you edit the TextMate YAML grammar, regenerate its packaged JSON with `go test ./editors/vscode -update`; see the [editor guide](editors/vscode/readme.md).
 

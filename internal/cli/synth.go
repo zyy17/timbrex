@@ -45,10 +45,16 @@ func synthesize(cmd *cobra.Command, path string, flags synthFlags, cfg config.Co
 		return err
 	}
 	writeDiags(cmd.ErrOrStderr(), diags)
+	if err := cmd.Context().Err(); err != nil {
+		return err
+	}
 	if err := check.Failed(diags); err != nil {
 		return err
 	}
 	doc := lower.Script(script)
+	if err := cmd.Context().Err(); err != nil {
+		return err
+	}
 	id := config.First(flags.provider, doc.Provider, cfg.Provider)
 	p, err := providers.Get(id)
 	if err != nil {
@@ -68,6 +74,9 @@ func synthesize(cmd *cobra.Command, path string, flags synthFlags, cfg config.Co
 	opt := providers.Options{
 		Out: outPath, Model: settings.Model, Voice: settings.Voice,
 		APIKey: settings.APIKey, Endpoint: settings.Endpoint,
+	}
+	if err := cmd.Context().Err(); err != nil {
+		return err
 	}
 	res, err := p.Synthesize(cmd.Context(), doc, opt)
 	if err != nil {

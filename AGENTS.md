@@ -40,6 +40,7 @@ Load configuration once through the Cobra entry point. Keep environment bindings
 - Teachability first. Prefer the smallest clear code. Do not pad scope.
 - Comments should explain constraints or decisions, such as a parsing boundary or a vendor requirement. Do not restate the code.
 - Pass `make test` and `make lint` before you claim done. `make test` builds `./timbrex` and runs `go test ./...`. `make lint` runs golangci-lint v2.14.0 and `golangci-lint fmt --diff`. CI uses the Go version in `go.mod` and that same linter.
+- With Node.js 24 and dependencies installed by `make editor-deps`, `make test-editor` runs the offline editor runtime tests. `make verify` combines tidy, Go tests, lint, and editor runtime tests; dependency installation stays separate.
 - Prefer a pattern that is already in the tree over a new abstraction.
 
 ## CLI

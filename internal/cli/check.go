@@ -23,6 +23,9 @@ func checkCmd(cfg *config.Config) *cobra.Command {
 			if err := check.Failed(diags); err != nil {
 				return err
 			}
+			if err := cmd.Context().Err(); err != nil {
+				return err
+			}
 			fmt.Fprintln(cmd.OutOrStdout(), "ok")
 			return nil
 		},
