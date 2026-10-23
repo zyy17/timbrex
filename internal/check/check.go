@@ -155,6 +155,8 @@ type checker struct {
 	file   string
 	strict bool
 	diags  []Diag
+
+	suggestions map[string]string
 }
 
 func (c *checker) walk(nodes []ast.Node, atStart, scene bool) {
@@ -248,13 +250,13 @@ func (c *checker) free(n *ast.Node, raw string) {
 	n.Args = nil
 	if !c.strict {
 		// One unknown word within distance 2. A phrase is free-form with no warning.
-		if s := suggest(raw); s != "" {
+		if s := c.suggest(raw); s != "" {
 			c.diag(n, "warning", "W040", "unknown ["+raw+"] used as free-form acting; did you mean ["+s+"]?")
 		}
 		return
 	}
 	msg := `unregistered tag "` + raw + `"; for free-form acting write [act "` + raw + `"]`
-	if s := suggest(raw); s != "" {
+	if s := c.suggest(raw); s != "" {
 		msg = `unregistered tag "` + raw + `"; did you mean [` + s + `]? for free-form acting write [act "` + raw + `"]`
 	}
 	c.error(n, "V041", msg)
@@ -364,11 +366,14 @@ func closing(raw string) (string, bool) {
 // suggest returns a registered name within Levenshtein distance 2.
 // Phrases are not matched; only a single unknown word is.
 // [laff] is distance 3 from [laugh], so it is reported with no suggestion.
-func suggest(raw string) string {
+func (c *checker) suggest(raw string) string {
 	if strings.ContainsAny(raw, " \t") || strings.Contains(raw, ":") {
 		return ""
 	}
 	name := vocab.Canon(raw)
+	if suggestion, ok := c.suggestions[name]; ok {
+		return suggestion
+	}
 	best := ""
 	bestD := 3
 	for _, cand := range vocab.Names() {
@@ -381,10 +386,15 @@ func suggest(raw string) string {
 			bestD = d
 		}
 	}
-	if bestD <= 2 {
-		return best
+	if bestD > 2 {
+		best = ""
 	}
-	return ""
+	if c.suggestions == nil {
+		c.suggestions = make(map[string]string)
+	}
+	// Cache misses too, but only for this Apply call.
+	c.suggestions[name] = best
+	return best
 }
 
 func dist(a, b string) int {
