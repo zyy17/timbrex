@@ -69,11 +69,17 @@ func newCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			if err := cmd.Context().Err(); err != nil {
+				return err
+			}
 			switch cmd.Name() {
 			case "check", "synth", "config":
 				var err error
 				cfg, err = config.Load(configPath)
-				return err
+				if err != nil {
+					return err
+				}
+				return cmd.Context().Err()
 			default:
 				return nil
 			}
