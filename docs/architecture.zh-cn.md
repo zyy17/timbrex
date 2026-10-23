@@ -4,20 +4,20 @@
 
 本文面向熟悉 Go、初次接触 Timbrex 的开发者。读完后，你应能跟着一份脚本走到 WAV 输出，找到某个行为对应的代码，并在不修改语言的前提下扩展适配器。本文介绍当前实现；语言规则以 [DSL 规范](spec.zh-cn.md)为准，设置项见[配置参考](configuration.zh-cn.md)，厂商相关约定见[厂商接入指南](providers.zh-cn.md)和[能力参考](capabilities.zh-cn.md)。
 
-Timbrex 由一个小型编译器和音频渲染器组成。编译器把台词、角色和表演指令保存在与厂商无关的中间表示（IR）中。真实厂商适配器再把这些结构转换成语音请求，按顺序调用同一家服务，并将返回的 PCM 与本地静音拼接起来。Timbrex 自身不生成语音，同一份脚本也不保证在不同厂商下得到相同的表演效果。
+Timbrex 由一个小型编译器和音频渲染器组成。编译器把台词、角色和表演指令转换为与厂商无关的中间表示（IR），供后续请求规划使用。真实厂商适配器再把这些结构转换成语音请求，按顺序调用同一家服务，并将返回的 PCM 与本地静音拼接起来。Timbrex 自身不生成语音，同一份脚本也不保证在不同厂商下得到相同的表演效果。
 
 ## 主流程
 
 ```mermaid
 flowchart TD
-    Source[".tbx 脚本"] --> Compiler["编译器<br/>解析 · 检查 · lowering"]
+    Source[".tbx 脚本"] --> Compiler["编译器<br/>解析 · 检查<br/>转换为 IR"]
     Compiler --> Adapter["厂商适配器<br/>准备请求 · 合成"]
     Adapter --> WAV["WAV 文件"]
 ```
 
 CLI 调用的是 `parse.Parse`。该函数先提取 front matter，再在内部调用词法分析器，调用方不需要手动连接 lexer 和 parser。`check.Apply` 既生成诊断，也原地更新标签节点。只有通过检查的 AST 才应交给 `lower.Script`。
 
-`check` 到完成检查的 AST 为止；`synth` 继续执行 lowering 和厂商选择。当前七个真实厂商适配器都使用 `Prepare` 与 `Render`，但这两个函数只是共享辅助函数，并不是 `Provider` 接口要求实现的方法。`stub` 刻意采用另一条路径：生成 **8 kHz、单声道、16 位测试音**，不读出台词，也不重现脚本里的停顿和表演指令。
+`check` 到完成检查的 AST 为止；`synth` 继续将其转换为中间表示，再选择厂商。当前七个真实厂商适配器都使用 `Prepare` 与 `Render`，但这两个函数只是共享辅助函数，并不是 `Provider` 接口要求实现的方法。`stub` 刻意采用另一条路径：生成 **8 kHz、单声道、16 位测试音**，不读出台词，也不重现脚本里的停顿和表演指令。
 
 ## 代码分布
 
@@ -35,7 +35,7 @@ CLI 调用的是 `parse.Parse`。该函数先提取 front matter，再在内部�
 | `internal/providers/<name>` | 某一家厂商的请求映射和响应解码 | [OpenAI 示例](../internal/providers/openai/openai.go) |
 | `editors/vscode` | TextMate 语法及编辑器运行时测试，不是编译器的解析器 | [编辑器指南](../editors/vscode/readme.zh-cn.md) |
 
-这些依赖边界有明确用途。AST 和 IR 只是数据结构，不承担服务调用。解析器不需要知道凭证或厂商；lowering 只知道词表分类，不知道厂商映射。适配器接收 IR 和已解析的选项，不导入 Cobra，也不重新读取环境变量。只有 `internal/cli` 可以导入 Cobra。完整的包边界规则见 [AGENTS.md](../AGENTS.md)。
+这些依赖边界有明确用途。AST 和 IR 只是数据结构，不承担服务调用。解析器不需要知道凭证或厂商；转换为中间表示时会用到词表分类，但不解释厂商映射。适配器接收 IR 和已解析的选项，不导入 Cobra，也不重新读取环境变量。只有 `internal/cli` 可以导入 Cobra。完整的包边界规则见 [AGENTS.md](../AGENTS.md)。
 
 ## 用一份脚本贯穿流程
 
@@ -88,7 +88,7 @@ make build
 
 ### 词法分析与解析
 
-编译过程不依赖厂商请求。`check` 命令在检查后结束，只有合成流程才继续执行 lowering。
+编译过程不依赖厂商请求。`check` 命令在检查后结束，只有合成流程才继续将 AST 转换为中间表示。
 
 ```mermaid
 flowchart TD
@@ -130,11 +130,11 @@ Script
 
 [check.Apply](../internal/check/check.go) 遍历 AST 并返回诊断，同时更新标签名称和表演指令元数据，因此它不是只读校验器。标准标签与别名来自 [vocab](../internal/vocab/vocab.go)。非严格模式下，未登记的自由形式标签可以转换为 `act`；严格模式下，未知标签产生 `V041`，表演指令需要使用显式 `act` 语法。
 
-`check.Failed` 将 error 级别的诊断转换为命令失败，警告和提示不会阻止 lowering。CLI 把诊断写到 stderr，仅在检查成功后向 stdout 写入 `ok`。解析错误带有文件、行号和列号，检查诊断还可能带有诊断码。完整诊断规则见 [DSL 规范](spec.zh-cn.md)。
+`check.Failed` 将 error 级别的诊断转换为命令失败，警告和提示不会阻止后续转换。CLI 把诊断写到 stderr，仅在检查成功后向 stdout 写入 `ok`。解析错误带有文件、行号和列号，检查诊断还可能带有诊断码。完整诊断规则见 [DSL 规范](spec.zh-cn.md)。
 
-检查通过**不代表**适配器支持全部标签、数值参数处于厂商允许的范围内，或凭证和音色 ID 可以使用。例如，已登记的 `[pitch …]` 可以是合法语言，却不被选定的适配器支持。原始围栏也可能通过解析和检查，但当前真实厂商的规划器会拒绝它。由于命令执行前加载配置，`check` 仍会验证集中配置；不过它不会调用 `Config.Resolve`，不会转换 IR，也不会执行厂商请求准备。
+检查通过**不代表**适配器支持全部标签、数值参数处于厂商允许的范围内，或凭证和音色 ID 可以使用。例如，已登记的 `[pitch …]` 可以是合法语言，却不被选定的适配器支持。原始围栏也可能通过解析和检查，但当前真实厂商的规划器会拒绝它。由于命令执行前加载配置，`check` 仍会验证集中配置；不过它不会调用 `Config.Resolve`，不会转换为中间表示，也不会执行厂商请求准备。
 
-## Lowering 保留结构，不解释厂商含义
+## 转换为中间表示
 
 [lower.Script](../internal/lower/lower.go) 将已检查的 AST 转换为 `ir.Document`。它复制 front matter 中的厂商、模型、默认音色、语言及 cast 音色映射，删除注释，并为其余每个块生成一个 utterance。旁白默认使用 `narrator`，也可以通过 front matter 指定其他旁白角色。空的 `Utterance.Speaker` 表示场景行或原始围栏，不表示普通旁白。
 
@@ -143,7 +143,7 @@ Script
 - 普通文字转换为 `ir.Text`。
 - 点标签依据词表分类和已解析的表演元数据，转换为 `ir.State` 或 `ir.Event`。
 - span 转换为包围其内容的 `ir.SpanStart` 和 `ir.SpanEnd`。
-- 原始围栏转换为 `ir.Raw`。lowering 保留其内容，不解释厂商标记。
+- 原始围栏转换为 `ir.Raw`。转换时保留其内容，不解释厂商标记。
 
 参数仍保留词法分类和原始值。IR 没有单独的 scope 字段，也不包含 HTTP 请求或计算后的时长。utterance 边界、节点类型和成对的 span 标记共同表达后续规划所需的结构。
 
@@ -161,7 +161,7 @@ Utterance("lin")
   Text("Take your time.")
 ```
 
-这样可以保持编译器简单：lowerer 只转换一次结构，适配器拿到完整文档后无需重新解析源码。但 lowering 不能代替检查。从源码出发的测试必须依次执行 `parse.Parse` → `check.Apply` → `check.Failed` → `lower.Script`。
+这样可以保持编译器简单：结构只转换一次，适配器拿到完整文档后无需重新解析源码。但这一步不能代替检查。从源码出发的测试必须依次执行 `parse.Parse` → `check.Apply` → `check.Failed` → `lower.Script`。
 
 ## 规划作用域并拆分语音片段
 
@@ -288,7 +288,7 @@ sequenceDiagram
 
 ## 错误与取消
 
-[cli.Run](../internal/cli/cli.go) 将中断信号和 SIGTERM 转换为 context 取消。CLI 在脚本加载各阶段前后、lowering 之后及调用厂商之前设置检查点；渲染器在片段之间及最终发布前检查；HTTP 请求在 I/O 期间也观察同一个 context。纯解析、检查、lowering 和规划循环不接收 context，所以并不是每一次 CPU 操作都能立即响应取消。输出发布成功后，再发生取消不会把已经完成的成功改为失败。
+[cli.Run](../internal/cli/cli.go) 将中断信号和 SIGTERM 转换为 context 取消。CLI 在脚本加载各阶段前后、转换为中间表示之后及调用厂商之前设置检查点；渲染器在片段之间及最终发布前检查；HTTP 请求在 I/O 期间也观察同一个 context。解析、检查、中间表示转换和规划的内部循环不接收 context，所以并不是每一次 CPU 操作都能立即响应取消。输出发布成功后，再发生取消不会把已经完成的成功改为失败。
 
 不同层的错误提供不同线索：语言问题使用源码位置或检查诊断码，builder 构造请求失败带厂商前缀，合成回调失败还带从 1 开始的片段索引。规划错误则由 `Prepare` 原样返回，不添加这个前缀。片段编号包含本地停顿。主进程将失败写到 stderr，并以状态码 1 退出，不会输出成功路径。
 
@@ -302,7 +302,7 @@ sequenceDiagram
 
 一些局部实现避免了重复工作，没有为此引入编译器框架：
 
-- lexer 沿源码前进，而不是反复统计剩余后缀；lowering 将嵌套 span 内容追加到同一个增长中的 IR 切片。
+- lexer 沿源码前进，而不是反复统计剩余后缀；`lower.Script` 将嵌套 span 内容追加到同一个增长中的 IR 切片。
 - 规划器一次建立已声明和已出现角色的索引，使前向 `as` 引用不必每次扫描全部 utterance。
 - 同一轮检查会复用重复未知标签的拼写建议。显示名警告也在该轮建立候选索引，不必为每个旁白块扫描整个 cast。这些是局部分析优化，不是持久缓存，更不是音频缓存。
 - HTTP 辅助函数在分配正文缓冲区前拒绝声明过大的响应，同时保留针对不可信长度的有限读取。
@@ -316,7 +316,7 @@ sequenceDiagram
 | 测试层 | 验证内容 | 示例 |
 | --- | --- | --- |
 | lexer、parser、checker | 语法、位置、front matter、标签解析与诊断 | [解析测试](../internal/parse/parse_test.go)、[检查测试](../internal/check/check_test.go)、[模糊测试](../internal/parse/fuzz_test.go) |
-| lowering 与规划 | 参数分类、展平、场景与发言及 span 恢复、音色与停顿 | [lower 测试](../internal/lower/lower_test.go)、[plan 测试](../internal/providers/plan_test.go)、[音色测试](../internal/providers/as_voice_test.go) |
+| 中间表示转换与规划 | 参数分类、展平、场景与发言及 span 恢复、音色与停顿 | [转换测试](../internal/lower/lower_test.go)、[plan 测试](../internal/providers/plan_test.go)、[音色测试](../internal/providers/as_voice_test.go) |
 | 请求准备与适配器 | 在网络 I/O 前拒绝后续无效片段，按约定序列化请求 | [prepare 测试](../internal/providers/prepare_test.go)、[OpenAI 测试](../internal/providers/openai/openai_test.go) |
 | HTTP、音频与输出 | 大小限制、无效音频、WAV 校验、取消与目标文件保留 | [HTTP 测试](../internal/providers/http_test.go)、[WAV 测试](../internal/providers/wav_test.go)、[输出测试](../internal/providers/output_test.go) |
 | CLI 集成 | 通过本地 HTTP 服务器验证从配置到请求映射、文件输出的完整流程 | [厂商 CLI 测试](../internal/cli/providers_test.go)、[取消测试](../internal/cli/cancel_test.go) |

@@ -4,20 +4,20 @@
 
 This guide is for developers who know Go and want to follow Timbrex from a script to a WAV file, find the code responsible for a behavior, or extend an adapter without changing the language. It describes the current implementation. Use the [specification](spec.md) for language rules, [configuration](configuration.md) for settings, and [provider setup](providers.md) and [capabilities](capabilities.md) for vendor-specific contracts.
 
-Timbrex is a small compiler plus an audio renderer. The compiler preserves the author's words, speakers, and directions in a provider-independent intermediate representation (IR). A real provider adapter resolves that structure into speech requests, calls one vendor sequentially, and joins the returned PCM with local silence. Timbrex does not generate speech itself, and the same script does not promise the same performance across vendors.
+Timbrex is a small compiler plus an audio renderer. The compiler converts the author's words, speakers, and directions into a provider-independent intermediate representation (IR) for request planning. A real provider adapter resolves that structure into speech requests, calls one vendor sequentially, and joins the returned PCM with local silence. Timbrex does not generate speech itself, and the same script does not promise the same performance across vendors.
 
 ## The main path
 
 ```mermaid
 flowchart TD
-    Source[".tbx script"] --> Compiler["Compiler<br/>parse · check · lower"]
+    Source[".tbx script"] --> Compiler["Compiler<br/>parse · check<br/>convert to IR"]
     Compiler --> Adapter["Provider adapter<br/>prepare · synthesize"]
     Adapter --> WAV["WAV file"]
 ```
 
 The CLI calls `parse.Parse`, which extracts front matter and invokes the lexer internally; callers do not manually connect a lexer to a parser. `check.Apply` both reports diagnostics and resolves tag nodes in place. Only a successfully checked AST should reach `lower.Script`.
 
-`check` stops at the checked AST. `synth` continues through lowering and provider selection. All seven real adapters currently use `Prepare` and `Render`; these helpers are not methods required by the `Provider` interface. The `stub` implementation is deliberately different: it produces an **8 kHz mono 16-bit test tone**, not speech, and does not reproduce the script's pauses or directions.
+`check` stops at the checked AST. `synth` continues by converting it to IR and selecting a provider. All seven real adapters currently use `Prepare` and `Render`; these helpers are not methods required by the `Provider` interface. The `stub` implementation is deliberately different: it produces an **8 kHz mono 16-bit test tone**, not speech, and does not reproduce the script's pauses or directions.
 
 ## Where the code lives
 
@@ -35,7 +35,7 @@ The root [main.go](../main.go) calls the CLI and formats a failed command's erro
 | `internal/providers/<name>` | One vendor's request mapping and response decoding | [OpenAI example](../internal/providers/openai/openai.go) |
 | `editors/vscode` | TextMate grammar and editor runtime tests, not the compiler parser | [Editor guide](../editors/vscode/readme.md) |
 
-The dependency boundaries are intentional. AST and IR are data structures, not services. Parsing does not know about credentials or providers. Lowering knows vocabulary kinds but not vendor mappings. Adapters receive IR and resolved options rather than importing Cobra or reloading environment variables. Only `internal/cli` imports Cobra. [AGENTS.md](../AGENTS.md) records the package rules.
+The dependency boundaries are intentional. AST and IR are data structures, not services. Parsing does not know about credentials or providers. Conversion to IR uses vocabulary kinds but does not interpret vendor mappings. Adapters receive IR and resolved options rather than importing Cobra or reloading environment variables. Only `internal/cli` imports Cobra. [AGENTS.md](../AGENTS.md) records the package rules.
 
 ## Follow one script
 
@@ -88,7 +88,7 @@ Voice selection has an additional, separate layer. For each speech segment, the 
 
 ### Lexing and parsing
 
-The compiler path stays independent of vendor requests. The `check` command stops after checking; only synthesis continues to lowering.
+The compiler path stays independent of vendor requests. The `check` command stops after checking; only synthesis continues to convert the AST to IR.
 
 ```mermaid
 flowchart TD
@@ -130,11 +130,11 @@ Script
 
 [check.Apply](../internal/check/check.go) walks the AST and returns diagnostics. It also updates tag names and acting metadata; it is not a read-only validator. Standard tags and aliases come from [vocab](../internal/vocab/vocab.go). In non-strict mode, an unregistered free-form tag can become `act`; in strict mode, unknown tags produce `V041` and acting directions must use explicit `act` syntax.
 
-`check.Failed` turns error-severity diagnostics into a command failure. Warnings and informational diagnostics do not prevent lowering. The CLI writes diagnostics to stderr and writes `ok` to stdout only after a successful check. Parser errors carry file, line, and column; checker diagnostics may also carry codes. The complete diagnostic rules belong in the [specification](spec.md).
+`check.Failed` turns error-severity diagnostics into a command failure. Warnings and informational diagnostics do not prevent the subsequent conversion. The CLI writes diagnostics to stderr and writes `ok` to stdout only after a successful check. Parser errors carry file, line, and column; checker diagnostics may also carry codes. The complete diagnostic rules belong in the [specification](spec.md).
 
-The checker does **not** establish that an adapter supports every tag, that a numerical argument is in a vendor's range, or that credentials and voice IDs work. For example, a recognized `[pitch …]` tag may be valid language but unsupported by a selected adapter. Raw fences can also parse and check successfully even though the current real-provider planner rejects them. `check` still validates centralized configuration because configuration loading precedes the command, but it does not call `Config.Resolve`, lower the AST, or run provider preparation.
+The checker does **not** establish that an adapter supports every tag, that a numerical argument is in a vendor's range, or that credentials and voice IDs work. For example, a recognized `[pitch …]` tag may be valid language but unsupported by a selected adapter. Raw fences can also parse and check successfully even though the current real-provider planner rejects them. `check` still validates centralized configuration because configuration loading precedes the command, but it does not call `Config.Resolve`, convert the AST to IR, or run provider preparation.
 
-## Lowering preserves structure without vendor meaning
+## Convert to intermediate representation
 
 [lower.Script](../internal/lower/lower.go) converts the checked AST to an `ir.Document`. It copies front-matter provider/model/default voice/language and cast voice mappings, removes comments, and emits an utterance for each remaining block. Narration uses `narrator` unless front matter names another narration speaker. An empty `Utterance.Speaker` marks a scene line or raw fence, never ordinary spoken narration.
 
@@ -143,11 +143,11 @@ Inline AST nesting becomes a flat node sequence:
 - Literal text becomes `ir.Text`.
 - Point tags become `ir.State` or `ir.Event`, according to vocabulary kind and resolved acting metadata.
 - Spans become paired `ir.SpanStart` and `ir.SpanEnd` markers around their content.
-- A raw fence becomes `ir.Raw`; lowering preserves it rather than interpreting vendor markup.
+- A raw fence becomes `ir.Raw`; the conversion preserves it rather than interpreting vendor markup.
 
 Arguments keep their typed lexical representation. The IR has no separate scope field and does not contain HTTP requests or computed durations. Utterance boundaries, node kinds, and paired span markers carry the structure that the planner needs.
 
-The example lowers to this simplified sequence:
+The example produces this simplified IR sequence:
 
 ```text
 Utterance("")
@@ -161,7 +161,7 @@ Utterance("lin")
   Text("Take your time.")
 ```
 
-This representation keeps the compiler small: the lowerer translates structure once, while a provider can inspect the complete document without reparsing source text. It also means the lowerer cannot be used as a substitute for checking. Source-based tests follow `parse.Parse` → `check.Apply` → `check.Failed` → `lower.Script`.
+This representation keeps the compiler small: structure is converted once, while a provider can inspect the complete document without reparsing source text. This step cannot be used as a substitute for checking. Source-based tests follow `parse.Parse` → `check.Apply` → `check.Failed` → `lower.Script`.
 
 ## Planning resolves scope and splits speech
 
@@ -288,7 +288,7 @@ This is complete-file publication, not a filesystem transaction or crash-durabil
 
 ## Errors and cancellation
 
-[cli.Run](../internal/cli/cli.go) derives a context from interrupt and SIGTERM. The CLI checks it before and after script loading stages, after lowering, and before provider invocation; the renderer checks between segments and before final publication, while HTTP requests observe it during I/O. Pure parser, checker, lowerer, and planner loops do not take a context, so cancellation is not checked at every CPU operation. Once output publication succeeds, a later cancellation does not turn that committed success into failure.
+[cli.Run](../internal/cli/cli.go) derives a context from interrupt and SIGTERM. The CLI checks it before and after script loading stages, after conversion to IR, and before provider invocation; the renderer checks between segments and before final publication, while HTTP requests observe it during I/O. The internal loops for parsing, checking, IR conversion, and planning do not take a context, so cancellation is not checked at every CPU operation. Once output publication succeeds, a later cancellation does not turn that committed success into failure.
 
 Errors identify the layer that failed: parse locations and checker codes for language problems, provider-prefixed builder failures, and provider plus one-based segment index for synthesis callback failures. Planning errors pass through `Prepare` without that added prefix. Segment numbers include local pauses. The main process prints the failure to stderr and exits with status 1 rather than printing a successful output path.
 
@@ -302,7 +302,7 @@ The source, AST, IR, planned segments, and all prepared request objects can also
 
 A few implementation details avoid repeated work without introducing a compiler framework:
 
-- The lexer advances through source text rather than repeatedly recounting the remaining suffix; lowering appends nested span content into one growing IR slice.
+- The lexer advances through source text rather than repeatedly recounting the remaining suffix; `lower.Script` appends nested span content into one growing IR slice.
 - The planner indexes declared and observed speakers once, allowing forward `as` references without scanning all utterances for every reference.
 - A checker pass reuses spelling suggestions for repeated unknown tags. Display-name warning candidates are indexed for that pass rather than scanning the whole cast for every narration block. These are local analysis optimizations, not persistent caches or cached audio.
 - The HTTP helper rejects an oversized declared response before allocating a body buffer, while retaining the bounded-read fallback for untrusted lengths.
@@ -316,7 +316,7 @@ Tests live beside the packages they exercise. Together they cover different cont
 | Test layer | What it establishes | Examples |
 | --- | --- | --- |
 | Lexer/parser/checker | Syntax, positions, front matter, tag resolution, diagnostics | [parse tests](../internal/parse/parse_test.go), [checker tests](../internal/check/check_test.go), [fuzz tests](../internal/parse/fuzz_test.go) |
-| Lowering/planning | Typed arguments, flattening, scene/turn/span restoration, voices and pauses | [lower tests](../internal/lower/lower_test.go), [plan tests](../internal/providers/plan_test.go), [voice tests](../internal/providers/as_voice_test.go) |
+| IR conversion/planning | Typed arguments, flattening, scene/turn/span restoration, voices and pauses | [conversion tests](../internal/lower/lower_test.go), [plan tests](../internal/providers/plan_test.go), [voice tests](../internal/providers/as_voice_test.go) |
 | Preparation/adapters | Reject invalid later segments before network I/O; serialize documented requests | [prepare tests](../internal/providers/prepare_test.go), [OpenAI tests](../internal/providers/openai/openai_test.go) |
 | HTTP/audio/output | Size bounds, malformed audio, WAV validation, cancellation, destination preservation | [HTTP tests](../internal/providers/http_test.go), [WAV tests](../internal/providers/wav_test.go), [output tests](../internal/providers/output_test.go) |
 | CLI integration | Configuration through request mapping and file output using local HTTP servers | [provider CLI tests](../internal/cli/providers_test.go), [cancellation tests](../internal/cli/cancel_test.go) |
