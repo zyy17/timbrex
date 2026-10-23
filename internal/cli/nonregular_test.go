@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -122,13 +123,46 @@ func runInputProcess(t *testing.T, dir string, args ...string) (string, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, executable, append([]string{"-test.run=^TestInputHelperProcess$", "--"}, args...)...)
 	cmd.Dir = dir
-	cmd.Env = []string{"GO_WANT_TIMBREX_INPUT_HELPER=1"}
+	cmd.Env = inputProcessEnv(os.Environ())
 	cmd.WaitDelay = time.Second
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() != nil {
 		t.Fatalf("command did not finish within 5 seconds: %v; output=%q", args, output)
 	}
 	return string(output), err
+}
+
+// Keep runtime controls without inheriting provider settings or credentials.
+// GOCOVERDIR lets child exit hooks add counters to the parent's coverage profile.
+func inputProcessEnv(environ []string) []string {
+	env := []string{"GO_WANT_TIMBREX_INPUT_HELPER=1"}
+	for _, entry := range environ {
+		name, _, _ := strings.Cut(entry, "=")
+		switch name {
+		case "PATH", "TMPDIR", "TMP", "TEMP", "GOCOVERDIR", "GOCOVERDEBUG",
+			"GODEBUG", "GOMAXPROCS", "GOMEMLIMIT", "GOTRACEBACK", "GORACE":
+			env = append(env, entry)
+		}
+	}
+	return env
+}
+
+func TestInputProcessEnv(t *testing.T) {
+	runtime := []string{
+		"PATH=/bin", "TMPDIR=/tmp", "TMP=/tmp", "TEMP=/tmp",
+		"GOCOVERDIR=/tmp/coverage", "GOCOVERDEBUG=1", "GODEBUG=asyncpreemptoff=1",
+		"GOMAXPROCS=2", "GOMEMLIMIT=1GiB", "GOTRACEBACK=all", "GORACE=halt_on_error=1",
+	}
+	environ := append(slices.Clone(runtime),
+		"TIMBREX_PROVIDER=openai", "OPENAI_API_KEY=secret", "ELEVENLABS_API_KEY=secret",
+		"MINIMAX_API_KEY=secret", "AZURE_SPEECH_KEY=secret", "QWEN_API_KEY=secret",
+		"DASHSCOPE_API_KEY=secret", "GEMINI_API_KEY=secret", "FISH_API_KEY=secret",
+		"OTHER_API_KEY=secret", "GOCOVERDIR_API_KEY=secret", "GO_WANT_TIMBREX_INPUT_HELPER=0",
+	)
+	want := append([]string{"GO_WANT_TIMBREX_INPUT_HELPER=1"}, runtime...)
+	if got := inputProcessEnv(environ); !slices.Equal(got, want) {
+		t.Fatalf("environment = %q, want %q", got, want)
+	}
 }
 
 func TestInputHelperProcess(t *testing.T) {
