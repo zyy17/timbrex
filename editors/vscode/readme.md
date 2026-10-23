@@ -38,6 +38,15 @@ After editing YAML, regenerate from the repository root:
 go test ./editors/vscode -update
 ```
 
+The runtime regression tests use the actual TextMate tokenizer and Oniguruma engine. With Node.js 24 installed, run from this extension directory:
+
+```bash
+npm ci --ignore-scripts
+npm test
+```
+
+CI runs these tests separately from the Go tests. The packages are development-only; users copying the extension do not need Node.js or `node_modules`.
+
 Normal tests fail if the JSON differs from the YAML or the extension manifest points elsewhere. The language ID is `timbrex`, and the TextMate scope is `source.tbx`. TextMate-compatible editors may reuse the JSON. A tree-sitter grammar for Neovim or Helix is not provided.
 
 ## License

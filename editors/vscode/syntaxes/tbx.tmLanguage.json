@@ -84,8 +84,15 @@
       "match": "^([A-Za-z][A-Za-z0-9_.-]*)(:)"
     },
     "string": {
-      "match": "\"([^\"\\\\]|\\\\.)*\"",
-      "name": "string.quoted.double.tbx"
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.tbx",
+      "patterns": [
+        {
+          "match": "\\\\[\"\\\\]",
+          "name": "constant.character.escape.tbx"
+        }
+      ]
     },
     "tag": {
       "begin": "(?\u003c=(?:^|[^\\\\])(?:\\\\\\\\)*)(\\[)(?!\\[)[ \\t]*([A-Za-z][A-Za-z0-9_.-]*(?::[A-Za-z][A-Za-z0-9_.-]*)?)?",

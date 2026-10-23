@@ -38,6 +38,15 @@ go run . check examples/expressive.tbx
 go test ./editors/vscode -update
 ```
 
+运行时回归测试使用实际的 TextMate 分词器和 Oniguruma 引擎。安装 Node.js 24 后，在此扩展目录运行：
+
+```bash
+npm ci --ignore-scripts
+npm test
+```
+
+CI 会在 Go 测试之外单独运行这些测试。依赖仅用于开发；复制扩展的用户不需要 Node.js 或 `node_modules`。
+
 普通测试会检查 JSON 与 YAML 是否一致，以及扩展 manifest 是否引用正确文件。语言 ID 为 `timbrex`，TextMate scope 为 `source.tbx`。兼容 TextMate 的编辑器可以复用 JSON。尚未提供供 Neovim 或 Helix 使用的 tree-sitter 语法。
 
 ## 许可证
