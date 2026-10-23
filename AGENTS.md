@@ -93,7 +93,6 @@ Provider request contracts are tested offline. Do not claim live compatibility o
 - [docs/spec.md](docs/spec.md) is DSL Specification v1. It describes current language behavior and may evolve during development. Its document version is separate from the script field `timbrex: 1` and the CLI/software version; do not change those merely to rename the document.
 - Update English and Chinese companions together. Keep their technical meaning and examples aligned; Chinese should be natural and concise, with identifiers and useful English terms preserved.
 - Verify behavior against implementation and tests. Keep [docs/tutorial.md](docs/tutorial.md) runnable: every command and `ok`/error line must match the current CLI. Distinguish parsing, checking, provider support, and live validation; do not present planned behavior as implemented.
-- Preserve historical facts in `REVIEW_ROUNDS.md`; a current documentation revision does not rewrite earlier review results.
 
 ## Git
 

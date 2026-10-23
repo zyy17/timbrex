@@ -67,7 +67,7 @@ Arguments are separated by spaces or tabs. Positional values and `key=value` are
 
 A suffix belongs to a number only if it ends the token: `10stone` is a word. Quoted values support `\"` and `\\`. For `act` and nonverbal events, bare word arguments are collected into a note, such as `holding back tears` in `[act holding back tears]`. Other values remain arguments. The checker validates pause arguments for `pause`, `silence`, `break`, and `gap`; it does not yet enforce other per-tag argument types or ranges. Each real adapter validates the parameters it implements before making requests. The parser accepts named arguments, but current adapters do not map them to vendor parameters.
 
-Numeric synthesis controls require unquoted values of the matching kind. For example, use `speed 1.2`, not `speed "1.2"` or `speed 1e0`. Pauses accept the duration units `ms`, `s`, and `min`; Go-specific forms such as `1m` and `1s250ms` are words, not durations. Write zero duration as `0ms`. A bare `0` is a number and is rejected.
+Numeric synthesis controls require unquoted values of the matching kind. For example, use `speed 1.2`, not `speed "1.2"` or `speed 1e0`. Numbers need a digit before the decimal point: `0.5s` is a duration, but `.5s` is a word. Pauses accept the duration units `ms`, `s`, and `min`; Go-specific forms such as `1m` and `1s250ms` are words, not durations. Write zero duration as `0ms`. A bare `0` is a number and is rejected.
 
 Outside quoted arguments, `[[` and `\[` produce a literal `[`. `]]` and `\]` produce a literal `]`. Backslash can also escape `|`, `\`, and `:`. Other backslashes are literal. Inside two or more open tags, consecutive `]` close nested tags; use `\]` for a literal closing bracket there. Thus `[whisper|say [pause 1s]]` closes both tags.
 
@@ -95,6 +95,8 @@ The parser recognizes the shape `ns:tag`, but no provider namespaces or external
 | `I050` | Non-ASCII free-form acting text |
 
 Suggestions use edit distance at most 2. `[paus]` suggests `[pause]`; `[laff]` has no suggestion for `[laugh]` (distance 3). Warnings and information do not fail `check`; errors do. Other parse and position errors can be reported without a diagnostic code. There is no automatic translation or spelling repair.
+
+Closing-tag diagnostics currently recognize only a slash followed by one ASCII identifier. A closing-like phrase such as `[/hello world]` is treated as implicit acting in non-strict mode and rejected with `V041` in strict mode, not `V013`. It never closes a span; use strict mode to catch this case.
 
 ## 5. Scope and vocabulary
 
@@ -149,7 +151,7 @@ cast:
 ---
 ```
 
-Supported keys are `timbrex`, `provider`, `model`, `voice`, `lang`, `strict_tags`, `narrator`, and `cast`. `cast` is either `auto` or a map of IDs with optional `name` and `voices`. If supplied, `timbrex` must be `1`. Unknown YAML keys are errors, including misspelled cast fields; future configuration is not silently accepted.
+Supported keys are `timbrex`, `provider`, `model`, `voice`, `lang`, `strict_tags`, `narrator`, and `cast`. `cast` is either the lowercase value `auto` (not `Auto`) or a map of IDs with optional `name` and `voices`. If supplied, `timbrex` must be `1`. Unknown YAML keys are errors, including misspelled cast fields; future configuration is not silently accepted.
 
 Precedence is documented in [configuration](configuration.md). Voice IDs and models are vendor-specific. `lang` is a hint interpreted by the selected adapter; unsupported hints may fail. Azure chooses models through voice names and rejects `model:`. Supply credentials through the documented environment variables or configuration fields, never through scripts.
 
