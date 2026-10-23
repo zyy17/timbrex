@@ -8,7 +8,7 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 
 设置来自 YAML 和环境变量。见 [配置](configuration.zh-cn.md)。将凭证放在环境变量或密钥管理器中。Timbrex 不加载 `.env` 文件。不要把密钥写入 `.tbx` 文件或提交到仓库。下表列出环境变量配置。等价的 `providers.<id>` 文件字段同样有效。
 
-| Provider ID | 必需环境变量 | 默认模型 | 默认音色 |
+| Provider ID | 通过环境变量配置 | 默认模型 | 默认音色 |
 | --- | --- | --- | --- |
 | `openai` | `OPENAI_API_KEY` | `gpt-4o-mini-tts` | `coral` |
 | `elevenlabs` | `ELEVENLABS_API_KEY`，另需选择音色 | `eleven_v3` | 无；通过 `ELEVENLABS_VOICE_ID`、`--voice`、front matter 或 cast 映射设置 |
@@ -106,16 +106,6 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 参考：[HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api)、[模型与使用限制](https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide)。
 
-## 失败处理与限制
-
-单次 HTTP 请求超时为两分钟，响应限制为 64 MiB；最终 PCM 输出限制为 1 GiB。所有语音片段会在发起请求前验证。运行时错误包含厂商和片段编号。HTTP 错误包含状态码，MiniMax/Qwen API 错误包含厂商错误代码。诊断省略响应正文和签名 URL 的查询参数。
-
-音频响应必须是原始的 24 kHz、单声道、S16LE PCM。媒体类型或明确提供的 `rate`/`channels` 媒体类型参数不符、可识别的音频容器（包括 FLAC 和 MP4）、空数据或字节数为奇数的 PCM 均会报错。HTTP 206 部分响应和中断的响应体均会报错；不会自动重试合成请求。缺失可选格式元数据的响应仍被接受。原始 PCM 字节不能标明采样率或声道数，因此缺少明确元数据时仍依赖厂商按请求格式返回音频；这些检查不能验证声音质量。
-
-渲染器在目标文件旁创建临时文件，成功后才重命名。取消或失败会删除临时输出并保留已有目标文件。父目录必须已存在。先前请求仍可能计费；没有重试、降级、缓存或断点续传。
-
-排错时请对照官方文档检查模型、音色、区域和密钥权限。离线测试通过只证明实现的契约，不证明服务可用性或语音质量。长文本应自行分段，Timbrex 不会按厂商 token 限制自动切块。
-
 ## Gemini TTS
 
 ```bash
@@ -127,7 +117,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 台词和 `speechMetadata.style` 分开传递。`fast`/`slow`、表演、情绪和发声控制是近似风格指令；数值 `speed`、`pitch` 和 `volume` 会被拒绝。部分事件映射到原生尖括号标记。显式 `lang` 映射到 `speechConfig.languageCode`，只接受 API 参考列出的 BCP-47 代码（如 `en-US`、`cmn-CN`，不接受 `en`、`zh-CN`）；未指定时由模型自动识别。台词加风格总计限制为 4096 个 Unicode 字符，仅作为本地资源上限，**不是** token 计数；服务端 8192-token 输入预算仍适用。
 
-请求明确指定 `AUDIO_WAV`、`INLINE` 和 24000 Hz。响应必须恰好包含一个 `STOP` 候选和一个内联 `audio/wav` part，且输入/输出未被拦截。额外 part、多个候选、无效 JSON/base64 和 API 错误对象均失败。共用解码器要求完整 RIFF 长度、PCM1、单声道、24 kHz、16-bit、对齐 2、字节率 48000；未知长度 WAV、重复音频块和其他编码会失败，额外 RIFF 元数据块可接受。64 MiB HTTP 限制包含 JSON/base64 开销。本适配器先提取 WAV 内的 PCM，再交给共用渲染器；前述原始 PCM 限制适用于其他适配器。
+请求明确指定 `AUDIO_WAV`、`INLINE` 和 24000 Hz。响应必须恰好包含一个 `STOP` 候选和一个内联 `audio/wav` part，且输入/输出未被拦截。额外 part、多个候选、无效 JSON/base64 和 API 错误对象均失败。音频可以附带文档规定的非载荷元数据，但带有 thought 标记的音频和额外载荷会被拒绝。64 MiB HTTP 限制包含 JSON/base64 开销。WAV 解码遵循下文的共用格式检查。
 
 参考：[GenerateContent TTS 指南](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation)、[GenerateContent schema](https://ai.google.dev/api/generate-content)、[模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)。[当前产品 TTS 指南](https://ai.google.dev/gemini-api/docs/speech-generation) 以 Interactions API 为主，本适配器不调用该接口。离线样例验证所选 schema 和拒绝行为，尚未进行真实账号或声学验证。
 
@@ -142,6 +132,26 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入；自由表演指令、数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
 
-请求指定 `format: wav` 和 `sample_rate: 24000`。有界解码器遍历 RIFF chunk，不直接删除固定 44 字节头；只接受完整的 PCM1、单声道、24 kHz、16-bit WAV，且对齐、字节率和长度必须一致。成功 HTTP 响应内的 JSON 错误、截断/未知长度 WAV、重复音频块和其他格式均失败。本适配器先提取 WAV 内的 PCM 再渲染；前述原始 PCM 限制适用于其他适配器。有效 WAV 不能证明模型读出了每个字。官方 HTTP 错误包括 400、401、402、403、404、429 和 5xx；失败时不重试，诊断也不包含响应正文。
+请求指定 `format: wav` 和 `sample_rate: 24000`。WAV 解码遵循下文的共用格式检查。即使 HTTP 状态成功，响应中的 JSON 错误也会导致失败。有效 WAV 不能证明模型读出了每个字。官方 HTTP 错误包括 400、401、402、403、404、429 和 5xx；失败时不重试，诊断也不包含响应正文。
 
-参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，流式哨兵长度会明确拒绝而不是猜测。
+参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，不接受用特殊长度值表示尚未结束的流式 WAV。
+
+## 失败处理与限制
+
+适配器会在第一次请求前检查全部语音片段，发现不支持的控制和无效的本地设置。这不验证账号权限，也不保证服务一定接受请求。Timbrex 不会按厂商的 token 限制自动拆分文本；较长的台词应分成较短段落。
+
+单次 HTTP 请求超时为两分钟，响应限制为 64 MiB；最终 PCM 输出限制为 1 GiB。运行时错误包含厂商和片段编号。HTTP 错误包含状态码，MiniMax 和 Qwen 的业务错误包含厂商错误代码。诊断不包含响应正文或签名 URL 的查询参数。HTTP 206 部分响应和中断的响应体会报错。请求不会自动重试。
+
+### 音频格式检查
+
+OpenAI、ElevenLabs、MiniMax、Azure 和 Qwen 请求原始的 24 kHz、单声道、S16LE PCM。适配器拒绝不符的媒体类型，以及明确提供但不符的 `rate`/`channels` 元数据。渲染器还会拒绝可识别的音频容器、空 PCM 和奇数字节数。可选元数据缺失时仍接受响应：原始 PCM 字节无法标明采样率或声道数，因此仍需依赖厂商按请求格式返回。
+
+Gemini 和 Fish 请求 WAV，在渲染前提取其中的 PCM。解码器要求完整的 RIFF 长度、唯一的 PCM1 格式块和音频数据块、单声道 24 kHz 16 位采样、block alignment 为 2、byte rate 为 48000。允许额外的 RIFF 元数据块；截断文件、未知长度的流式 WAV、重复音频块和其他编码均报错。真实服务是否返回兼容的完整 WAV，尚未验证。
+
+这些检查能够发现容器和格式问题，但不能证明模型读出了每个字，或准确执行了表演指令。各厂商还有自己的限制，例如 Azure 的十分钟截断，详见对应章节。
+
+### 输出与恢复
+
+渲染器在目标文件旁创建临时文件，合成和写入成功后才替换目标文件。若操作以取消或失败结束，会删除临时输出并保留已有目标文件。父目录需要事先存在。之前的请求可能已经计费；目前没有自动重试、厂商回退、缓存或续传。
+
+请求失败时，请对照厂商官方参考检查模型、音色、区域和密钥权限。离线测试验证的是 Timbrex 如何构造请求、处理响应，不代表服务可用性或语音质量。

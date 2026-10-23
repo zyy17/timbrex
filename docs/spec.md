@@ -1,8 +1,8 @@
-# Timbrex language reference
+# DSL Specification v1
 
 [简体中文](spec.zh-cn.md) · [Provider capabilities](capabilities.md) · [Tutorial](tutorial.md)
 
-**SPEC v0.3.4.** Grammar version: **`timbrex: 1`**. The syntax is frozen. This reference describes language rules and identifies current synthesis support separately.
+This reference describes Timbrex's language rules and current implementation. The language is under development; rules may change as the project develops. The script grammar version remains **`timbrex: 1`**. For a first script, start with the [tutorial](tutorial.md); for supported synthesis controls, see [provider capabilities](capabilities.md).
 
 ## 1. Text and tags
 
@@ -13,7 +13,7 @@ Hello.
 [happy|Hello again!] [pause 500ms] Welcome home.
 ```
 
-The only markup form is `[name args]` or `[name args|content]`. Tags can nest. Names, identifiers, and configuration keys use English ASCII. Spoken text, quoted strings, display names, and free-form acting may use any language. Full-width marks such as `［］` and `｜` are ordinary text, not alternate syntax.
+Tags have two forms: a **point tag**, `[name args]`, and a **span**, `[name args|content]`, which applies to enclosed text. Arguments are optional when the tag permits it, and spans can nest. Registered tag names, identifiers, and configuration keys use English ASCII. Spoken text, quoted strings, display names, and free-form acting may use any language. Full-width marks such as `［］` and `｜` are ordinary text, not alternate syntax.
 
 A tag header ends at the first unescaped `|` or `]` outside a quoted argument. Double quotes in content are ordinary spoken punctuation: `[whisper|She said "hello".]`. A span may cross non-empty lines but must close within its paragraph. BBCode closing tags such as `[/whisper]` are invalid.
 
@@ -23,7 +23,7 @@ A tag header ends at the first unescaped `|` or `]` outside a quoted argument. D
 | `[happy\|words]` | Set emotion only for these words |
 | `[happy]` on its own line | Set scene emotion for subsequent turns |
 | `[pause 500ms]` | Insert an event here |
-| `[whisper\|Hello]` on its own line | Speak the span as narration |
+| `[whisper\|Hello]` in a new paragraph without a speaker prefix | Speak the span as narration |
 
 A **scene line** contains only tags without spans, plus optional whitespace. Events on a scene line happen between turns. A scene state persists until replaced or reset.
 
@@ -46,7 +46,7 @@ chen: Hello back.
 This is narration.
 ```
 
-Speaker IDs match `[A-Za-z][A-Za-z0-9_.-]*` and are case-sensitive. Only an ID declared in `cast` starts a turn. A display name is not an alias. Without a declaration, `note: hello` is ordinary text. `cast: auto` accepts every leading ASCII ID and `check` reports the discovered IDs. `lin\: hello` escapes a possible speaker prefix.
+Speaker IDs match `[A-Za-z][A-Za-z0-9_.-]*` and are case-sensitive. With a `cast` map, only its IDs start turns; a display name is not an alias. With no cast, `note: hello` is ordinary text. With `cast: auto`, every column-zero `id:` matching that identifier rule starts a turn, and `check` reports each discovered ID once. `lin\: hello` escapes a possible speaker prefix.
 
 Narration uses `narrator`, unless front matter `narrator:` supplies another ASCII ID. A cast entry for that ID can assign its voice. Display names are metadata; adapters currently use IDs and voice mappings, not display names as acting instructions.
 
@@ -65,7 +65,7 @@ Arguments are separated by spaces or tabs. Positional values and `key=value` are
 | Quoted string | `"holding back tears"`, `"轻轻地"` |
 | Named argument | `intensity=0.5` |
 
-A suffix belongs to a number only if it ends the token: `10stone` is a word. Quoted values support `\"` and `\\`. A registered tag may accept trailing words as a note; the current note-enabled tags are `act` and nonverbal events. The checker validates duration kinds for `pause`, `silence`, `break`, and `gap` (the shared planner's pause tags). It does not yet enforce other per-tag argument types or ranges. Each real adapter validates the parameters it implements before making requests; named arguments are not currently implemented by these adapters.
+A suffix belongs to a number only if it ends the token: `10stone` is a word. Quoted values support `\"` and `\\`. For `act` and nonverbal events, bare word arguments are collected into a note, such as `holding back tears` in `[act holding back tears]`. Other values remain arguments. The checker validates pause arguments for `pause`, `silence`, `break`, and `gap`; it does not yet enforce other per-tag argument types or ranges. Each real adapter validates the parameters it implements before making requests. The parser accepts named arguments, but current adapters do not map them to vendor parameters.
 
 Numeric synthesis controls require unquoted values of the matching kind. For example, use `speed 1.2`, not `speed "1.2"` or `speed 1e0`. Pauses accept the duration units `ms`, `s`, and `min`; Go-specific forms such as `1m` and `1s250ms` are words, not durations. Write zero duration as `0ms`. A bare `0` is a number and is rejected.
 
@@ -73,7 +73,7 @@ Outside quoted arguments, `[[` and `\[` produce a literal `[`. `]]` and `\]` pro
 
 A line whose first non-space characters are `//` is a comment outside tags. Inline `//`, `#`, and HTML comments are spoken text. Parentheses and angle brackets are plain language text, but some providers reserve them for native markup; see [capabilities](capabilities.md#literal-text).
 
-Raw fences start with three backticks and an info string whose first word is an ASCII identifier, followed by an opaque info tail. The parser currently validates only the first word. They end at a line containing only three backticks and optional whitespace. Their contents are not parsed as Timbrex. All current real adapters reject fences; parsing them does not imply passthrough support.
+Raw fences start on a new line with three backticks and an info string whose first word is an ASCII identifier. Any remaining info text is preserved without validation. They end at a line containing only three backticks and optional whitespace; both fence lines may be indented. Their contents are not parsed as Timbrex. All current real adapters reject fences during synthesis.
 
 ## 4. Tag resolution and strict mode
 
@@ -109,9 +109,11 @@ The vocabulary declares four kinds:
 
 Inner controls replace outer controls of the same feature. Different features coexist when the provider can represent them. The shared planner groups `speed/fast/slow`, `voice/as`, `whisper/shout`, and the emotions into their respective features. Leaving a span restores its enclosing state. Each new turn starts from scene state.
 
-`[reset]` in a turn restores scene state. `[reset speed]` restores just scene speed, or removes turn speed if no scene speed exists. A scene-line reset removes scene state. `as` selects another speaker's voice and requires a span. The target must be a `cast` ID or a speaker who already has a turn or narration paragraph in the script. A known speaker without a provider mapping still uses the default voice. An unknown target is an error, not a silent fallback. `voice` selects a vendor voice ID directly and also requires a span.
+`[reset]` in a turn restores scene state, including when used inside a nested span. `[reset speed]` restores just scene speed, or removes turn speed if no scene speed exists. On a scene line, `[reset]` clears scene state and `[reset speed]` clears scene speed.
 
-The standard vocabulary includes these families. **This is a language inventory, not a provider support promise.** The executable list is [internal/vocab/vocab.go](../internal/vocab/vocab.go).
+`[as speaker_id|words]` uses another speaker's voice. The speech planner used by real HTTP adapters accepts IDs declared in `cast` and IDs used by a recognized turn or narration paragraph anywhere in the script, including later paragraphs. With `cast: auto`, mentioning an ID only inside `[as]` does not declare a speaker; that ID must also have a turn, or be the ID of an actual narration paragraph. A recognized speaker without a mapping for the selected provider uses that provider's configured default voice. An unknown ID fails synthesis planning. To select a vendor voice ID directly, use `[voice voice_id|words]`. Both forms require a span; `check` validates their structure but does not resolve the target voice.
+
+The standard vocabulary includes these families. A registered tag passes vocabulary lookup even when the selected provider cannot synthesize it. Check the [capability table](capabilities.md) before using it with a provider. The registry is [internal/vocab/vocab.go](../internal/vocab/vocab.go).
 
 | Family | Names |
 | --- | --- |
@@ -149,18 +151,18 @@ cast:
 
 Supported keys are `timbrex`, `provider`, `model`, `voice`, `lang`, `strict_tags`, `narrator`, and `cast`. `cast` is either `auto` or a map of IDs with optional `name` and `voices`. If supplied, `timbrex` must be `1`. Unknown YAML keys are errors, including misspelled cast fields; future configuration is not silently accepted.
 
-Precedence is documented in [configuration](configuration.md). Voice IDs and models are vendor-specific. `lang` is a hint interpreted by the selected adapter; unsupported hints may fail. Azure chooses models through voice names and rejects `model:`. Keep credentials in environment variables, never in scripts.
+Precedence is documented in [configuration](configuration.md). Voice IDs and models are vendor-specific. `lang` is a hint interpreted by the selected adapter; unsupported hints may fail. Azure chooses models through voice names and rejects `model:`. Supply credentials through the documented environment variables or configuration fields, never through scripts.
 
-## 7. Synthesis contract
+## 7. Current synthesis behavior
 
-`check` validates the language and vocabulary. `synth` additionally validates the current adapter's mapping, then renders sequentially. Unsupported controls, raw fences, and invalid parameter values used by a speech segment fail before the first paid request. State that is overridden before any speech has no audible effect.
+`check` validates syntax, tag placement, vocabulary, and pause arguments. It does not test provider support. During `synth`, real HTTP adapters plan the script and build every request before rendering sequentially. Unsupported controls, raw fences, and invalid parameter values used by a speech segment fail before the first network request. State that is overridden before any speech has no audible effect and may not be validated by the adapter.
 
-Pauses (`pause`, `silence`, `break`, and a nonnegative `gap`) are local silence in the shared PCM renderer used by HTTP adapters. Default pause is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations range from 0 to 1 minute per pause. `0ms` is accepted and produces no samples. `stub` writes one 8 kHz tone from rune count and does not insert those pauses. `fast` is 1.2× and `slow` is 0.8×. `speed 120%` means 1.2×, not an increase of 120%. Pitch uses semitones and volume uses dB; supported ranges depend on the adapter. Emotion intensities are interpreted as text only where documented, not as calibrated measurements.
+Pauses (`pause`, `silence`, `break`, and a nonnegative `gap`) are local silence in the shared PCM renderer used by HTTP adapters. Default pause is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations range from 0 to 1 minute per pause. `0ms` is accepted and produces no samples. `stub` writes one 8 kHz tone from rune count and does not insert those pauses. Where speed is a numeric parameter, `fast` requests 1.2× and `slow` 0.8×. Gemini represents them as approximate style instructions; models without speed support reject them. `speed 120%` means 1.2×, not an increase of 120%. Pitch uses semitones and volume uses dB; supported ranges depend on the adapter. Emotion intensities are interpreted as text only where documented, not as calibrated measurements.
 
 The renderer concatenates compatible raw PCM segments into one WAV. It does not mix, overlap, resample, normalize, or crossfade. There is no implicit pause between turns. Use explicit pauses for timing. [Provider setup](providers.md) and [capabilities](capabilities.md) describe the exact current mappings and limits.
 
-## 8. Future work, not current behavior
+## 8. Unimplemented features
 
-The frozen syntax leaves room for external vocabularies, registered provider namespaces, raw passthrough, capability declarations, lock files, and dataset templates outside the speech body. External YAML configuration is already implemented; see [configuration](configuration.md). Pronunciation, mixing, fallback planning, streaming, native dialogue, and voice management need separate implementations and tests. The grammar does not include loops or conditionals.
+External vocabularies, registered provider namespaces, raw passthrough, capability files, lock files, and dataset templates are not implemented. Neither are pronunciation controls, mixing, fallback planning, streaming, native dialogue, or voice management. The language does not include loops or conditionals. These features would need their own design, implementation, and tests.
 
-`fix`, `fmt`, `expand`, `compile`, `caps`, `voices`, `tags`, `migrate`, an LSP, and a public Go SDK are not shipped commands or APIs. Old design sketches of these features are not compatibility promises. Later work must document implemented behavior in both languages.
+`fix`, `fmt`, `expand`, `compile`, `caps`, `voices`, `tags`, `migrate`, an LSP, and a public Go SDK are not shipped commands or APIs. See the [design rationale](reflection.md) for the tradeoffs behind the current implementation.

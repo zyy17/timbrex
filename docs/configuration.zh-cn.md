@@ -2,17 +2,16 @@
 
 [English](configuration.md) · [厂商接入](providers.zh-cn.md) · [教程](tutorial.zh-cn.md)
 
-每次执行 `check`、`synth` 或 `config` 时，CLI 加载一次配置。`internal/config` 通过 [koanf](https://github.com/knadh/koanf) 合并默认值、一份 YAML 文件和环境变量。适配器接收解析后的选项，不自行读取文件或环境变量。
+配置用于设置默认 provider、模型、音色和严格模式。`check`、`synth` 和 `config` 会加载一份 YAML 文件及文档列出的环境变量。脚本与命令行参数可以覆盖相应默认值；凭证和端点只能来自配置文件或环境变量。
 
 ## 配置文件
 
 默认情况下，`check`、`synth` 和 `config` 读取**当前工作目录**下存在的 `timbrex.yaml`。不会搜索脚本所在目录、父目录或主目录。`--config` 指定一个文件。显式路径不存在时会报错。
 
 ```bash
-cp examples/timbrex.yaml timbrex.yaml
-./timbrex config
+./timbrex --config examples/timbrex.yaml config
 ./timbrex --config examples/timbrex.yaml check examples/expressive.tbx
-./timbrex synth examples/expressive.tbx --config timbrex.yaml --provider openai -o speech.wav
+./timbrex --config examples/timbrex.yaml synth examples/expressive.tbx --provider stub -o tone.wav
 ```
 
 `--config` 是全局参数，可放在命令之前或之后。帮助、版本和 shell 补全不加载配置。Timbrex 不加载 `.env`，不展开 YAML 中的 `${VARIABLE}`，也不监听文件变化。
@@ -38,7 +37,7 @@ providers:
 | --- | --- |
 | `provider` | 默认厂商，初始为 `stub` |
 | `strict_tags` | 默认标签检查模式，初始为 `false` |
-| `providers.<id>.api_key` | 对应厂商的凭证；使用其环境变量 |
+| `providers.<id>.api_key` | 对应厂商的凭证，也可以使用该厂商的环境变量 |
 | `providers.<id>.model` | 默认模型；Azure 通过音色选择模型，指定模型会报错 |
 | `providers.<id>.voice` | 未配置 cast 映射的角色使用的兜底音色 |
 | `providers.<id>.endpoint` | OpenAI、ElevenLabs、MiniMax、Gemini、Fish 的 API 基础 URL；Azure、Qwen 的完整请求 URL |
