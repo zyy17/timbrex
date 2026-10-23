@@ -57,11 +57,11 @@ OpenAI 已将 GPT-4o Mini TTS 标为弃用。[生命周期公告](https://develo
 ./timbrex synth examples/expressive.tbx --provider elevenlabs -o elevenlabs.wav
 ```
 
-使用 `xi-api-key` 调用 `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=pcm_24000`。适配器为 `eleven_v3`、`eleven_v4`、`eleven_v4_turbo` 生成原生 audio tags；两个 v4 模型不支持语速设置，因此会拒绝显式 `speed`、`fast` 和 `slow`。其他模型 ID 支持纯文本与语速，但拒绝表演标签和非语言事件。适配器采用保守的 5000 字符限制，包含生成的标签。语言提示使用主要语言子标签；`eleven_multilingual_v2` 不接受 `language_code`，因此拒绝显式 `lang`。
+使用 `xi-api-key` 调用 `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=pcm_24000`。适配器为 `eleven_v3`、`eleven_v4`、`eleven_v4_turbo` 生成原生 audio tags；两个 v4 模型不支持语速设置，因此会拒绝显式 `speed`、`fast` 和 `slow`。其他模型 ID 支持纯文本与语速，但拒绝表演标签和非语言事件。适配器采用保守的 5000 字符限制，包含生成的标签。语言提示会转为小写并提取主要语言子标签；主要子标签为空时报错。`eleven_multilingual_v2` 不接受 `language_code`，因此拒绝显式 `lang`。仅支持英语的 `eleven_flash_v2` 和 `eleven_turbo_v2` 只接受 `en`，包括 `en-US` 等 locale 形式。适配器不会查询其他模型支持的语言列表；ElevenLabs 可能忽略所选模型不支持的语言代码。
 
 Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致。目前保留原映射，等待真实账户验证；本地接受该设置不代表已确认它会改变生成语音。
 
-参考：[Create speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)、[audio tags](https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4)、[语速控制](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech)。Audio tags 描述期望的表演，不保证生成指定音效。
+参考：[Create speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)、[模型语言支持](https://elevenlabs.io/docs/help-center/technical/what-models-do-you-offer-and-what-is-the-difference-between-them)、[audio tags](https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4)、[语速控制](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech)。Audio tags 描述期望的表演，不保证生成指定音效。
 
 ## MiniMax
 
