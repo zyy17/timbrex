@@ -20,6 +20,30 @@ Interrupt and SIGTERM cancel the command context. The CLI checks cancellation be
 
 `--config` is a global flag and works before or after the command. Help, version, and shell completion do not load configuration. Timbrex does not load `.env` files, expand `${VARIABLE}` in YAML, or watch files for changes.
 
+## Local environment file
+
+[.env.example](../.env.example) lists every supported environment variable, grouped by provider. All assignments are commented out and empty, so the unchanged template preserves existing environment variables, YAML settings, and built-in defaults. It does not select a paid provider. The `stub` provider needs no credentials; configure only the speech services you intend to use. Required credentials, voices, and endpoints are explained in [provider setup](providers.md).
+
+From the repository root, create a local copy (keep an existing `.env` rather than overwriting it):
+
+```bash
+cp -i .env.example .env
+chmod 600 .env
+```
+
+Edit `.env` locally, uncomment only the variables you need, and put each value inside single quotes. Do not add spaces around `=`. Single quotes keep characters such as `$`, spaces, and `#` literal; a value containing a single quote needs shell escaping. Nonempty exported values override YAML settings; leaving an unused line commented also preserves an existing shell value.
+
+Timbrex has no automatic dotenv loading or dotenv dependency. In a POSIX-compatible shell such as Bash or Zsh, manually export the edited file before running Timbrex:
+
+```bash
+set -a
+. ./.env
+set +a
+./timbrex config
+```
+
+The `.` command executes shell code: source only your own edited file after reviewing it, not an untrusted downloaded file. These exports apply to the current shell and its child processes. `config` redacts API keys and does not contact providers; a later `synth` command using a real provider can incur charges. The repository ignores `.env` and `.env.*` local variants while retaining `.env.example`. Never put real credentials in the template, commit them, or paste them into chat.
+
 ## File format
 
 ```yaml

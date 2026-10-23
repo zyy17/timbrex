@@ -43,7 +43,7 @@ make build
 
 ### 生成语音
 
-要使用示例中的 OpenAI 音色，在环境中配置 `OPENAI_API_KEY`，或在[配置文件](docs/configuration.zh-cn.md)中设置 `providers.openai.api_key`。不要把密钥写入脚本或提交到仓库。然后在同一仓库目录运行：
+要使用示例中的 OpenAI 音色，在环境中配置 `OPENAI_API_KEY`，或在[配置文件](docs/configuration.zh-cn.md)中设置 `providers.openai.api_key`。也可以将 [.env.example](.env.example) 复制为 `.env`，只填写需要的设置，再[手动加载](docs/configuration.zh-cn.md#本地环境文件)；Timbrex 不会自动加载它。不要把密钥写入脚本、提交到仓库或粘贴到聊天中。然后在同一仓库目录运行：
 
 ```bash
 ./timbrex synth examples/dialogue.tbx --provider openai --model gpt-4o-mini-tts -o dialogue.wav

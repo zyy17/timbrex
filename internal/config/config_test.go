@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -195,5 +196,47 @@ func TestRedactedOutputPreservesCredentials(t *testing.T) {
 func TestExampleConfiguration(t *testing.T) {
 	if _, err := load("../../examples/timbrex.yaml", func() []string { return nil }); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestEnvironmentExample(t *testing.T) {
+	data, err := os.ReadFile("../../.env.example")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assignment := regexp.MustCompile(`^# ([A-Z][A-Z0-9_]*)=(.*)$`)
+	seen := make(map[string]bool)
+	for i, line := range strings.Split(string(data), "\n") {
+		if line != "" && !strings.HasPrefix(line, "#") {
+			t.Errorf("line %d: template must contain only comments or blank lines", i+1)
+		}
+		match := assignment.FindStringSubmatch(line)
+		if match == nil {
+			continue
+		}
+		key := match[1]
+		if match[2] != "''" {
+			t.Errorf("line %d: %s must have an empty, shell-quoted value", i+1, key)
+		}
+		if envKeys[key] == "" || seen[key] {
+			t.Errorf("line %d: unknown or duplicate environment key %s", i+1, key)
+		}
+		seen[key] = true
+	}
+	for key := range envKeys {
+		if !seen[key] {
+			t.Errorf("missing commented, empty assignment for %s", key)
+		}
+	}
+}
+
+func TestDotEnvIsNotAutomaticallyLoaded(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.WriteFile(".env", []byte("TIMBREX_PROVIDER=openai\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := load("", func() []string { return nil })
+	if err != nil || c.Provider != "stub" {
+		t.Fatalf("local .env must not change configuration: %v", err)
 	}
 }
