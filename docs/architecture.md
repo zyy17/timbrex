@@ -10,25 +10,9 @@ Timbrex is a small compiler plus an audio renderer. The compiler preserves the a
 
 ```mermaid
 flowchart TD
-    Source[".tbx script"] --> Parse["parse.Parse"]
-    Parse --> Lex["lex.Scan on the body"]
-    Lex --> AST["AST with front matter and blocks"]
-    AST --> Check["check.Apply and check.Failed"]
-    Vocab["vocab: standard tags"] --> Check
-    Check --> Checked["Checked and resolved AST"]
-    Checked --> CheckDone["check command: ok"]
-    Checked --> Lower["lower.Script"]
-    Lower --> IR["IR document and utterances"]
-    Settings["config + front matter + flags"] --> CLI["CLI selects provider and resolves Options"]
-    IR --> CLI
-    CLI --> Adapter["Provider.Synthesize"]
-    Adapter --> Prepare["Prepare: Plan then build every request"]
-    Prepare --> Render["Render: speech and pauses in order"]
-    Render --> HTTP["Adapter HTTP calls"]
-    HTTP --> PCM["Validated 24 kHz mono S16LE"]
-    PCM --> Output["Temporary WAV then rename"]
-    Render -->|local silence| Output
-    Adapter --> Stub["stub: separate 8 kHz test tone path"]
+    Source[".tbx script"] --> Compiler["Compiler<br/>parse · check · lower"]
+    Compiler --> Adapter["Provider adapter<br/>prepare · synthesize"]
+    Adapter --> WAV["WAV file"]
 ```
 
 The CLI calls `parse.Parse`, which extracts front matter and invokes the lexer internally; callers do not manually connect a lexer to a parser. `check.Apply` both reports diagnostics and resolves tag nodes in place. Only a successfully checked AST should reach `lower.Script`.
@@ -104,6 +88,16 @@ Voice selection has an additional, separate layer. For each speech segment, the 
 
 ### Lexing and parsing
 
+The compiler path stays independent of vendor requests. The `check` command stops after checking; only synthesis continues to lowering.
+
+```mermaid
+flowchart TD
+    Parse["parse.Parse<br/>front matter + lex.Scan"] --> AST["AST"]
+    AST --> Check["check.Apply<br/>resolve tags and diagnose"]
+    Check --> Gate["check.Failed<br/>stop on errors"]
+    Gate --> Lower["lower.Script<br/>checked AST → IR"]
+```
+
 [parse.Parse](../internal/parse/parse.go) rejects invalid UTF-8, normalizes a leading BOM and line endings, parses YAML front matter, then calls [lex.Scan](../internal/lex/lex.go) on the remaining body. Tokens carry source positions and nesting information. Front-matter line offsets are added back so diagnostics refer to the original file.
 
 The parser builds `ast.Script{Front, Blocks}`. Blocks distinguish narration, speaker turns, comments, scene lines, and raw fences. Inline nodes distinguish text from tags; a span owns a nested `Content` slice. Arguments retain `Key`, `Raw`, and a lexical `Kind`, such as `duration` or `quoted`. They are not yet vendor parameters: `200ms` is stored as text with a duration kind, not immediately converted to `time.Duration`.
@@ -173,25 +167,14 @@ This representation keeps the compiler small: the lowerer translates structure o
 
 [providers.Plan](../internal/providers/plan.go) converts an IR document into `[]Segment`. Each segment contains either a local `Pause`, or a voice, language hint, active `Controls`, and speakable `Nodes`.
 
-The planner maintains scene state, a working state for the current utterance, and a stack of saved states for nested spans:
+The planner maintains scene state, a working state for the current utterance, and a stack of saved states for nested spans. The example shows the state before, inside, and after `whisper`, then at the start of the next turn:
 
 ```mermaid
 flowchart TD
-    Begin["Begin utterance: clone scene state"] --> Node{"Next IR node"}
-    Node -->|Text or non-pause event| Buffer["Append to pending speech"]
-    Buffer --> Node
-    Node -->|State| State["Flush speech; replace matching feature"]
-    State --> Node
-    Node -->|SpanStart| Push["Flush; save state; apply span control"]
-    Push --> Node
-    Node -->|SpanEnd| Pop["Flush; restore saved state"]
-    Pop --> Node
-    Node -->|Pause event| Pause["Flush; append local silence segment"]
-    Pause --> Node
-    Node -->|Utterance ends| Flush["Flush remaining speech"]
-    Flush --> Scene{"Empty speaker?"}
-    Scene -->|Yes| Save["Keep resulting state for later utterances"]
-    Scene -->|No| Discard["Discard turn-local state"]
+    Before["Before the span<br/>slow + happy"]
+    Before -->|SpanStart whisper| Inside["Inside the span<br/>slow + happy + whisper"]
+    Inside -->|SpanEnd| After["After the span<br/>slow + happy"]
+    After -->|Next turn begins| Next["Scene baseline<br/>slow"]
 ```
 
 A state change flushes pending speech before taking effect. A span pushes the current state, applies its control, and restores the saved state at the closing marker. Each new spoken turn starts from scene state, not from the preceding speaker's last state.
@@ -216,6 +199,12 @@ This is segmentation by control boundaries, not a sentence tokenizer or a genera
 ## Preparing requests before network I/O
 
 [Prepare](../internal/providers/prepare.go) is a generic helper: it runs `Plan`, allocates a request slice aligned with segment indices, and calls the adapter's builder for every speech segment. Local pauses keep a zero-value request that is never sent. If any builder rejects a segment, no synthesis request has started.
+
+```mermaid
+flowchart TD
+    Plan["Plan<br/>IR → segments"] --> Build["Build and validate<br/>every speech request"]
+    Build --> Ready["All requests ready<br/>only then enter Render"]
+```
 
 This ordering catches unsupported controls late in a script before earlier segments incur remote synthesis work. It does not prove that a remote service will accept the model, voice, account, or request. CLI credential resolution also happens before preparation, so `synth` is not an offline provider-check command.
 
@@ -260,40 +249,26 @@ A new vendor normally does not require AST or grammar changes. Shared helpers be
 
 ## From HTTP responses to a complete WAV
 
-The real-adapter execution order is:
+After preparation succeeds, real adapters render one segment at a time. This smaller sequence focuses on the renderer and its callback; the adapter handles HTTP and decoding, and the renderer writes to the temporary file:
 
 ```mermaid
 sequenceDiagram
-    participant CLI
-    participant Adapter
-    participant Prepare
-    participant Render
-    participant HTTP as Vendor HTTP
-    participant File as Output files
-    CLI->>Adapter: Synthesize(ctx, doc, options)
-    Adapter->>Prepare: Plan and build all speech requests
-    Prepare-->>Adapter: Segments and aligned requests, or error
-    Note over Adapter,Prepare: A preparation error returns before Render
-    Adapter->>Render: Render(segments, synthesis callback)
-    Render->>File: Create sibling temporary file and reserve WAV header
-    loop Segments in script order
-        alt Local pause
-            Render->>File: Write zero-valued PCM samples
+    participant R as Render
+    participant A as Adapter
+    R->>R: Create temporary WAV
+    loop Segments in order
+        alt Pause
+            R->>R: Generate silence
         else Speech
-            Render->>Adapter: Synthesize segment by index
-            Adapter->>HTTP: Context-bound request
-            HTTP-->>Adapter: Bounded complete response
-            Adapter-->>Render: Decoded and validated PCM, or error
-            Render->>File: Validate PCM and append samples
+            R->>A: Synthesize segment
+            A-->>R: PCM
         end
+        R->>R: Append PCM
     end
-    Render->>File: Fill header and close temporary file
-    Render->>File: Check cancellation and rename to destination
-    Render-->>Adapter: Result path
-    Adapter-->>CLI: Result path
+    R->>R: Complete and publish WAV
 ```
 
-The diagram shows the success path; any error returns without continuing to later segments or publishing the temporary file.
+The diagram shows the success path. Speech PCM is validated before writing; final publication fills the header, closes the file, checks cancellation, and renames it. Any error returns without processing later segments or publishing the temporary file.
 
 ### Transport and decoding
 

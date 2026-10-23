@@ -10,25 +10,9 @@ Timbrex 由一个小型编译器和音频渲染器组成。编译器把台词、
 
 ```mermaid
 flowchart TD
-    Source[".tbx 脚本"] --> Parse["parse.Parse"]
-    Parse --> Lex["lex.Scan 扫描正文"]
-    Lex --> AST["包含 front matter 和块结构的 AST"]
-    AST --> Check["check.Apply 与 check.Failed"]
-    Vocab["vocab 标准词表"] --> Check
-    Check --> Checked["检查并解析标签含义后的 AST"]
-    Checked --> CheckDone["check 命令输出 ok"]
-    Checked --> Lower["lower.Script"]
-    Lower --> IR["IR 文档与 utterance"]
-    Settings["配置、front matter 与命令行参数"] --> CLI["CLI 选择厂商并解析 Options"]
-    IR --> CLI
-    CLI --> Adapter["Provider.Synthesize"]
-    Adapter --> Prepare["Prepare：先 Plan，再构造全部请求"]
-    Prepare --> Render["Render：顺序处理语音与停顿"]
-    Render --> HTTP["适配器发起 HTTP 调用"]
-    HTTP --> PCM["检查后的 24 kHz 单声道 S16LE"]
-    PCM --> Output["临时 WAV 文件，完成后重命名"]
-    Render -->|本地静音| Output
-    Adapter --> Stub["stub：独立的 8 kHz 测试音路径"]
+    Source[".tbx 脚本"] --> Compiler["编译器<br/>解析 · 检查 · lowering"]
+    Compiler --> Adapter["厂商适配器<br/>准备请求 · 合成"]
+    Adapter --> WAV["WAV 文件"]
 ```
 
 CLI 调用的是 `parse.Parse`。该函数先提取 front matter，再在内部调用词法分析器，调用方不需要手动连接 lexer 和 parser。`check.Apply` 既生成诊断，也原地更新标签节点。只有通过检查的 AST 才应交给 `lower.Script`。
@@ -104,6 +88,16 @@ make build
 
 ### 词法分析与解析
 
+编译过程不依赖厂商请求。`check` 命令在检查后结束，只有合成流程才继续执行 lowering。
+
+```mermaid
+flowchart TD
+    Parse["parse.Parse<br/>front matter + lex.Scan"] --> AST["AST"]
+    AST --> Check["check.Apply<br/>解析标签并生成诊断"]
+    Check --> Gate["check.Failed<br/>有错误则停止"]
+    Gate --> Lower["lower.Script<br/>已检查 AST → IR"]
+```
+
 [parse.Parse](../internal/parse/parse.go) 拒绝无效 UTF-8，移除开头的 BOM、统一换行符，解析 YAML front matter，再调用 [lex.Scan](../internal/lex/lex.go) 扫描正文。token 携带源码位置和嵌套信息。解析器会补回 front matter 占用的行数，使诊断指向原文件的位置。
 
 解析结果为 `ast.Script{Front, Blocks}`。块区分旁白、角色发言、注释、场景行和原始围栏。行内节点区分文字与标签；span 通过嵌套的 `Content` 切片保存内容。参数保留 `Key`、`Raw` 和 `Kind`，例如 `duration` 或 `quoted`。这些还不是厂商参数：`200ms` 保存为带有 duration 分类的文本，不会立即转换成 `time.Duration`。
@@ -173,25 +167,14 @@ Utterance("lin")
 
 [providers.Plan](../internal/providers/plan.go) 将 IR 文档转换为 `[]Segment`。每个片段要么是本地 `Pause`，要么包含音色、语言提示、生效的 `Controls` 和可发声的 `Nodes`。
 
-规划器维护场景状态、当前 utterance 的工作状态，以及保存嵌套 span 状态的栈：
+规划器维护场景状态、当前 utterance 的工作状态，以及保存嵌套 span 状态的栈。下面用示例展示进入 `whisper` 前、span 内、span 结束后，以及下一轮发言起点的状态：
 
 ```mermaid
 flowchart TD
-    Begin["进入 utterance：复制场景状态"] --> Node{"下一个 IR 节点"}
-    Node -->|文字或非停顿事件| Buffer["加入待合成内容"]
-    Buffer --> Node
-    Node -->|State| State["提交待合成片段；替换同类控制"]
-    State --> Node
-    Node -->|SpanStart| Push["提交片段；保存状态；应用 span 控制"]
-    Push --> Node
-    Node -->|SpanEnd| Pop["提交片段；恢复保存的状态"]
-    Pop --> Node
-    Node -->|停顿事件| Pause["提交片段；加入本地静音片段"]
-    Pause --> Node
-    Node -->|utterance 结束| Flush["提交剩余片段"]
-    Flush --> Scene{"Speaker 为空？"}
-    Scene -->|是| Save["保存结果，作为后续场景状态"]
-    Scene -->|否| Discard["丢弃本轮临时状态"]
+    Before["进入 span 前<br/>slow + happy"]
+    Before -->|SpanStart whisper| Inside["span 内<br/>slow + happy + whisper"]
+    Inside -->|SpanEnd| After["span 结束后<br/>slow + happy"]
+    After -->|下一轮发言开始| Next["场景基准<br/>slow"]
 ```
 
 状态变化先将已有待合成内容提交为片段，再对后续内容生效。span 开始时保存当前状态并应用控制，结束时恢复保存的状态。每轮发言都从场景状态开始，不继承上一轮发言结束时的临时状态。
@@ -216,6 +199,12 @@ flowchart TD
 ## 先准备全部请求，再开始网络调用
 
 [Prepare](../internal/providers/prepare.go) 是一个泛型辅助函数：先运行 `Plan`，分配与片段索引对齐的请求切片，然后为每个语音片段调用适配器的 builder。本地停顿对应的请求保留零值，不会被发送。只要有一个 builder 拒绝片段，合成请求就还没有开始。
+
+```mermaid
+flowchart TD
+    Plan["Plan<br/>IR → 片段"] --> Build["构造并验证<br/>全部语音请求"]
+    Build --> Ready["所有请求就绪<br/>才进入 Render"]
+```
 
 这一顺序可以在脚本末尾存在不支持的控制时，避免先为前面的片段发起远程合成。但它不能证明远端会接受模型、音色、账号或请求。CLI 的凭证解析也发生在请求准备之前，因此 `synth` 不是一个离线的厂商能力检查命令。
 
@@ -260,40 +249,26 @@ type Provider interface {
 
 ## 从 HTTP 响应到完整 WAV
 
-真实适配器按下面的顺序执行：
+准备成功后，真实适配器逐个渲染片段。下面的短时序图只保留渲染器与合成回调：适配器负责 HTTP 和解码，渲染器负责写入临时文件。
 
 ```mermaid
 sequenceDiagram
-    participant CLI
-    participant Adapter as 适配器
-    participant Prepare
-    participant Render
-    participant HTTP as 厂商 HTTP
-    participant File as 输出文件
-    CLI->>Adapter: Synthesize(ctx, doc, options)
-    Adapter->>Prepare: Plan 并构造全部语音请求
-    Prepare-->>Adapter: 片段与对齐的请求，或错误
-    Note over Adapter,Prepare: 准备失败时直接返回，不进入 Render
-    Adapter->>Render: Render(片段, 合成回调)
-    Render->>File: 创建同目录临时文件，预留 WAV 头
-    loop 按脚本顺序处理片段
-        alt 本地停顿
-            Render->>File: 写入值为零的 PCM 采样
+    participant R as Render
+    participant A as 适配器
+    R->>R: 创建临时 WAV
+    loop 按顺序处理片段
+        alt 停顿
+            R->>R: 生成静音
         else 语音
-            Render->>Adapter: 按索引合成片段
-            Adapter->>HTTP: 携带 context 的请求
-            HTTP-->>Adapter: 有大小限制的完整响应
-            Adapter-->>Render: 解码并检查后的 PCM，或错误
-            Render->>File: 校验 PCM 并追加采样
+            R->>A: 合成当前片段
+            A-->>R: PCM
         end
+        R->>R: 追加 PCM
     end
-    Render->>File: 补齐头部并关闭临时文件
-    Render->>File: 检查取消，然后重命名到目标路径
-    Render-->>Adapter: 返回结果路径
-    Adapter-->>CLI: 返回结果路径
+    R->>R: 完成并发布 WAV
 ```
 
-图中展示成功路径；任何阶段出错都会返回，不再处理后续片段，也不发布临时文件。
+图中展示成功路径。语音 PCM 在写入前经过检查；最终发布包括补齐头部、关闭文件、检查取消和重命名。任何阶段出错都会返回，不再处理后续片段，也不发布临时文件。
 
 ### 传输与解码
 
