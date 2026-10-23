@@ -6,36 +6,25 @@ Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，
 
 ## 配置
 
-设置来自 YAML 和环境变量。见 [配置](configuration.zh-cn.md)。将凭证放在环境变量或密钥管理器中。Timbrex 不加载 `.env` 文件。不要把密钥写入 `.tbx` 文件或提交到仓库。下表列出环境变量配置。等价的 `providers.<id>` 文件字段同样有效。
+设置来自 YAML 和环境变量。见 [配置](configuration.zh-cn.md)。将凭证放在环境变量或密钥管理器中。Timbrex 不加载 `.env` 文件。不要把密钥写入 `.tbx` 文件或提交到仓库。各厂商小节列出所需的环境变量。等价的 `providers.<id>` 文件字段同样有效。
 
-| Provider ID | 通过环境变量配置 | 默认模型 | 默认音色 |
-| --- | --- | --- | --- |
-| `openai` | `OPENAI_API_KEY` | `gpt-4o-mini-tts` | `coral` |
-| `elevenlabs` | `ELEVENLABS_API_KEY`，另需选择音色 | `eleven_v3` | 无；通过 `ELEVENLABS_VOICE_ID`、`--voice`、front matter 或 cast 映射设置 |
-| `minimax` | `MINIMAX_API_KEY` | `speech-2.8-hd` | `English_expressive_narrator` |
-| `azure` | `AZURE_SPEECH_KEY`，以及区域或端点 | 由音色决定 | `en-US-JennyNeural` |
-| `qwen` | `DASHSCOPE_API_KEY`、`QWEN_ENDPOINT` | `qwen-audio-3.1-tts-flash` | `longanhuan_v3.1` |
-| `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash-tts` | `Kore` |
-| `fish` | `FISH_API_KEY`，音色/reference ID | `s2.1-pro` | 无；通过 `FISH_VOICE_ID`、`--voice`、front matter 或角色映射设置 |
-| `stub` | 无 | 无 | 无；测试音 |
+[OpenAI](#openai) · [ElevenLabs](#elevenlabs) · [MiniMax](#minimax) · [Azure Speech](#azure-speech) · [Qwen](#qwen) · [Gemini TTS](#gemini-tts) · [Fish Audio](#fish-audio)
 
-可选的环境变量默认值：
-
-| 厂商 | 模型 | 音色 | 端点覆盖 |
-| --- | --- | --- | --- |
-| OpenAI | `OPENAI_MODEL` | `OPENAI_VOICE` | `OPENAI_BASE_URL`（含 `/v1` 的基础 URL） |
-| ElevenLabs | `ELEVENLABS_MODEL` | `ELEVENLABS_VOICE_ID` | `ELEVENLABS_BASE_URL`（含 `/v1` 的基础 URL） |
-| MiniMax | `MINIMAX_MODEL` | `MINIMAX_VOICE_ID` | `MINIMAX_BASE_URL`（含 `/v1` 的基础 URL） |
-| Azure | — | `AZURE_SPEECH_VOICE` | `AZURE_SPEECH_ENDPOINT`（完整请求 URL），否则使用 `AZURE_SPEECH_REGION` |
-| Qwen | `QWEN_MODEL` | `QWEN_VOICE` | `QWEN_ENDPOINT`（必填完整请求 URL） |
-| Gemini | `GEMINI_MODEL` | `GEMINI_VOICE` | `GEMINI_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`) |
-| Fish | `FISH_MODEL` | `FISH_VOICE_ID` | `FISH_BASE_URL` (`https://api.fish.audio/v1`) |
+`stub` 不需要环境变量，也没有模型或音色；它只生成测试音。
 
 `--model` 和 `--voice` 覆盖 front matter，后者覆盖环境变量，环境变量覆盖 YAML 配置和内置默认值。cast 音色映射优先于默认音色。`[voice "vendor-id"|text]` 直接选择音色。`[as lin|text]` 使用 Lin 的映射；已知说话人没有映射时仍使用默认音色，未知目标会报错。切换厂商不会自动转换其他厂商的模型或音色 ID。
 
 端点覆盖用于指定的区域服务或可信兼容网关。API 凭证会发送至该端点。远程服务应使用 HTTPS；HTTP 用于本地测试。请求不会跟随重定向。
 
 ## OpenAI
+
+- Provider ID：`openai`。
+- 环境变量配置：`OPENAI_API_KEY`。
+- 默认模型：`gpt-4o-mini-tts`。
+- 默认音色：`coral`。
+- 可选的模型默认值：`OPENAI_MODEL`。
+- 可选的音色默认值：`OPENAI_VOICE`。
+- 端点覆盖：`OPENAI_BASE_URL`（含 `/v1` 的基础 URL）。
 
 ```bash
 # 先设置 OPENAI_API_KEY。
@@ -52,6 +41,14 @@ OpenAI 已将 GPT-4o Mini TTS 标为弃用。[生命周期公告](https://develo
 
 ## ElevenLabs
 
+- Provider ID：`elevenlabs`。
+- 环境变量配置：`ELEVENLABS_API_KEY`，另需选择音色。
+- 默认模型：`eleven_v3`。
+- 默认音色：无；通过 `ELEVENLABS_VOICE_ID`、`--voice`、front matter 或 cast 映射设置。
+- 可选的模型默认值：`ELEVENLABS_MODEL`。
+- 可选的音色默认值：`ELEVENLABS_VOICE_ID`。
+- 端点覆盖：`ELEVENLABS_BASE_URL`（含 `/v1` 的基础 URL）。
+
 ```bash
 # 先设置 ELEVENLABS_API_KEY 和 ELEVENLABS_VOICE_ID。
 ./timbrex synth examples/expressive.tbx --provider elevenlabs -o elevenlabs.wav
@@ -65,6 +62,14 @@ Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致
 
 ## MiniMax
 
+- Provider ID：`minimax`。
+- 环境变量配置：`MINIMAX_API_KEY`。
+- 默认模型：`speech-2.8-hd`。
+- 默认音色：`English_expressive_narrator`。
+- 可选的模型默认值：`MINIMAX_MODEL`。
+- 可选的音色默认值：`MINIMAX_VOICE_ID`。
+- 端点覆盖：`MINIMAX_BASE_URL`（含 `/v1` 的基础 URL）。
+
 ```bash
 # 先设置 MINIMAX_API_KEY。
 ./timbrex synth examples/expressive.tbx --provider minimax -o minimax.wav
@@ -77,6 +82,14 @@ Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致
 参考：[同步语音合成 API](https://platform.minimax.io/docs/api-reference/speech-t2a-http)。
 
 ## Azure Speech
+
+- Provider ID：`azure`。
+- 环境变量配置：`AZURE_SPEECH_KEY`，以及区域或端点。
+- 默认模型：由音色决定。
+- 默认音色：`en-US-JennyNeural`。
+- 可选的模型默认值：—。
+- 可选的音色默认值：`AZURE_SPEECH_VOICE`。
+- 端点覆盖：`AZURE_SPEECH_ENDPOINT`（完整请求 URL），否则使用 `AZURE_SPEECH_REGION`。
 
 ```bash
 # 先设置 AZURE_SPEECH_KEY。
@@ -94,6 +107,14 @@ Azure REST 会在十分钟处截断音频，且可能仍返回 HTTP 200。片段
 
 ## Qwen
 
+- Provider ID：`qwen`。
+- 环境变量配置：`DASHSCOPE_API_KEY`、`QWEN_ENDPOINT`。
+- 默认模型：`qwen-audio-3.1-tts-flash`。
+- 默认音色：`longanhuan_v3.1`。
+- 可选的模型默认值：`QWEN_MODEL`。
+- 可选的音色默认值：`QWEN_VOICE`。
+- 端点覆盖：`QWEN_ENDPOINT`（必填完整请求 URL）。
+
 ```bash
 # 先设置 DASHSCOPE_API_KEY，并替换工作空间占位符。
 export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer'
@@ -107,6 +128,14 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 参考：[HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api)、[模型与使用限制](https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide)。
 
 ## Gemini TTS
+
+- Provider ID：`gemini`。
+- 环境变量配置：`GEMINI_API_KEY`。
+- 默认模型：`gemini-3.8-flash-tts`。
+- 默认音色：`Kore`。
+- 可选的模型默认值：`GEMINI_MODEL`。
+- 可选的音色默认值：`GEMINI_VOICE`。
+- 端点覆盖：`GEMINI_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`)。
 
 ```bash
 # 须已设置 GEMINI_API_KEY。
@@ -122,6 +151,14 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 参考：[GenerateContent TTS 指南](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation)、[GenerateContent schema](https://ai.google.dev/api/generate-content)、[模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)。[当前产品 TTS 指南](https://ai.google.dev/gemini-api/docs/speech-generation) 以 Interactions API 为主，本适配器不调用该接口。离线样例验证所选 schema 和拒绝行为，尚未进行真实账号或声学验证。
 
 ## Fish Audio
+
+- Provider ID：`fish`。
+- 环境变量配置：`FISH_API_KEY`，音色/reference ID。
+- 默认模型：`s2.1-pro`。
+- 默认音色：无；通过 `FISH_VOICE_ID`、`--voice`、front matter 或角色映射设置。
+- 可选的模型默认值：`FISH_MODEL`。
+- 可选的音色默认值：`FISH_VOICE_ID`。
+- 端点覆盖：`FISH_BASE_URL` (`https://api.fish.audio/v1`)。
 
 ```bash
 # 须已设置 FISH_API_KEY 和 FISH_VOICE_ID。

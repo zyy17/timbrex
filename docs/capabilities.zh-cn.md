@@ -2,27 +2,154 @@
 
 [English](capabilities.md) · [配置与官方参考](providers.zh-cn.md) · [教程](tutorial.zh-cn.md)
 
-此表描述 Timbrex 当前适配器，不代表厂商提供的全部能力。**参数**表示数值 API 字段或 SSML 控制；**指令**表示期望的表演，模型可能近似理解；**不支持**表示用于语音片段时会在本地报错。音色和模型限制仍然适用。这些映射有离线契约测试，尚无真实声音验证。
-
-| 控制 | OpenAI | ElevenLabs | MiniMax | Azure | Qwen | Gemini | Fish |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 文本与 cast 音色 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 |
-| `pause`、`silence`、`break`、非负 `gap` | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 | 本地静音 |
-| `speed`、`fast`、`slow` | 参数：0.25–4 倍 | 参数：0.7–1.2 倍；v4/v4 Turbo 不支持 | 参数：0.5–2 倍 | SSML：0.5–2 倍 | 参数：0.5–2 倍 | `fast`/`slow` 为指令；数值不支持 | 参数：0.5–2 倍 |
-| `pitch` | 不支持 | 不支持 | 整数 −12…+12 半音 | SSML −12…约 +7.01955 半音 | 参数 −12…+12 半音 | 不支持 | 不支持 |
-| `volume` | 不支持 | 不支持 | 参数 −60…+20 dB | SSML −60…+20 dB | 参数 −60…约 +6.02 dB | 不支持 | 参数 −60…+20 dB（本地范围） |
-| 标准情绪 | 指令 | Audio-tag 指令 | 七种映射情绪 | 映射到 style | 指令 | 指令 | 部分 S2 标记 |
-| 情绪强度，如 `happy 0.8` | 文本指令 | 文本指令 | 不支持 | 不支持 | 文本指令 | 文本指令 | 不支持 |
-| `whisper` / `shout` | 指令 | Audio tags | 仅 2.6 支持耳语，不支持喊叫 | 依赖音色的 style | 指令 | 指令 | S2 标记 |
-| `act`、`accent`、`dialect`、自定义 `emotion` | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 | 指令 | 不支持 |
-| `style`、`role` | 指令 | Audio-tag 指令 | 不支持 | SSML；role 需要 style | 指令 | 指令 | 不支持 |
-| `emph` | 指令 | Audio-tag 指令 | 不支持 | 依赖音色的强调 | 指令 | 指令 | S2 标记 |
-| `laugh`、`cry`、`sigh` 的 **span** | 指令 | Audio-tag 指令 | 不支持 | 不支持 | 指令 | 指令 | 不支持 |
-| 独立非语言事件 | 不支持 | 部分事件 | 2.8 下的部分事件 | 不支持 | 部分事件 | 部分事件 | 部分事件 |
-| `lang` span / front matter | 指令 | 语言代码 | Language boost | SSML locale | 语言提示 | 原生语言代码 | 不支持 |
-| `voice`、`as` span；`reset` | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 | 共享规划器 |
+下表按厂商列出 Timbrex 当前适配器的能力，不代表厂商提供的全部能力。**参数**表示数值 API 字段或 SSML 控制；**指令**表示期望的表演，模型可能近似理解；**不支持**表示用于语音片段时会在本地报错。音色和模型限制仍然适用。这些映射有离线契约测试，尚无真实声音验证。
 
 OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`。`eleven_v4` 和 `eleven_v4_turbo` 不支持语速设置，因此会拒绝显式语速控制；其他模型的适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见 [厂商接入](providers.zh-cn.md)。
+
+## 按厂商查询控制
+
+[OpenAI](#openai) · [ElevenLabs](#elevenlabs) · [MiniMax](#minimax) · [Azure](#azure) · [Qwen](#qwen) · [Gemini](#gemini) · [Fish](#fish)
+
+### OpenAI
+
+| 控制 | 支持情况 |
+| --- | --- |
+| 文本与 cast 音色 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 |
+| `speed`、`fast`、`slow` | 参数：0.25–4 倍 |
+| `pitch` | 不支持 |
+| `volume` | 不支持 |
+| 标准情绪 | 指令 |
+| 情绪强度，如 `happy 0.8` | 文本指令 |
+| `whisper` / `shout` | 指令 |
+| `act`、`accent`、`dialect`、自定义 `emotion` | 指令 |
+| `style`、`role` | 指令 |
+| `emph` | 指令 |
+| `laugh`、`cry`、`sigh` 的 **span** | 指令 |
+| 独立非语言事件 | 不支持 |
+| `lang` span / front matter | 指令 |
+| `voice`、`as` span；`reset` | 共享规划器 |
+
+### ElevenLabs
+
+| 控制 | 支持情况 |
+| --- | --- |
+| 文本与 cast 音色 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 |
+| `speed`、`fast`、`slow` | 参数：0.7–1.2 倍；v4/v4 Turbo 不支持 |
+| `pitch` | 不支持 |
+| `volume` | 不支持 |
+| 标准情绪 | Audio-tag 指令 |
+| 情绪强度，如 `happy 0.8` | 文本指令 |
+| `whisper` / `shout` | Audio tags |
+| `act`、`accent`、`dialect`、自定义 `emotion` | Audio-tag 指令 |
+| `style`、`role` | Audio-tag 指令 |
+| `emph` | Audio-tag 指令 |
+| `laugh`、`cry`、`sigh` 的 **span** | Audio-tag 指令 |
+| 独立非语言事件 | 部分事件 |
+| `lang` span / front matter | 语言代码 |
+| `voice`、`as` span；`reset` | 共享规划器 |
+
+### MiniMax
+
+| 控制 | 支持情况 |
+| --- | --- |
+| 文本与 cast 音色 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 |
+| `speed`、`fast`、`slow` | 参数：0.5–2 倍 |
+| `pitch` | 整数 −12…+12 半音 |
+| `volume` | 参数 −60…+20 dB |
+| 标准情绪 | 七种映射情绪 |
+| 情绪强度，如 `happy 0.8` | 不支持 |
+| `whisper` / `shout` | 仅 2.6 支持耳语，不支持喊叫 |
+| `act`、`accent`、`dialect`、自定义 `emotion` | 不支持 |
+| `style`、`role` | 不支持 |
+| `emph` | 不支持 |
+| `laugh`、`cry`、`sigh` 的 **span** | 不支持 |
+| 独立非语言事件 | 2.8 下的部分事件 |
+| `lang` span / front matter | Language boost |
+| `voice`、`as` span；`reset` | 共享规划器 |
+
+### Azure
+
+| 控制 | 支持情况 |
+| --- | --- |
+| 文本与 cast 音色 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 |
+| `speed`、`fast`、`slow` | SSML：0.5–2 倍 |
+| `pitch` | SSML −12…约 +7.01955 半音 |
+| `volume` | SSML −60…+20 dB |
+| 标准情绪 | 映射到 style |
+| 情绪强度，如 `happy 0.8` | 不支持 |
+| `whisper` / `shout` | 依赖音色的 style |
+| `act`、`accent`、`dialect`、自定义 `emotion` | 不支持 |
+| `style`、`role` | SSML；role 需要 style |
+| `emph` | 依赖音色的强调 |
+| `laugh`、`cry`、`sigh` 的 **span** | 不支持 |
+| 独立非语言事件 | 不支持 |
+| `lang` span / front matter | SSML locale |
+| `voice`、`as` span；`reset` | 共享规划器 |
+
+### Qwen
+
+| 控制 | 支持情况 |
+| --- | --- |
+| 文本与 cast 音色 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 |
+| `speed`、`fast`、`slow` | 参数：0.5–2 倍 |
+| `pitch` | 参数 −12…+12 半音 |
+| `volume` | 参数 −60…约 +6.02 dB |
+| 标准情绪 | 指令 |
+| 情绪强度，如 `happy 0.8` | 文本指令 |
+| `whisper` / `shout` | 指令 |
+| `act`、`accent`、`dialect`、自定义 `emotion` | 指令 |
+| `style`、`role` | 指令 |
+| `emph` | 指令 |
+| `laugh`、`cry`、`sigh` 的 **span** | 指令 |
+| 独立非语言事件 | 部分事件 |
+| `lang` span / front matter | 语言提示 |
+| `voice`、`as` span；`reset` | 共享规划器 |
+
+### Gemini
+
+| 控制 | 支持情况 |
+| --- | --- |
+| 文本与 cast 音色 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 |
+| `speed`、`fast`、`slow` | `fast`/`slow` 为指令；数值不支持 |
+| `pitch` | 不支持 |
+| `volume` | 不支持 |
+| 标准情绪 | 指令 |
+| 情绪强度，如 `happy 0.8` | 文本指令 |
+| `whisper` / `shout` | 指令 |
+| `act`、`accent`、`dialect`、自定义 `emotion` | 指令 |
+| `style`、`role` | 指令 |
+| `emph` | 指令 |
+| `laugh`、`cry`、`sigh` 的 **span** | 指令 |
+| 独立非语言事件 | 部分事件 |
+| `lang` span / front matter | 原生语言代码 |
+| `voice`、`as` span；`reset` | 共享规划器 |
+
+### Fish
+
+| 控制 | 支持情况 |
+| --- | --- |
+| 文本与 cast 音色 | 支持 |
+| `pause`、`silence`、`break`、非负 `gap` | 本地静音 |
+| `speed`、`fast`、`slow` | 参数：0.5–2 倍 |
+| `pitch` | 不支持 |
+| `volume` | 参数 −60…+20 dB（本地范围） |
+| 标准情绪 | 部分 S2 标记 |
+| 情绪强度，如 `happy 0.8` | 不支持 |
+| `whisper` / `shout` | S2 标记 |
+| `act`、`accent`、`dialect`、自定义 `emotion` | 不支持 |
+| `style`、`role` | 不支持 |
+| `emph` | S2 标记 |
+| `laugh`、`cry`、`sigh` 的 **span** | 不支持 |
+| 独立非语言事件 | 部分事件 |
+| `lang` span / front matter | 不支持 |
+| `voice`、`as` span；`reset` | 共享规划器 |
+
 
 ## 具体映射
 
