@@ -81,4 +81,6 @@ The [contributor guide](contributing.md) covers development setup, package bound
 
 ## License
 
-[MIT](license).
+Copyright (c) 2026 zyy17
+
+Licensed under the [Apache License 2.0](license). Earlier revisions were released under the [MIT license](https://github.com/zyy17/timbrex/blob/7c69ff14546744bf72ebc7f9155cb10e476d4338/license), which remains in the project history.

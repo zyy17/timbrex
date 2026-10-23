@@ -58,4 +58,4 @@ Update English and `.zh-cn.md` companions together, with the same examples and t
 
 ## Open a pull request
 
-Keep the change focused and use English [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) messages, such as `fix: preserve speaker after nested span`. Explain the problem, the resulting behavior, and which checks passed. Include a small before/after example when it helps, and call out compatibility changes or missing validation. Do not commit keys, `.env` files, or generated audio. Contributions are covered by the repository's [MIT license](license).
+Keep the change focused and use English [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) messages, such as `fix: preserve speaker after nested span`. Explain the problem, the resulting behavior, and which checks passed. Include a small before/after example when it helps, and call out compatibility changes or missing validation. Do not commit keys, `.env` files, or generated audio. Contributions are covered by the repository's [Apache License 2.0](license).
