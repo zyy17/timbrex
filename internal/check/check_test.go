@@ -327,6 +327,60 @@ func TestNonASCIIActingInfo(t *testing.T) {
 	}
 }
 
+func TestActingInfoSources(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		src    string
+		strict bool
+		codes  []string
+	}{
+		{name: "ascii", src: `[act "" "softly" gently]`},
+		{name: "quoted", src: `[act "café"]`, codes: []string{"I050"}},
+		{name: "note", src: `[act doucement café]`, codes: []string{"I050"}},
+		{name: "keyed quoted", src: `[act note="café"]`, codes: []string{"I050"}},
+		{name: "keyed word", src: `[act note=café]`},
+		{name: "multiple sources", src: `[act "" "café" "轻轻地" doucement]`, codes: []string{"I050"}},
+		{name: "spoken content", src: `[act "softly"|你好]`},
+		{name: "free", src: `[轻轻地]`, codes: []string{"I050"}},
+		{name: "strict free", src: `[轻轻地]`, strict: true, codes: []string{"V041"}},
+		{name: "strict explicit", src: `[act "轻轻地"]`, strict: true, codes: []string{"I050"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			script, err := parse.Parse("test.tbx", tt.src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var codes []string
+			for _, diag := range Apply(script, tt.strict) {
+				codes = append(codes, diag.Code)
+				if diag.Code == "I050" && diag.Severity != "info" {
+					t.Fatalf("diagnostic = %+v", diag)
+				}
+			}
+			if !reflect.DeepEqual(codes, tt.codes) {
+				t.Fatalf("codes = %v, want %v", codes, tt.codes)
+			}
+		})
+	}
+}
+
+func TestActingInfoAllocationGrowth(t *testing.T) {
+	const count = 2000
+	script, err := parse.Parse("test.tbx", "[act "+strings.Repeat(`"a" `, count)+"]")
+	if err != nil {
+		t.Fatal(err)
+	}
+	allocs := testing.AllocsPerRun(1, func() {
+		if diags := Apply(script, false); len(diags) != 0 {
+			t.Fatal(diags)
+		}
+	})
+	// Detecting non-ASCII acting must not build a growing copy for every argument.
+	if allocs > 100 {
+		t.Fatalf("checking %d quoted arguments used %.0f allocations", count, allocs)
+	}
+}
+
 func TestCanonicalNameAndLaughSpan(t *testing.T) {
 	script, err := parse.Parse("scene.tbx", "She [PAUSE 500ms] [laugh nervously|while laughing] [pinyin]\n")
 	if err != nil {

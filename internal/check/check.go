@@ -182,7 +182,7 @@ func turnTag(n *ast.Node) bool {
 func (c *checker) one(n *ast.Node, atStart, scene bool) {
 	closed := c.resolve(n)
 	// Accepted acting only. A strict-mode V041 already explains the tag.
-	if !closed && n.Name == "act" && (!n.Free || !c.strict) && hasNonASCII(actingText(n)) {
+	if !closed && n.Name == "act" && (!n.Free || !c.strict) && hasNonASCIIActing(n) {
 		c.diag(n, "info", "I050", "non-ASCII free-form acting")
 	}
 	if n.Span {
@@ -288,21 +288,19 @@ func (c *checker) diag(n *ast.Node, severity, code, msg string) {
 	})
 }
 
-func actingText(n *ast.Node) string {
+func hasNonASCIIActing(n *ast.Node) bool {
+	if hasNonASCII(n.Note) {
+		return true
+	}
 	if n.Free {
-		return n.Note
+		return false
 	}
-	text := n.Note
 	for _, arg := range n.Args {
-		if arg.Kind != "quoted" {
-			continue
+		if arg.Kind == "quoted" && hasNonASCII(arg.Raw) {
+			return true
 		}
-		if text != "" {
-			text += " "
-		}
-		text += arg.Raw
 	}
-	return text
+	return false
 }
 
 func hasNonASCII(s string) bool {

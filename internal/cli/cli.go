@@ -47,6 +47,9 @@ func FormatError(err error) string {
 }
 
 func run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	cmd := newCommand()
 	cmd.SetArgs(args)
 	cmd.SetIn(in)

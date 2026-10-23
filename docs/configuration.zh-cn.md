@@ -8,6 +8,8 @@
 
 默认情况下，`check`、`synth` 和 `config` 读取**当前工作目录**下存在的 `timbrex.yaml`。不会搜索脚本所在目录、父目录或主目录。`--config` 指定一个文件。显式路径不存在时会报错。
 
+脚本和配置输入必须是普通文件；支持指向普通文件的符号链接。命名管道（FIFO）、设备和目录均会被拒绝。只接受文件输入并不保证每个文件系统操作都可以被中断。
+
 ```bash
 ./timbrex --config examples/timbrex.yaml config
 ./timbrex --config examples/timbrex.yaml check examples/expressive.tbx

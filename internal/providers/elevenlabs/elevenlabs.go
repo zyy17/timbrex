@@ -120,6 +120,12 @@ func build(seg providers.Segment, model string) (request, error) {
 			return r, fmt.Errorf("eleven_multilingual_v2 does not support a language hint; omit lang")
 		}
 		r.Language = strings.ToLower(strings.Split(seg.Lang, "-")[0])
+		if r.Language == "" {
+			return r, fmt.Errorf("language hint needs a nonempty primary language subtag")
+		}
+		if (model == "eleven_flash_v2" || model == "eleven_turbo_v2") && r.Language != "en" {
+			return r, fmt.Errorf("%s supports only English language hints", model)
+		}
 	}
 	return r, nil
 }
