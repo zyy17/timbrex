@@ -80,6 +80,7 @@ Provider request contracts are tested offline. Do not claim live compatibility o
 ## Language
 
 - Docs may be bilingual. English is the primary text (`readme.md`, `docs/spec.md`). A Chinese companion uses the `.zh-cn.md` suffix and must say the same thing.
+- In Chinese prose, separate Chinese text from adjacent Latin letters or numbers with a space, including across Markdown links, emphasis, and inline code. Check the rendered text; preserve code, identifiers, file paths, and link targets.
 - Use lowercase documentation filenames. Keep `AGENTS.md` as named for tool discovery.
 - Identifiers, package names, comments, CLI help, and CLI errors are English.
 - Commit messages are English Conventional Commits.
