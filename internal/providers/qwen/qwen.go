@@ -46,7 +46,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	}
 	headers := map[string]string{"Authorization": "Bearer " + opt.APIKey}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		data, err := providers.PostJSON(ctx, p.client, opt.Endpoint, headers, requests[i])
+		data, err := providers.PostJSON(ctx, p.client, opt.Endpoint, headers, requests[i], providers.ResponseBody)
 		if err != nil {
 			return nil, err
 		}
@@ -129,5 +129,5 @@ func (p provider) download(ctx context.Context, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("response has no valid audio URL")
 	}
 	// The audio URL is signed; it must never receive the DashScope API key.
-	return providers.Request(ctx, p.client, http.MethodGet, u.String(), "", map[string]string{"Accept": "audio/pcm, application/octet-stream"}, nil)
+	return providers.Request(ctx, p.client, http.MethodGet, u.String(), "", map[string]string{"Accept": "audio/pcm, application/octet-stream"}, nil, providers.ResponsePCM)
 }

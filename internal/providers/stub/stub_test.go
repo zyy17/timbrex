@@ -2,6 +2,8 @@ package stub
 
 import (
 	"context"
+	"encoding/binary"
+	"errors"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -32,8 +34,21 @@ func TestWritesWAV(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(b) < 44 || string(b[:4]) != "RIFF" || string(b[8:12]) != "WAVE" {
-		t.Fatalf("not a wav: %d bytes", len(b))
+	if len(b) != 44+2000*2 || string(b[:4]) != "RIFF" || string(b[8:12]) != "WAVE" ||
+		binary.LittleEndian.Uint32(b[24:]) != 8000 || binary.LittleEndian.Uint32(b[28:]) != 16000 ||
+		binary.LittleEndian.Uint16(b[22:]) != 1 || binary.LittleEndian.Uint16(b[34:]) != 16 ||
+		binary.LittleEndian.Uint32(b[40:]) != 4000 {
+		t.Fatalf("wrong 8 kHz mono S16LE tone WAV: %d bytes", len(b))
+	}
+	if binary.LittleEndian.Uint16(b[44:]) != 0 || binary.LittleEndian.Uint16(b[46:]) != 1354 {
+		t.Fatal("stub tone samples changed")
+	}
+	info, err := os.Stat(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm()&0o177 != 0 {
+		t.Fatalf("stub output permissions are not private: %04o", info.Mode().Perm())
 	}
 }
 
@@ -100,5 +115,26 @@ func TestOverwriteKeepsPreviousWavOnFailure(t *testing.T) {
 	}
 	if len(matches) != 0 {
 		t.Fatalf("partial files = %v", matches)
+	}
+}
+
+func TestCanceledSynthesisKeepsExistingOutput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "out.wav")
+	if err := os.WriteFile(path, []byte("KEEP"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	result, err := (provider{}).Synthesize(ctx, &ir.Document{}, providers.Options{Out: path})
+	if !errors.Is(err, context.Canceled) || result != (providers.Result{}) {
+		t.Fatalf("result=%+v error=%v", result, err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != "KEEP" {
+		t.Fatalf("output=%q error=%v", data, err)
+	}
+	files, err := os.ReadDir(filepath.Dir(path))
+	if err != nil || len(files) != 1 {
+		t.Fatalf("temporary files remain: %v, %v", files, err)
 	}
 }

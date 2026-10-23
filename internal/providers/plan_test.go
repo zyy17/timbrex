@@ -82,17 +82,34 @@ func TestResetFeatureRestoresSceneValue(t *testing.T) {
 }
 
 func TestPlanRejectsBadPausesAndFences(t *testing.T) {
-	pauses := []string{"Hi [pause -1s]", "Hi [pause 61s]", "Hi [pause 1 2]", "Hi [pause NaN]", "Hi [pause 1m]", "Hi [pause 1s250ms]", `Hi [pause "1s"]`, "Hi [pause 0]"}
-	for _, src := range pauses {
-		script, err := parse.Parse("test.tbx", src)
+	for _, tt := range []struct {
+		source string
+		args   []ir.Arg
+	}{
+		{"Hi [pause -1s]", []ir.Arg{{Raw: "-1s", Kind: "duration"}}},
+		{"Hi [pause 61s]", []ir.Arg{{Raw: "61s", Kind: "duration"}}},
+		{"Hi [pause 1 2]", []ir.Arg{{Raw: "1", Kind: "number"}, {Raw: "2", Kind: "number"}}},
+		{"Hi [pause NaN]", []ir.Arg{{Raw: "NaN", Kind: "word"}}},
+		{"Hi [pause 1m]", []ir.Arg{{Raw: "1m", Kind: "word"}}},
+		{"Hi [pause 1s250ms]", []ir.Arg{{Raw: "1s250ms", Kind: "word"}}},
+		{`Hi [pause "1s"]`, []ir.Arg{{Raw: "1s", Kind: "quoted"}}},
+		{"Hi [pause 0]", []ir.Arg{{Raw: "0", Kind: "number"}}},
+	} {
+		script, err := parse.Parse("test.tbx", tt.source)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if err := check.Failed(check.Apply(script, false)); err == nil {
-			t.Fatalf("check accepted %q", src)
+			t.Fatalf("check accepted %q", tt.source)
 		}
-		if _, err := providers.Plan(lower.Script(script), "openai", "coral"); err == nil {
-			t.Fatalf("plan accepted %q", src)
+		// Invalid checked ASTs never enter lowering. Exercise the planner's
+		// defensive boundary with malformed IR supplied directly instead.
+		doc := &ir.Document{Utterances: []ir.Utterance{{Nodes: []ir.Node{
+			{Kind: ir.Text, Text: "Hi "},
+			{Kind: ir.Event, Name: "pause", Args: tt.args},
+		}}}}
+		if _, err := providers.Plan(doc, "openai", "coral"); err == nil {
+			t.Fatalf("plan accepted malformed pause IR for %q", tt.source)
 		}
 	}
 	for _, src := range []string{"```ssml azure\n<speak/>\n```", "// empty"} {
