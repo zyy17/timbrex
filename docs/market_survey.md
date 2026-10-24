@@ -2,7 +2,7 @@
 
 [简体中文](market_survey.zh-cn.md) · [Tutorial](tutorial.md)
 
-Review date: **2026-10-22**. This document records API design differences relevant to Timbrex. It is not a quality benchmark, price comparison, or legal assessment. No live listening study was performed. Model availability and service terms must be checked with the vendor when deploying.
+Review date: **2026-10-22**; Fish model/acting coverage refreshed **2026-10-24**. This document records API design differences relevant to Timbrex. It is not a quality benchmark, price comparison, or legal assessment. No live listening study was performed. Model availability and service terms must be checked with the vendor when deploying.
 
 | Service | Documented control surface | Consequence for Timbrex |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ Review date: **2026-10-22**. This document records API design differences releva
 | [Azure Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice) | SSML voice, prosody, style, and role with voice-dependent support | Escape XML and distinguish supported syntax from actual voice capabilities |
 | [Qwen-Audio-TTS](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api) | Workspace endpoint, instruction and numeric controls, downloadable audio | Require the correct workspace endpoint and separate authenticated synthesis from signed downloads |
 | [Gemini TTS](https://ai.google.dev/gemini-api/docs/speech-generation) | Structured `speech_metadata.style`, inline vocal tags, WAV or raw PCM | Keep turn-level style out of the transcript; unwrap WAV before the shared PCM renderer |
-| [Fish Audio](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech) | Bearer `POST /v1/tts`, `model` header, `reference_id`, S2 bracket cues, WAV/PCM/MP3/Opus | Require an explicit voice ID; map a documented cue subset; unwrap WAV before the shared PCM renderer |
+| [Fish Audio](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech) | Bearer `POST /v1/tts`, `model` header, `reference_id`, S2 bracket cues, WAV/PCM/MP3/Opus | Require an explicit voice ID; map selected cues and free-form acting; unwrap WAV before the shared PCM renderer |
 
 Timbrex requests compatible PCM, either raw or inside a WAV container, then concatenates the samples into one WAV. It extracts PCM from Gemini and Fish WAV responses without resampling. The current renderer does not combine compressed audio or depend on a transcoder.
 

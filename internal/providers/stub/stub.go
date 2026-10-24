@@ -30,7 +30,7 @@ func (provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
+	if err := opt.Validate("stub"); err != nil {
 		return providers.Result{}, err
 	}
 	if opt.Concurrency > 1 {

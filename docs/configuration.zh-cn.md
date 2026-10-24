@@ -70,6 +70,7 @@ providers:
 | `providers.<id>.voice` | 未配置 cast 映射的角色使用的兜底音色 |
 | `providers.<id>.endpoint` | OpenAI、ElevenLabs、MiniMax、Gemini、Fish 的 API 基础 URL；Azure、Qwen 的完整请求 URL |
 | `providers.azure.region` | 未设置端点时使用的 Azure 区域 |
+| `providers.elevenlabs.synthesis` | 下文列出的强类型单次请求选项，不会修改已保存的音色设置 |
 
 厂商 ID 为 `stub`、`openai`、`elevenlabs`、`minimax`、`azure`、`qwen`、`gemini`、`fish`。默认值和支持的环境变量名见 [厂商接入](providers.zh-cn.md)。[完整示例](../examples/timbrex.yaml) 包含各语音服务。stub 忽略语音设置。
 
@@ -90,6 +91,25 @@ providers:
 Cast 音色映射仍然优先于兜底音色，包括 `--voice`。`voice` 或 `as` span 在自身作用域内覆盖当前角色的音色。切换厂商不会转换模型和音色 ID。端点和凭证不能来自脚本。
 
 `--strict-tags=false` 显式关闭严格模式，`--no-strict-tags=false` 则开启。两个参数名互斥，从而区分“未传入”和“显式 false”。
+
+## ElevenLabs 合成选项
+
+选中的 YAML 文件可以提供以下 [Create Speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert) 选项。它们没有 CLI、环境变量或脚本 front matter 覆盖项。其他厂商不接受 `synthesis` 配置段；它不是任意 API 参数透传。
+
+```yaml
+providers:
+  elevenlabs:
+    synthesis:
+      seed: 42
+      apply_text_normalization: auto
+      apply_language_text_normalization: false
+```
+
+- `seed`：`0` 到 `4294967295` 的整数。串行和并发合成都会向每个语音片段发送同一个 seed。服务仅尽力提供确定性，不保证结果一致；修改分段、文本、模型或音色都会改变请求。
+- `apply_text_normalization`：只能是 `auto`、`on` 或 `off`，控制服务是否对数字等文本进行规范化。
+- `apply_language_text_normalization`：布尔值。ElevenLabs 目前仅说明支持日语，并提醒开启后可能显著增加延迟。Timbrex 不要求提供语言提示，也不会推断朗读语言；现有的模型特定 `lang` 限制仍然适用。
+
+未提供的字段不会加入请求，因此保留原有行为。显式 `0` 和 `false` 会发送，空映射不会提供覆盖值。Null、未知键、错误标量类型和超范围 seed 会在合成前被本地拒绝。这些设置不会修改已保存的音色。参见[配置示例](../examples/elevenlabs-synthesis.yaml)；使用它执行 `synth` 前，请提供自己的音色 ID 和 `ELEVENLABS_API_KEY`。
 
 ## 合成并发数
 

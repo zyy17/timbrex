@@ -70,6 +70,7 @@ The file contains one YAML mapping. Keys are case-sensitive. Unknown keys, unkno
 | `providers.<id>.voice` | Fallback voice for speakers without cast mappings |
 | `providers.<id>.endpoint` | API base URL for OpenAI, ElevenLabs, MiniMax, Gemini, and Fish; full request URL for Azure and Qwen |
 | `providers.azure.region` | Azure region used when no endpoint is set |
+| `providers.elevenlabs.synthesis` | Typed per-request options described below; not stored voice settings |
 
 Provider IDs are `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, `qwen`, `gemini`, and `fish`. Defaults and the supported environment variable names are listed in [provider setup](providers.md). The [complete example](../examples/timbrex.yaml) includes the speech services. The stub ignores speech settings.
 
@@ -90,6 +91,25 @@ For each setting, the highest supplied value wins:
 A cast voice mapping still takes priority over the fallback voice, including `--voice`. A `voice` or `as` span overrides the current speaker within its scope. Model and voice IDs are not translated when switching providers. Endpoint and credential settings never come from scripts.
 
 `--strict-tags=false` explicitly disables strict mode; `--no-strict-tags=false` enables it. The two flag names are mutually exclusive. This preserves the distinction between an omitted boolean and an explicit `false`.
+
+## ElevenLabs synthesis options
+
+The selected YAML file can supply these [Create Speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert) options. They have no CLI, environment, or script-front-matter overrides. Other providers reject a `synthesis` section; this is not arbitrary API passthrough.
+
+```yaml
+providers:
+  elevenlabs:
+    synthesis:
+      seed: 42
+      apply_text_normalization: auto
+      apply_language_text_normalization: false
+```
+
+- `seed`: integer from `0` through `4294967295`. The same seed is sent to every speech segment, in serial or concurrent synthesis. Determinism is best effort, not guaranteed; changing segmentation, text, model, or voice changes the request.
+- `apply_text_normalization`: exactly `auto`, `on`, or `off`, controlling whether the service normalizes text such as numbers.
+- `apply_language_text_normalization`: boolean. ElevenLabs currently documents Japanese support only and warns that enabling it can substantially increase latency. Timbrex does not require a language hint or infer the spoken language; the existing model-specific `lang` restrictions still apply.
+
+Omitted fields remain absent from requests, preserving existing behavior. Explicit `0` and `false` are sent, and an empty mapping supplies no overrides. Null, unknown keys, incorrect scalar types, and out-of-range seeds fail locally before synthesis. These settings do not modify saved voices. See [the configuration example](../examples/elevenlabs-synthesis.yaml); supply your voice ID and `ELEVENLABS_API_KEY` before using it with `synth`.
 
 ## Synthesis concurrency
 

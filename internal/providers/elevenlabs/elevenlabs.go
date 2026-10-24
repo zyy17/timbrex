@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/zyy17/timbrex/internal/ir"
+	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
 )
 
@@ -22,10 +23,13 @@ func (provider) ID() string { return "elevenlabs" }
 
 // https://elevenlabs.io/docs/api-reference/text-to-speech/convert
 type request struct {
-	Text     string    `json:"text"`
-	Model    string    `json:"model_id"`
-	Language string    `json:"language_code,omitempty"`
-	Settings *settings `json:"voice_settings,omitempty"`
+	Text                           string                                `json:"text"`
+	Model                          string                                `json:"model_id"`
+	Language                       string                                `json:"language_code,omitempty"`
+	Settings                       *settings                             `json:"voice_settings,omitempty"`
+	Seed                           *uint32                               `json:"seed,omitempty"`
+	ApplyTextNormalization         *provideropts.ElevenTextNormalization `json:"apply_text_normalization,omitempty"`
+	ApplyLanguageTextNormalization *bool                                 `json:"apply_language_text_normalization,omitempty"`
 }
 
 type settings struct {
@@ -46,14 +50,18 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
+	if err := opt.Validate(p.ID()); err != nil {
+		return providers.Result{}, err
+	}
+	synthesis, err := synthesisOptions(opt.Synthesis)
+	if err != nil {
 		return providers.Result{}, err
 	}
 	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) {
 		if seg.Voice == "" {
 			return request{}, fmt.Errorf("set --voice, providers.elevenlabs.voice, or cast voices.elevenlabs")
 		}
-		return build(seg, opt.Model)
+		return buildWithSynthesis(seg, opt.Model, synthesis)
 	})
 	if err != nil {
 		return providers.Result{}, err
