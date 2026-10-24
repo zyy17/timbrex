@@ -142,7 +142,8 @@ OpenAI instructions require a model that supports `instructions`; `tts-1` and `t
 | Standard emotions | Selected S2 cues |
 | Emotion intensity, e.g. `happy 0.8` | Unsupported |
 | `whisper` / `shout` | S2 cues |
-| `act`, `accent`, `dialect`, custom `emotion` | Unsupported |
+| `act` | Natural-language S2 cue |
+| `accent`, `dialect`, custom `emotion` | Unsupported |
 | `style`, `role` | Unsupported |
 | `emph` | S2 cue |
 | `laugh`, `cry`, `sigh` **spans** | Unsupported |
@@ -207,8 +208,8 @@ Standalone events map `laugh→<laugh>`, `sigh→<sigh>`, `cough→<cough>`, `br
 
 ## Fish Audio
 
-The `s2.1-pro` adapter supports text, explicit voice reference IDs, shared voice/as/reset scopes and local pauses. Numeric speed is a **parameter** (0.5–2×); `fast`/`slow` use 1.2×/0.8×. Volume is a **dB parameter** within the adapter's −60…+20 bound. Pitch, explicit language/accents, acting/style/role instructions, numeric emotion intensity and laugh/cry/sigh spans are **unsupported**.
+The Fish adapter supports `s2.1-pro`, `s2.1-pro-free`, and `s2-pro` with text, explicit voice reference IDs, shared voice/as/reset scopes and local pauses. Numeric speed is a **parameter** (0.5–2×); `fast`/`slow` use 1.2×/0.8×. Volume is a **dB parameter** within the adapter's −60…+20 bound. `act` is a **natural-language cue**, supporting quoted directions or bare notes and scene/turn/span/reset scopes. Pitch, explicit language/accents, style/role instructions, numeric emotion intensity and laugh/cry/sigh spans are **unsupported**.
 
-Native S2 cues map `happy→[happy]`, `sad→[sad]`, `angry→[angry]`, `fear→[scared]`, `surprise→[surprised]`, `disgust→[disgusted]`, `calm→[calm]`, `excited→[excited]`, `whisper→[whispering]`, `shout→[shouting]`, and `emph→[emphasis]`. Other emotions are unsupported. Events map `laugh→[laughing]`, `chuckle→[chuckling]`, `sigh→[sighing]`, `groan→[groaning]`, `pant→[panting]`, `gasp→[gasping]`, `yawn→[yawning]`, `snore→[snoring]`, and `clear-throat→[clear throat]`. Cue/event arguments and notes are unsupported. These are requested performances, not guaranteed isolated sounds or measured acoustic values.
+Native S2 cues map `happy→[happy]`, `sad→[sad]`, `angry→[angry]`, `fear→[scared]`, `surprise→[surprised]`, `disgust→[disgusted]`, `calm→[calm]`, `excited→[excited]`, `whisper→[whispering]`, `shout→[shouting]`, and `emph→[emphasis]`. Other dedicated emotion tags are unsupported; use `act` for descriptive directions. Events map `laugh→[laughing]`, `chuckle→[chuckling]`, `sigh→[sighing]`, `groan→[groaning]`, `pant→[panting]`, `gasp→[gasping]`, `yawn→[yawning]`, `snore→[snoring]`, and `clear-throat→[clear throat]`. Arguments and notes on these fixed cues/events are unsupported. These are requested performances, not guaranteed isolated sounds or measured acoustic values.
 
-Literal ASCII `[`/`]` and the native speaker-token prefix `<|` are rejected to prevent accidental controls. Ordinary parentheses remain text; the legacy S1 parenthesized cue syntax is not generated. The reserved unsupported features above also apply.
+Literal ASCII `[`/`]` and the native token prefix `<|` are rejected in speech and acting directions to prevent accidental controls. Acting directions must be nonempty and cannot mix positional arguments with notes or use named arguments. Ordinary parentheses remain text; the legacy S1 parenthesized cue syntax is not generated. The reserved unsupported features above also apply.
