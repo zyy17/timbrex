@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/zyy17/timbrex/internal/ir"
 	"github.com/zyy17/timbrex/internal/providers"
@@ -20,7 +21,9 @@ type provider struct{ client *http.Client }
 
 func (provider) ID() string { return "azure" }
 
-var voiceLocale = regexp.MustCompile(`^([a-z]{2,3}-(?:[A-Z]{2}|[0-9]{3}))-`)
+// Infer only Azure's language[-Script]-region prefix, not arbitrary BCP-47
+// subtags. The remaining name and voice availability are not validated here.
+var voiceLocale = regexp.MustCompile(`^([A-Za-z]{2,3})(?:-([A-Za-z]{4}))?-([A-Za-z]{2}|[0-9]{3})-`)
 
 var styles = map[string]string{
 	"happy": "cheerful", "sad": "sad", "angry": "angry", "fear": "fearful",
@@ -32,7 +35,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
+	if err := opt.Validate(p.ID()); err != nil {
 		return providers.Result{}, err
 	}
 	if opt.Model != "" {
@@ -78,23 +81,25 @@ func build(seg providers.Segment) (string, error) {
 	}
 	text = escape(text)
 	style, role := "", ""
+	rate, pitch, volume := "", "", ""
+	emphasis := false
 	for _, n := range seg.Controls {
 		switch n.Name {
 		case "speed", "fast", "slow":
 			var speed float64
 			speed, err = providers.Speed(n, 0.5, 2)
-			text = fmt.Sprintf(`<prosody rate="%g">%s</prosody>`, speed, text)
+			rate = fmt.Sprintf(` rate="%g"`, speed)
 		case "pitch":
-			var pitch float64
-			pitch, err = providers.Number(n, "st", -12, 12*math.Log2(1.5))
-			text = fmt.Sprintf(`<prosody pitch="%+gst">%s</prosody>`, pitch, text)
+			var semitones float64
+			semitones, err = providers.Number(n, "st", -12, 12*math.Log2(1.5))
+			pitch = fmt.Sprintf(` pitch="%+gst"`, semitones)
 		case "volume":
 			var db float64
 			db, err = providers.Number(n, "dB", -60, 20)
-			text = fmt.Sprintf(`<prosody volume="%+.4f%%">%s</prosody>`, (math.Pow(10, db/20)-1)*100, text)
+			volume = fmt.Sprintf(` volume="%+.4f%%"`, (math.Pow(10, db/20)-1)*100)
 		case "emph":
 			err = providers.NoArgs(n)
-			text = `<emphasis level="strong">` + text + `</emphasis>`
+			emphasis = true
 		case "style":
 			if style != "" {
 				return "", fmt.Errorf("azure accepts one style per segment; use separate spans")
@@ -120,6 +125,15 @@ func build(seg providers.Segment) (string, error) {
 	if role != "" && style == "" {
 		return "", fmt.Errorf("[role] requires a style supported by the selected voice")
 	}
+	// Azure permits prosody inside emphasis, but not emphasis inside prosody.
+	// Compose the planner's resolved controls independently of their source order.
+	// https://learn.microsoft.com/azure/ai-services/speech-service/speech-synthesis-markup-structure
+	if attrs := rate + pitch + volume; attrs != "" {
+		text = `<prosody` + attrs + `>` + text + `</prosody>`
+	}
+	if emphasis {
+		text = `<emphasis level="strong">` + text + `</emphasis>`
+	}
 	if style != "" {
 		attrs := ` style="` + escape(style) + `"`
 		if role != "" {
@@ -129,11 +143,15 @@ func build(seg providers.Segment) (string, error) {
 	}
 	lang := seg.Lang
 	if match := voiceLocale.FindStringSubmatch(seg.Voice); match != nil {
-		lang = match[1]
+		lang = strings.ToLower(match[1])
+		if script := match[2]; script != "" {
+			lang += "-" + strings.ToUpper(script[:1]) + strings.ToLower(script[1:])
+		}
+		lang += "-" + strings.ToUpper(match[3])
 	} else if lang == "" {
 		return "", fmt.Errorf("set lang for voice %q", seg.Voice)
 	}
-	if seg.Lang != "" && seg.Lang != lang {
+	if seg.Lang != "" && !strings.EqualFold(seg.Lang, lang) {
 		text = `<lang xml:lang="` + escape(seg.Lang) + `">` + text + `</lang>`
 	}
 	ssml := `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="` + escape(lang) + `"><voice name="` + escape(seg.Voice) + `">` + text + `</voice></speak>`

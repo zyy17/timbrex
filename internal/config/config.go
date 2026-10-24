@@ -20,6 +20,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/zyy17/timbrex/internal/inputfile"
+	"github.com/zyy17/timbrex/internal/provideropts"
 )
 
 type Config struct {
@@ -29,11 +30,12 @@ type Config struct {
 }
 
 type Provider struct {
-	APIKey   string `koanf:"api_key" yaml:"api_key,omitempty"`
-	Model    string `koanf:"model" yaml:"model,omitempty"`
-	Voice    string `koanf:"voice" yaml:"voice,omitempty"`
-	Endpoint string `koanf:"endpoint" yaml:"endpoint,omitempty"`
-	Region   string `koanf:"region" yaml:"region,omitempty"`
+	Synthesis provideropts.Value `koanf:"-" yaml:"synthesis,omitempty"`
+	APIKey    string             `koanf:"api_key" yaml:"api_key,omitempty"`
+	Model     string             `koanf:"model" yaml:"model,omitempty"`
+	Voice     string             `koanf:"voice" yaml:"voice,omitempty"`
+	Endpoint  string             `koanf:"endpoint" yaml:"endpoint,omitempty"`
+	Region    string             `koanf:"region" yaml:"region,omitempty"`
 }
 
 // Load applies defaults, one YAML file, then the documented environment keys.
@@ -107,8 +109,12 @@ func loadFile(k *koanf.Koanf, path string) error {
 }
 
 func decode(k *koanf.Koanf) (Config, error) {
+	common, synthesis, err := splitSynthesis(k)
+	if err != nil {
+		return Config{}, err
+	}
 	var c Config
-	err := k.UnmarshalWithConf("", &c, koanf.UnmarshalConf{
+	err = common.UnmarshalWithConf("", &c, koanf.UnmarshalConf{
 		DecoderConfig: &mapstructure.DecoderConfig{
 			ErrorUnused: true,
 			MatchName:   func(key, field string) bool { return key == field },
@@ -130,6 +136,8 @@ func decode(k *koanf.Koanf) (Config, error) {
 			return Config{}, fmt.Errorf("unknown provider configuration %q", id)
 		}
 		p := c.Providers[id]
+		p.Synthesis = synthesis[id]
+		c.Providers[id] = p
 		if p.Endpoint != "" {
 			if err := validateEndpoint(p.Endpoint); err != nil {
 				return Config{}, fmt.Errorf("providers.%s.endpoint: %w", id, err)

@@ -1,4 +1,4 @@
-// Package fish implements single-speaker Fish Audio S2.1-Pro requests.
+// Package fish implements single-speaker Fish Audio S2 requests.
 package fish
 
 import (
@@ -20,6 +20,7 @@ func (provider) ID() string { return "fish" }
 
 // https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech
 // https://docs.fish.audio/developer-guide/core-features/emotions
+// https://docs.fish.audio/developer-guide/models-pricing/models-overview
 type request struct {
 	Text        string  `json:"text"`
 	ReferenceID string  `json:"reference_id"`
@@ -48,7 +49,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
+	if err := opt.Validate(p.ID()); err != nil {
 		return providers.Result{}, err
 	}
 	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) { return build(seg, opt.Model) })
@@ -69,7 +70,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 func build(seg providers.Segment, model string) (request, error) {
 	r := request{ReferenceID: seg.Voice, Format: "wav", SampleRate: providers.SampleRate, Normalize: false, Prosody: prosody{Speed: 1, NormalizeLoudness: true}}
 	// Unknown model headers silently fall back at the service; never allow that.
-	if model != "s2.1-pro" {
+	switch model {
+	case "s2.1-pro", "s2.1-pro-free", "s2-pro":
+	default:
 		return r, fmt.Errorf("unsupported Fish TTS model")
 	}
 	if strings.TrimSpace(seg.Voice) == "" {
@@ -92,6 +95,18 @@ func build(seg providers.Segment, model string) (request, error) {
 			r.Prosody.Speed, err = providers.Speed(n, 0.5, 2)
 		case "volume":
 			r.Prosody.Volume, err = providers.Number(n, "dB", -60, 20)
+		case "act":
+			direction, err := providers.Direction(n)
+			if err != nil {
+				return r, err
+			}
+			if strings.TrimSpace(direction) == "" {
+				return r, fmt.Errorf("[act] needs nonempty acting text")
+			}
+			if strings.ContainsAny(direction, "[]") || strings.Contains(direction, "<|") {
+				return r, fmt.Errorf("acting text cannot contain brackets or native token prefixes for Fish")
+			}
+			prefix.WriteString("[" + direction + "] ")
 		default:
 			cue, ok := cues[n.Name]
 			if !ok {

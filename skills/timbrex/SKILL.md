@@ -63,4 +63,4 @@ When blocked, preserve the usable script and identify the smallest missing input
 
 ## Compatibility
 
-Targets DSL `timbrex: 1` and implementation [47d478d](https://github.com/zyy17/timbrex/tree/47d478de8b5ba0ec4134d9745bde0151a73155c5). The CLI reports `0.1.0`; that number alone does not establish matching behavior. The language and provider contracts evolve. Prefer installed-version help and matching documentation when they differ, and report uncertainty.
+Targets DSL `timbrex: 1` and the implementation from the same repository revision as this skill. The CLI reports `0.1.0`; that number alone does not establish matching behavior. Prefer installed-version help and documentation from the matching checkout or revision, and report uncertainty.

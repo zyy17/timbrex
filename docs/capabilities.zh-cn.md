@@ -63,11 +63,11 @@ OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒�
 | 情绪强度，如 `happy 0.8` | 不支持 |
 | `whisper` / `shout` | 仅 2.6 支持耳语，不支持喊叫 |
 | `act`、`accent`、`dialect`、自定义 `emotion` | 不支持 |
-| `style`、`role` | 不支持 |
+| `style`、`role` | 仅 2.6 支持 `style fluent`；无 role |
 | `emph` | 不支持 |
 | `laugh`、`cry`、`sigh` 的 **span** | 不支持 |
 | 独立非语言事件 | 2.8 下的部分事件 |
-| `lang` span / front matter | Language boost |
+| `lang` span / front matter | 40 种语言/方言 boost 和显式 auto；受模型限制 |
 | `voice`、`as` span；`reset` | 共享规划器 |
 
 ### Azure
@@ -142,7 +142,8 @@ OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒�
 | 标准情绪 | 部分 S2 标记 |
 | 情绪强度，如 `happy 0.8` | 不支持 |
 | `whisper` / `shout` | S2 标记 |
-| `act`、`accent`、`dialect`、自定义 `emotion` | 不支持 |
+| `act` | 自然语言 S2 提示 |
+| `accent`、`dialect`、自定义 `emotion` | 不支持 |
 | `style`、`role` | 不支持 |
 | `emph` | S2 标记 |
 | `laugh`、`cry`、`sigh` 的 **span** | 不支持 |
@@ -153,11 +154,26 @@ OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒�
 
 ## 具体映射
 
-MiniMax 情绪映射为：`happy→happy`、`sad→sad`、`angry→angry`、`fear→fearful`、`disgust→disgusted`、`surprise→surprised`、`calm→calm`。`whisper` 与情绪占用相同 API 字段，不能同时使用。`speech-2.8-hd` 和 `speech-2.8-turbo` 支持的事件为：
+MiniMax 情绪映射为：`happy→happy`、`sad→sad`、`angry→angry`、`fear→fearful`、`disgust→disgusted`、`surprise→surprised`、`calm→calm`。`whisper` 和 `[style fluent]` 与情绪占用相同 API 字段，要求 2.6 模型，不能彼此组合，也不能与另一种情绪组合。`speech-2.8-hd` 和 `speech-2.8-turbo` 支持的事件为：
 
 ```text
 laugh chuckle cough clear-throat groan breath pant inhale exhale gasp
 sniff sigh snort burp lip-smack hum hiss emm sneeze
+```
+
+MiniMax 主要语言代码映射不区分大小写。Locale 处理、`auto` 和模型限制见[接入说明](providers.zh-cn.md#minimax)。右侧是精确的 `language_boost` API 字符串：
+
+```text
+af→Afrikaans ar→Arabic bg→Bulgarian ca→Catalan
+cs→Czech da→Danish de→German el→Greek
+en→English es→Spanish fa→Persian fi→Finnish
+fil→Filipino fr→French he→Hebrew hi→Hindi
+hr→Croatian hu→Hungarian id→Indonesian it→Italian
+ja→Japanese ko→Korean ms→Malay nl→Dutch
+nn→Nynorsk no→Norwegian pl→Polish pt→Portuguese
+ro→Romanian ru→Russian sk→Slovak sl→Slovenian
+sv→Swedish ta→Tamil th→Thai tr→Turkish
+uk→Ukrainian vi→Vietnamese yue→Chinese,Yue zh→Chinese
 ```
 
 Azure style 映射为：`happy→cheerful`、`sad→sad`、`angry→angry`、`fear→fearful`、`excited→excited`、`calm→calm`、`tender→gentle`、`serious→serious`、`whisper→whispering`、`shout→shouting`、`crying→crying`、`neutral→neutral`。`[style "vendor-style"]` 传递 style 名称。每个片段只能使用一个 style，且所选音色必须支持；Azure 可能忽略不支持的 style。Timbrex 当前不会探测音色能力。
@@ -186,14 +202,40 @@ Stub 忽略表演语义，输出 8 kHz 测试音，不能验证厂商能力或�
 
 ## Gemini TTS
 
-`gemini-3.8-flash-tts` 适配器支持文本、预置角色音色、共用 voice/as/reset 作用域和本地停顿。标准情绪（含数值强度）、`act`、`style`、`role`、`accent`、`dialect`、自定义 `emotion`、`whisper`、`shout`、`emph` 及 laugh/cry/sigh span 会转换为 `speechMetadata.style` 中的**指令**。`fast` 和 `slow` 请求更快/更慢的语音，不承诺精确倍率。数值 speed、pitch 和 volume **不支持**。`lang` 是原生语言代码参数，允许的子集见接入说明。
+Gemini 适配器支持 `gemini-3.8-flash-tts` 和 `gemini-3.8-flash-lite-tts`，可使用文本、预置角色音色、共用 voice/as/reset 作用域和本地停顿。标准情绪（含数值强度）、`act`、`style`、`role`、`accent`、`dialect`、自定义 `emotion`、`whisper`、`shout`、`emph` 及 laugh/cry/sigh span 会转换为 `speechMetadata.style` 中的**指令**。`fast` 和 `slow` 请求更快/更慢的语音，不承诺精确倍率。数值 speed、pitch 和 volume **不支持**。`lang` 是原生语言代码参数，允许的子集见接入说明。
 
-独立事件映射为 `laugh→<laugh>`、`sigh→<sigh>`、`cough→<cough>`、`breath→<breath>`、`gasp→<gasp>`；事件参数/注释及其他事件不支持。原生标记请求表演效果，不保证精确的独立声音。文本中的字面 ASCII `<`、`>` 会被保守拒绝，以避免原生标记解释；需要保留字面含义时请用 Unicode 替代。指令与台词分开传递。前述保留但未实现的功能同样适用。
+两个模型均支持下表中的独立事件，映射依据官方 [TTS 原生发声标记](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#vocal-bursts-and-non-speech-sounds)。
+
+| DSL 事件 | 原生台词标记 |
+| --- | --- |
+| `[laugh]` | `<laugh>` |
+| `[sigh]` | `<sigh>` |
+| `[cough]` | `<cough>` |
+| `[breath]` | `<breath>` |
+| `[gasp]` | `<gasp>` |
+| `[exhale]` | `<exhales>` |
+| `[chuckle]` | `<chuckle>` |
+| `[giggle]` | `<giggle>` |
+| `[cackle]` | `<cackle>` |
+| `[snort]` | `<snort>` |
+| `[cry]` | `<cry>` |
+| `[sob]` | `<sob>` |
+| `[whimper]` | `<whimper>` |
+| `[pant]` | `<pant>` |
+| `[groan]` | `<groan>` |
+| `[grunt]` | `<grunt>` |
+| `[moan]` | `<moan>` |
+| `[sneeze]` | `<sneeze>` |
+| `[yawn]` | `<yawn>` |
+| `[hiss]` | `<hiss>` |
+| `[clear-throat]` | `<throat-clearing>` |
+
+事件参数、注释和未列出的独立事件会被拒绝；不猜测近义映射。`whisper`、`shout` 仍为风格指令，`pause` 等精确时长事件仍在本地生成静音，不输出原生 pause 标记。原生标记请求表演效果，不保证精确的独立声音。文本中的字面 ASCII `<`、`>` 会被保守拒绝，即使添加 DSL 转义也不能绕过此限制；需要保留字面含义时请用 Unicode 替代。指令与台词分开传递。前述保留但未实现的功能同样适用。
 
 ## Fish Audio
 
-`s2.1-pro` 适配器支持文本、显式音色 reference ID、共用 voice/as/reset 作用域和本地停顿。数值语速是**参数**（0.5–2 倍）；`fast`/`slow` 分别使用 1.2/0.8 倍。音量是 **dB 参数**，采用本地 −60…+20 范围。音高、显式语言/口音、表演/style/role 指令、数值情绪强度和 laugh/cry/sigh span **不支持**。
+Fish 适配器支持 `s2.1-pro`、`s2.1-pro-free` 和 `s2-pro`，可使用文本、显式音色 reference ID、共用 voice/as/reset 作用域和本地停顿。数值语速是**参数**（0.5–2 倍）；`fast`/`slow` 分别使用 1.2/0.8 倍。音量是 **dB 参数**，采用本地 −60…+20 范围。`act` 是**自然语言提示**，接受引号中的指令或 bare note，支持 scene/turn/span/reset 作用域。音高、显式语言/口音、style/role 指令、数值情绪强度和 laugh/cry/sigh span **不支持**。
 
-原生 S2 标记映射为 `happy→[happy]`、`sad→[sad]`、`angry→[angry]`、`fear→[scared]`、`surprise→[surprised]`、`disgust→[disgusted]`、`calm→[calm]`、`excited→[excited]`、`whisper→[whispering]`、`shout→[shouting]`、`emph→[emphasis]`；其他情绪不支持。事件映射为 `laugh→[laughing]`、`chuckle→[chuckling]`、`sigh→[sighing]`、`groan→[groaning]`、`pant→[panting]`、`gasp→[gasping]`、`yawn→[yawning]`、`snore→[snoring]`、`clear-throat→[clear throat]`。标记/事件的参数和注释不支持。这些是请求的表演效果，不保证精确独立声音或声学数值。
+原生 S2 标记映射为 `happy→[happy]`、`sad→[sad]`、`angry→[angry]`、`fear→[scared]`、`surprise→[surprised]`、`disgust→[disgusted]`、`calm→[calm]`、`excited→[excited]`、`whisper→[whispering]`、`shout→[shouting]`、`emph→[emphasis]`；其他专用情绪标签不支持；描述性指令可使用 `act`。事件映射为 `laugh→[laughing]`、`chuckle→[chuckling]`、`sigh→[sighing]`、`groan→[groaning]`、`pant→[panting]`、`gasp→[gasping]`、`yawn→[yawning]`、`snore→[snoring]`、`clear-throat→[clear throat]`。这些固定标记/事件的参数和注释不支持。这些是请求的表演效果，不保证精确独立声音或声学数值。
 
-字面 ASCII `[`/`]` 及原生说话人 token 前缀 `<|` 会被拒绝，以防意外控制。普通圆括号仍作为文本，不生成旧 S1 圆括号标记。前述保留但未实现的功能同样适用。
+台词和表演指令中的字面 ASCII `[`/`]` 及原生 token 前缀 `<|` 会被拒绝，以防意外控制。表演指令不能为空，不能混用位置参数与 note，也不能使用命名参数。普通圆括号仍作为文本，不生成旧 S1 圆括号标记。前述保留但未实现的功能同样适用。
