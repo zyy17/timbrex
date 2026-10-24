@@ -77,7 +77,13 @@ Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致
 
 使用 bearer 认证调用 `POST https://api.minimax.io/v1/t2a_v2`，请求非流式 hex 输出和 PCM 音频。适配器要求 `base_resp.status_code` 明确表示成功，检查完成状态和 hex 解码，并拒绝可选 `extra_info` 音频元数据中冲突的采样率、声道数、格式或解码后字节数。每段文字必须少于 10000 字符。
 
-默认的 `speech-2.8-hd` 支持已映射的非语言事件。适配器仅在 `speech-2.6-hd` 或 `speech-2.6-turbo` 下支持耳语，且同一片段不能同时使用耳语和另一种情绪。音高要求整数半音。语言提示当前映射 `zh en ja ko fr de es ru pt it ar hi th id vi yue`，`zh-HK` 和 `zh-MO` 映射为粤语。其他提示会在本地报错。这是适配器实现的子集，不代表厂商完整语言覆盖。
+默认的 `speech-2.8-hd` 支持已映射的非语言事件。`[whisper]` 和 `[style fluent]` 要求使用 `speech-2.6-hd` 或 `speech-2.6-turbo`。它们占用情绪字段，同一片段中不能彼此组合，也不能与另一种情绪组合。其他 style 不支持。音高要求整数半音。
+
+语言提示覆盖文档列出的全部 40 种语言/方言，见[主要语言代码的具体映射](capabilities.zh-cn.md#具体映射)。显式提示要求使用 `speech-2.8-hd`、`speech-2.8-turbo`、`speech-2.6-hd`、`speech-2.6-turbo`、`speech-02-hd`、`speech-02-turbo`、`speech-01-hd` 或 `speech-01-turbo`。波斯语（`fa`）、菲律宾语（`fil`）和泰米尔语（`ta`）要求 2.6 或 2.8 模型，带 locale 后缀时也适用此限制。未指定 `lang` 时仍省略 `language_boost`；显式 `lang: auto` 或 `[lang auto|Text]` 发送 `"auto"`。无语言提示的请求仍允许原样传递模型 ID；未知模型与显式语言提示组合时会在本地失败。
+
+提示不区分大小写，接受 `language[-Script][-REGION]`：已映射的主要语言代码，可选的四字母 script，以及可选的两字母或三数字 region。Script 和 region 后缀会被忽略，不保证口音；适配器只检查其形式，不核验注册表。仅保留完全匹配的旧别名 `zh-HK` 和 `zh-MO` 来选择粤语。其他 `zh` 形式（含 `zh-Hant-HK`）仍映射为 Chinese；明确指定粤语请用 `yue` 或 `yue-Hant-HK`。`no` 映射为 Norwegian，`nn` 映射为 Nynorsk。不会把 `nb` 和 `tl` 推断为 Norwegian 和 Filipino 的别名，也不会将 `UA` 或 `PH` 等国家代码当作语言提示。
+
+未知代码、`en-foo` 等格式不符的提示，以及 extlang、variant、extension、private-use 形式，都会在任何合成请求前失败。这有意收紧了旧版只提取前缀的处理方式，避免格式错误的后缀被静默接受。请改用支持的主要语言代码或上述简单 locale 形式。
 
 参考：[同步语音合成 API](https://platform.minimax.io/docs/api-reference/speech-t2a-http)。
 
@@ -99,11 +105,13 @@ export AZURE_SPEECH_REGION=eastus
 
 使用订阅密钥和 SSML 调用 `POST https://{region}.tts.speech.microsoft.com/cognitiveservices/v1`，请求 `raw-24khz-16bit-mono-pcm`。文本和属性均进行 XML 转义。音色名称决定模型；指定 `--model` 或 front matter 的 `model:` 会报错。
 
-Style、role 和强调能力依赖所选音色。Azure 可能忽略音色不支持的 style，Timbrex 尚未查询音色能力。适配器只允许每个片段一个 style，冲突时会报错。`[role Boy]` 需要同一作用域中存在 style。根 SSML 语言使用音色名称中可识别的语言区域前缀。显式 `lang` 与该语言区域不同时，会在 `voice` 内生成 `<lang xml:lang="…">`，以表达多语言或口音覆盖；所选音色必须支持目标语言。没有语言区域前缀的自定义音色使用显式 `lang` 作为根默认语言。
+Style、role 和强调能力依赖所选音色。Azure 可能忽略音色不支持的 style，Timbrex 尚未查询音色能力。适配器只允许每个片段一个 style，冲突时会报错。`[role Boy]` 需要同一作用域中存在 style。与韵律控制组合时，强调元素包裹一个包含所请求语速、音高和音量属性的 prosody 元素，因此等效控制无论按什么标签顺序书写，都会生成相同且符合文档要求的 SSML 层级。这只保证请求结构正确，不代表所选音色支持这些控制。尤其不能根据音色名称推断 HD 控制能力：Microsoft 的 [HD 支持表](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/high-definition-voices#supported-and-unsupported-ssml-elements-for-azure-speech-hd-voices)与部分 SSML 示例对韵律和风格的支持说明不一致。
+
+根 SSML 语言使用音色名称中可识别的 `language[-Script]-region` 前缀，包括 `sr-Latn-RS-NicholasNeural` 和小写的 `en-us-Ava:DragonHDLatestNeural`。推断出的语言标记会规范大小写，音色 ID 保持原样。显式 `lang` 与该语言标记存在大小写以外的差异时，会在 `voice` 内生成 `<lang xml:lang="…">`，以表达多语言或口音覆盖；所选音色必须支持目标语言。不符合此语言标记形式的名称需要显式 `lang` 作为根默认语言。语言推断不会验证音色是否可用。
 
 Azure REST 会在十分钟处截断音频，且可能仍返回 HTTP 200。片段达到或超过 28,800,000 字节（所请求的 24 kHz 单声道 S16LE PCM 的十分钟长度）时，Timbrex 会报错而不会视为完整结果；请将较长语音拆成较短段落。由于原始 PCM 没有完成标记，恰好十分钟且完整的片段也会被拒绝。该边界检查不能证明更短的音频包含全部请求文字。
 
-参考：[REST API](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech)、[音色、风格、角色和韵律](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice)。
+参考：[REST API](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech)、[音色、风格、角色和韵律](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice)、[SSML 结构](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-structure#document-structure)、[音色目录](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts#text-to-speech)。
 
 ## Qwen
 
@@ -158,7 +166,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 - Provider ID：`fish`。
 - 环境变量配置：`FISH_API_KEY`，音色/reference ID。
-- 默认模型：`s2.1-pro`。
+- 默认模型：`s2.1-pro`；也支持 `s2.1-pro-free` 和 `s2-pro`。
 - 默认音色：无；通过 `FISH_VOICE_ID`、`--voice`、front matter 或角色映射设置。
 - 可选的模型默认值：`FISH_MODEL`。
 - 可选的音色默认值：`FISH_VOICE_ID`。
@@ -169,13 +177,13 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 ./timbrex synth examples/fish.tbx -o fish.wav
 ```
 
-使用 bearer 认证、`model: s2.1-pro` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。初版仅支持 `s2.1-pro`；由于服务端会对未知模型请求头静默回退，未知及其他模型均在本地拒绝。没有默认账号音色。使用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；各角色使用独立的片段请求，启用并发时也不例外。
+使用 bearer 认证、所选 `model` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。支持 `s2.1-pro`、`s2.1-pro-free` 和 `s2-pro`，使用相同的单说话人请求格式与 S2 方括号标记。未知模型、旧版 `s1` 和 `drama-3` 在本地拒绝；否则服务端会对未知模型请求头静默回退。免费模型受公平使用限制，不提供 TTFA 或 DPA 保证，不会被自动选用。没有默认账号音色。使用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；各角色使用独立的片段请求，启用并发时也不例外。
 
-语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入；自由表演指令、数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
+语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入。`act` 接受一个位置参数或 bare note，例如 `[act "whispers sweetly"]` 或 `[act holding back tears]`，映射为自然语言方括号提示。指令不能为空，也不能包含 ASCII `[`/`]` 或原生 token 前缀 `<|`。数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
 
 请求指定 `format: wav` 和 `sample_rate: 24000`。WAV 解码遵循下文的共用格式检查。即使 HTTP 状态成功，响应中的 JSON 错误也会导致失败。有效 WAV 不能证明模型读出了每个字。官方 HTTP 错误包括 400、401、402、403、404、429 和 5xx；失败时不重试，诊断也不包含响应正文。
 
-参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，不接受用特殊长度值表示尚未结束的流式 WAV。
+参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 模型与自然语言控制](https://docs.fish.audio/developer-guide/models-pricing/models-overview)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，不接受用特殊长度值表示尚未结束的流式 WAV。
 
 ## 并发生成
 

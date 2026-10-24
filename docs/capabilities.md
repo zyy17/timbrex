@@ -63,11 +63,11 @@ OpenAI instructions require a model that supports `instructions`; `tts-1` and `t
 | Emotion intensity, e.g. `happy 0.8` | Unsupported |
 | `whisper` / `shout` | Whisper on 2.6 only; no shout |
 | `act`, `accent`, `dialect`, custom `emotion` | Unsupported |
-| `style`, `role` | Unsupported |
+| `style`, `role` | `style fluent` on 2.6 only; no role |
 | `emph` | Unsupported |
 | `laugh`, `cry`, `sigh` **spans** | Unsupported |
 | Standalone nonverbal events | Selected events on 2.8 |
-| `lang` span / front matter | Language boost |
+| `lang` span / front matter | 40 language/dialect boosts and explicit auto; model limits apply |
 | `voice`, `as` spans; `reset` | Shared planner |
 
 ### Azure
@@ -142,7 +142,8 @@ OpenAI instructions require a model that supports `instructions`; `tts-1` and `t
 | Standard emotions | Selected S2 cues |
 | Emotion intensity, e.g. `happy 0.8` | Unsupported |
 | `whisper` / `shout` | S2 cues |
-| `act`, `accent`, `dialect`, custom `emotion` | Unsupported |
+| `act` | Natural-language S2 cue |
+| `accent`, `dialect`, custom `emotion` | Unsupported |
 | `style`, `role` | Unsupported |
 | `emph` | S2 cue |
 | `laugh`, `cry`, `sigh` **spans** | Unsupported |
@@ -153,11 +154,26 @@ OpenAI instructions require a model that supports `instructions`; `tts-1` and `t
 
 ## Exact mappings
 
-MiniMax emotion mappings: `happy→happy`, `sad→sad`, `angry→angry`, `fear→fearful`, `disgust→disgusted`, `surprise→surprised`, `calm→calm`. `whisper` occupies the same API field as emotion and cannot be combined with one. Supported events on `speech-2.8-hd` and `speech-2.8-turbo`:
+MiniMax emotion mappings: `happy→happy`, `sad→sad`, `angry→angry`, `fear→fearful`, `disgust→disgusted`, `surprise→surprised`, `calm→calm`. `whisper` and `[style fluent]` occupy the same API field as emotion, require a 2.6 model, and cannot be combined with each other or another emotion. Supported events on `speech-2.8-hd` and `speech-2.8-turbo`:
 
 ```text
 laugh chuckle cough clear-throat groan breath pant inhale exhale gasp
 sniff sigh snort burp lip-smack hum hiss emm sneeze
+```
+
+MiniMax primary-language mappings are case-insensitive. Locale handling, `auto`, and model restrictions are described in [provider setup](providers.md#minimax). The values on the right are the exact `language_boost` API strings:
+
+```text
+af→Afrikaans ar→Arabic bg→Bulgarian ca→Catalan
+cs→Czech da→Danish de→German el→Greek
+en→English es→Spanish fa→Persian fi→Finnish
+fil→Filipino fr→French he→Hebrew hi→Hindi
+hr→Croatian hu→Hungarian id→Indonesian it→Italian
+ja→Japanese ko→Korean ms→Malay nl→Dutch
+nn→Nynorsk no→Norwegian pl→Polish pt→Portuguese
+ro→Romanian ru→Russian sk→Slovak sl→Slovenian
+sv→Swedish ta→Tamil th→Thai tr→Turkish
+uk→Ukrainian vi→Vietnamese yue→Chinese,Yue zh→Chinese
 ```
 
 Azure style mappings: `happy→cheerful`, `sad→sad`, `angry→angry`, `fear→fearful`, `excited→excited`, `calm→calm`, `tender→gentle`, `serious→serious`, `whisper→whispering`, `shout→shouting`, `crying→crying`, `neutral→neutral`. `[style "vendor-style"]` passes a style name. Only one style is allowed per segment. The selected voice must support it; Azure can ignore unsupported styles. Timbrex currently does not probe voices.
@@ -218,8 +234,8 @@ Arguments, notes and unlisted standalone events are rejected; near-synonym mappi
 
 ## Fish Audio
 
-The `s2.1-pro` adapter supports text, explicit voice reference IDs, shared voice/as/reset scopes and local pauses. Numeric speed is a **parameter** (0.5–2×); `fast`/`slow` use 1.2×/0.8×. Volume is a **dB parameter** within the adapter's −60…+20 bound. Pitch, explicit language/accents, acting/style/role instructions, numeric emotion intensity and laugh/cry/sigh spans are **unsupported**.
+The Fish adapter supports `s2.1-pro`, `s2.1-pro-free`, and `s2-pro` with text, explicit voice reference IDs, shared voice/as/reset scopes and local pauses. Numeric speed is a **parameter** (0.5–2×); `fast`/`slow` use 1.2×/0.8×. Volume is a **dB parameter** within the adapter's −60…+20 bound. `act` is a **natural-language cue**, supporting quoted directions or bare notes and scene/turn/span/reset scopes. Pitch, explicit language/accents, style/role instructions, numeric emotion intensity and laugh/cry/sigh spans are **unsupported**.
 
-Native S2 cues map `happy→[happy]`, `sad→[sad]`, `angry→[angry]`, `fear→[scared]`, `surprise→[surprised]`, `disgust→[disgusted]`, `calm→[calm]`, `excited→[excited]`, `whisper→[whispering]`, `shout→[shouting]`, and `emph→[emphasis]`. Other emotions are unsupported. Events map `laugh→[laughing]`, `chuckle→[chuckling]`, `sigh→[sighing]`, `groan→[groaning]`, `pant→[panting]`, `gasp→[gasping]`, `yawn→[yawning]`, `snore→[snoring]`, and `clear-throat→[clear throat]`. Cue/event arguments and notes are unsupported. These are requested performances, not guaranteed isolated sounds or measured acoustic values.
+Native S2 cues map `happy→[happy]`, `sad→[sad]`, `angry→[angry]`, `fear→[scared]`, `surprise→[surprised]`, `disgust→[disgusted]`, `calm→[calm]`, `excited→[excited]`, `whisper→[whispering]`, `shout→[shouting]`, and `emph→[emphasis]`. Other dedicated emotion tags are unsupported; use `act` for descriptive directions. Events map `laugh→[laughing]`, `chuckle→[chuckling]`, `sigh→[sighing]`, `groan→[groaning]`, `pant→[panting]`, `gasp→[gasping]`, `yawn→[yawning]`, `snore→[snoring]`, and `clear-throat→[clear throat]`. Arguments and notes on these fixed cues/events are unsupported. These are requested performances, not guaranteed isolated sounds or measured acoustic values.
 
-Literal ASCII `[`/`]` and the native speaker-token prefix `<|` are rejected to prevent accidental controls. Ordinary parentheses remain text; the legacy S1 parenthesized cue syntax is not generated. The reserved unsupported features above also apply.
+Literal ASCII `[`/`]` and the native token prefix `<|` are rejected in speech and acting directions to prevent accidental controls. Acting directions must be nonempty and cannot mix positional arguments with notes or use named arguments. Ordinary parentheses remain text; the legacy S1 parenthesized cue syntax is not generated. The reserved unsupported features above also apply.

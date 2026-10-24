@@ -79,6 +79,7 @@ func synthesize(cmd *cobra.Command, path string, flags synthFlags, cfg config.Co
 	opt := providers.Options{
 		Out: outPath, Model: settings.Model, Voice: settings.Voice,
 		APIKey: settings.APIKey, Endpoint: settings.Endpoint, Concurrency: flags.concurrency,
+		Synthesis: settings.Synthesis,
 	}
 	if err := cmd.Context().Err(); err != nil {
 		return err

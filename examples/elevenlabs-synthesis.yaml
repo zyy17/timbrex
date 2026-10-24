@@ -1,0 +1,14 @@
+# Supply ELEVENLABS_API_KEY in the environment and replace the voice ID.
+# Inspect without a network call:
+#   timbrex --config examples/elevenlabs-synthesis.yaml config
+# Synthesis uses the selected paid provider:
+#   timbrex --config examples/elevenlabs-synthesis.yaml synth examples/hello.tbx
+provider: elevenlabs
+providers:
+  elevenlabs:
+    model: eleven_v3
+    voice: YOUR_VOICE_ID
+    synthesis:
+      seed: 42
+      apply_text_normalization: auto
+      apply_language_text_normalization: false

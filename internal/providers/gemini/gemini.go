@@ -93,7 +93,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
+	if err := opt.Validate(p.ID()); err != nil {
 		return providers.Result{}, err
 	}
 	if !slices.Contains(models, opt.Model) {
