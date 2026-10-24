@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/zyy17/timbrex/internal/check"
 	"github.com/zyy17/timbrex/internal/parse"
@@ -19,6 +21,7 @@ var (
 	atxHeadings   = regexp.MustCompile(`(?m)^(#{1,6}) `)
 	fenceLine     = regexp.MustCompile("^(`{3,})([^`]*)$")
 	inlineCode    = regexp.MustCompile("`([^`]*)`")
+	strongLabels  = regexp.MustCompile(`\*\*[^*\n]+[：:]\*\*(.)`)
 	skipBilingual = map[string]bool{
 		// Portable agent instructions stay English; human guides remain bilingual.
 		"AGENTS.md":                              true,
@@ -156,7 +159,13 @@ func TestMarkdownFencesAndTables(t *testing.T) {
 				open = m[1]
 				continue
 			}
-			if open != "" || !strings.HasPrefix(strings.TrimSpace(line), "|") {
+			if open != "" {
+				continue
+			}
+			if hasBrokenStrongLabel(inlineCode.ReplaceAllString(line, "")) {
+				t.Errorf("%s:%d: move the label's colon outside **; adjacent text prevents GFM from closing the emphasis", path, i+1)
+			}
+			if !strings.HasPrefix(strings.TrimSpace(line), "|") {
 				continue
 			}
 			for _, span := range inlineCode.FindAllStringSubmatch(line, -1) {
@@ -172,6 +181,31 @@ func TestMarkdownFencesAndTables(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// GFM cannot close emphasis after punctuation when a letter follows it directly.
+// This guards the label pattern that previously rendered literal ** in Chinese.
+func hasBrokenStrongLabel(line string) bool {
+	for _, match := range strongLabels.FindAllStringSubmatch(line, -1) {
+		next, _ := utf8.DecodeRuneInString(match[1])
+		if !unicode.IsSpace(next) && !unicode.IsPunct(next) && !unicode.IsSymbol(next) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestMarkdownStrongLabelBoundaries(t *testing.T) {
+	for _, line := range []string{"**音色系列：**包括标准", "**音色：**SSML", "**Voice:**text"} {
+		if !hasBrokenStrongLabel(line) {
+			t.Errorf("missed broken strong label: %s", line)
+		}
+	}
+	for _, line := range []string{"**音色系列**：包括标准", "**Voice:** text", "**音色：**（标准）"} {
+		if hasBrokenStrongLabel(line) {
+			t.Errorf("rejected valid strong label: %s", line)
+		}
 	}
 }
 

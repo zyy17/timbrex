@@ -70,7 +70,7 @@ mkdir -p out
 ./timbrex synth skills/timbrex/assets/dialogue.tbx --provider stub -o out/dialogue-tone.wav
 ```
 
-The first command prints `ok` without contacting a speech service. The second writes a test tone, not dialogue. Stub does not reproduce voices, pauses, or directions. Use a fresh output path if that file already exists.
+The first command prints `ok` without contacting a speech service. The `synth` command writes a test tone, not dialogue. Stub does not reproduce voices, pauses, or directions. Use a fresh output path if that file already exists.
 
 Passing `check` establishes language validity, not provider support. It does not validate every control's range, account access, or voice ID. There is no `--dry-run` or standalone provider-preflight command.
 

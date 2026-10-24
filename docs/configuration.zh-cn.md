@@ -88,7 +88,7 @@ providers:
 
 `TIMBREX_PROVIDER` 覆盖文件中的默认厂商，`TIMBREX_STRICT_TAGS` 覆盖严格模式，接受 Go 布尔写法，包括 `true` 和 `false`。原有的 `OPENAI_API_KEY`、`OPENAI_MODEL`、`OPENAI_BASE_URL` 等厂商变量继续有效。未设置或为空的环境变量保留低优先级设置，无关变量被忽略。
 
-Cast 音色映射仍然优先于兜底音色，包括 `--voice`。`voice` 或 `as` span 在自身作用域内覆盖当前角色的音色。切换厂商不会转换模型和音色 ID。端点和凭证不能来自脚本。
+Cast 音色映射仍然优先于兜底音色，包括 `--voice`。`voice` 或 `as` span 在自身作用域内覆盖音色选择，不改变角色 ID。切换厂商不会转换模型和音色 ID。端点和凭证不能来自脚本。
 
 `--strict-tags=false` 显式关闭严格模式，`--no-strict-tags=false` 则开启。两个参数名互斥，从而区分“未传入”和“显式 false”。
 

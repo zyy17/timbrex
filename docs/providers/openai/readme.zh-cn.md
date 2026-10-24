@@ -10,9 +10,9 @@ OpenAI 的 Speech API 适合通过提示词控制旁白表现和生成多语言�
 
 ## 特性与取舍
 
-- **表达控制：**GPT-4o Mini TTS 可以通过指令控制口音、情绪、语调、节奏和耳语。`tts-1` 偏重低延迟，`tts-1-hd` 偏重音质，但两者都不支持这些指令。音色主要针对英语优化，也支持多语言合成。[语音指南](https://developers.openai.com/api/docs/guides/text-to-speech)
-- **音色选择：**Speech API 列出 13 个内置音色，也接受已获准的自定义音色引用；具体音色支持取决于模型。[Speech 参考](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)
-- **音频交付：**支持 MP3、Opus、AAC、FLAC、WAV 和原始 PCM，可逐步接收音频。PCM 为 24 kHz、16 位有符号小端格式。也支持 SSE，但 `tts-1` 和 `tts-1-hd` 除外。[输出格式](https://developers.openai.com/api/docs/guides/text-to-speech#supported-output-formats)、[流式选项](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)
+- **表达控制**：GPT-4o Mini TTS 可以通过指令控制口音、情绪、语调、节奏和耳语。`tts-1` 偏重低延迟，`tts-1-hd` 偏重音质，但两者都不支持这些指令。音色主要针对英语优化，也支持多语言合成。[语音指南](https://developers.openai.com/api/docs/guides/text-to-speech)
+- **音色选择**：Speech API 列出 13 个内置音色，也接受基于音频样本创建且符合使用资格的自定义音色引用；具体音色支持取决于模型。[Speech 参考](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)
+- **音频交付**：支持 MP3、Opus、AAC、FLAC、WAV 和原始 PCM，可逐步接收音频。PCM 为 24 kHz、16 位有符号小端格式。也支持 SSE，但 `tts-1` 和 `tts-1-hd` 除外。[输出格式](https://developers.openai.com/api/docs/guides/text-to-speech#supported-output-formats)、[流式选项](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)
 
 ## 需要注意的限制
 

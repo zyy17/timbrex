@@ -88,7 +88,7 @@ For each setting, the highest supplied value wins:
 
 `TIMBREX_PROVIDER` overrides the file's default provider. `TIMBREX_STRICT_TAGS` overrides its strict mode and accepts Go boolean forms, including `true` and `false`. Existing vendor variables such as `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_BASE_URL` remain supported. Unset or empty environment variables leave lower-priority settings intact; unrelated variables are ignored.
 
-A cast voice mapping still takes priority over the fallback voice, including `--voice`. A `voice` or `as` span overrides the current speaker within its scope. Model and voice IDs are not translated when switching providers. Endpoint and credential settings never come from scripts.
+A cast voice mapping still takes priority over the fallback voice, including `--voice`. A `voice` or `as` span overrides the voice selection within its scope; it does not change the speaker ID. Model and voice IDs are not translated when switching providers. Endpoint and credential settings never come from scripts.
 
 `--strict-tags=false` explicitly disables strict mode; `--no-strict-tags=false` enables it. The two flag names are mutually exclusive. This preserves the distinction between an omitted boolean and an explicit `false`.
 

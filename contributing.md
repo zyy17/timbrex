@@ -62,7 +62,7 @@ Keep each page focused: README for an overview and first run, tutorial for a gui
 
 Write for a developer encountering the project for the first time. Explain what a feature does, show a small example, and state relevant limits where they affect its use. Avoid slogans, claims without evidence, and promises about future compatibility. Chinese text should read naturally rather than follow English sentence structure; keep identifiers and useful technical terms in English. Distinguish implemented behavior, approximations, and proposals. Cite official sources for vendor behavior.
 
-Update English and `.zh-cn.md` companions together, with the same examples and technical meaning. Use lowercase documentation filenames except `AGENTS.md`. Documentation tests parse every fenced `tbx` example and `.tbx` file, check local file links and paired headings, and check Markdown fences and table escaping. They do not prove provider support or audio quality; verify those claims against adapter code and tests.
+Update English and `.zh-cn.md` companions together, with the same examples and technical meaning. Use lowercase documentation filenames except `AGENTS.md`. Documentation tests parse every fenced `tbx` example and `.tbx` file, check local file links and paired headings, and check Markdown fences, table escaping, and strong-label boundaries. Preview changed pages with a GitHub-compatible renderer as well, including their diagrams; syntax checks alone do not establish readability. These checks do not prove provider support or audio quality; verify those claims against adapter code and tests.
 
 ## Open a pull request
 

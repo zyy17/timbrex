@@ -10,8 +10,8 @@ Developer quick reference, reviewed **2026-10-24**. This covers the vendor’s T
 
 ## Capabilities
 
-- Speech controls: voice, speed 0.5–2, volume (0, 10], integer pitch −12–12, emotion, language/dialect hints, and 19 sound tags. `fluent` and `whisper` are 2.6-only emotion options; 2.8 does not accept `whisper`.
-- Pronunciation: replacement dictionaries, Pinyin, IPA, Japanese readings, and inline pronunciation. Native pauses, Chinese LaTeX reading, voice blending, and optional voice effects are also available.
+- Speech controls: voice, speed 0.5–2, volume (0, 10], integer pitch −12–12, emotion, language/dialect hints, and 19 sound tags in synchronous HTTP. `fluent` and `whisper` are 2.6-only emotion options; 2.8 does not accept `whisper`.
+- Pronunciation: replacement dictionaries, Pinyin, IPA, Japanese readings, and inline pronunciation. Native pauses, Chinese LaTeX reading, voice blending, and optional voice effects are also available. Voice effects require MP3/WAV/FLAC for non-streaming output and MP3 for streaming.
 - Output: MP3, PCM, WAV, FLAC, Ogg/Opus, and 8 kHz μ-law; sample rate, channels, and format-dependent bitrate controls. Sentence/word subtitles and usage metadata are available. [HTTP API and complete parameter reference](https://platform.minimax.io/docs/api-reference/speech-t2a-http).
 - Text normalization: `basic` favors latency; `quality` adds contextual processing for non-streaming 2.8/2.6 HTTP requests. [Normalization and endpoints](https://platform.minimax.io/docs/guides/speech-t2a-websocket).
 
@@ -19,7 +19,7 @@ Developer quick reference, reviewed **2026-10-24**. This covers the vendor’s T
 
 - HTTP accepts complete text under 10,000 characters, with whole-response or streaming output. Text over 3,000 characters is a candidate for streaming.
 - WebSocket offers sentence-oriented and bidirectional text streaming. These are separate transports, not HTTP flags. [WebSocket guide](https://platform.minimax.io/docs/guides/speech-t2a-websocket).
-- Asynchronous synthesis accepts up to 50,000 inline characters or a text file up to 1,000,000 characters. File jobs also support TXT/JSON/ZIP packaging. [Async API](https://platform.minimax.io/docs/api-reference/speech-t2a-async-create).
+- Asynchronous synthesis accepts up to 50,000 inline characters or a text file up to 1,000,000 characters. File input accepts TXT or ZIP; a ZIP must contain only TXT files or only JSON files. [Async API](https://platform.minimax.io/docs/api-reference/speech-t2a-async-create).
 - Synthesis accepts existing system/custom voice IDs. Voice blending produces one mixed timbre, not a multi-speaker dialogue. [Synthesis options](https://platform.minimax.io/docs/api-reference/speech-t2a-http).
 
 ## Pricing and regions

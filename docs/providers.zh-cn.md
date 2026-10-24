@@ -115,9 +115,9 @@ Style、role 和强调能力依赖所选音色。Azure 可能忽略音色不支�
 
 根 SSML 语言使用音色名称中可识别的 `language[-Script]-region` 前缀，包括 `sr-Latn-RS-NicholasNeural` 和小写的 `en-us-Ava:DragonHDLatestNeural`。推断出的语言标记会规范大小写，音色 ID 保持原样。显式 `lang` 与该语言标记存在大小写以外的差异时，会在 `voice` 内生成 `<lang xml:lang="…">`，以表达多语言或口音覆盖；所选音色必须支持目标语言。不符合此语言标记形式的名称需要显式 `lang` 作为根默认语言。语言推断不会验证音色是否可用。
 
-Azure REST 会在十分钟处截断音频，且可能仍返回 HTTP 200。片段达到或超过 28,800,000 字节（所请求的 24 kHz 单声道 S16LE PCM 的十分钟长度）时，Timbrex 会报错而不会视为完整结果；请将较长语音拆成较短段落。由于原始 PCM 没有完成标记，恰好十分钟且完整的片段也会被拒绝。该边界检查不能证明更短的音频包含全部请求文字。
+Timbrex 将每个序列化后的 SSML 请求限制在 64,000 个 UTF-8 字节以内，包含标记和 XML 转义；这是本地请求大小检查，不是字符数。Azure REST 会在十分钟处截断音频，且可能仍返回 HTTP 200。片段达到或超过 28,800,000 字节（所请求的 24 kHz 单声道 S16LE PCM 的十分钟长度）时，Timbrex 会报错而不会视为完整结果；请将较长语音拆成较短段落。由于原始 PCM 没有完成标记，恰好十分钟且完整的片段也会被拒绝。该边界检查不能证明更短的音频包含全部请求文字。
 
-参考：[REST API](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech)、[音色、风格、角色和韵律](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice)、[SSML 结构](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-structure#document-structure)、[音色目录](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts#text-to-speech)。
+参考：[REST API](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech)、[音色、风格、角色和韵律](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice)、[SSML 结构](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-structure#document-structure)、[音色目录](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts#text-to-speech-voices)。
 
 ## Qwen
 
@@ -216,7 +216,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 适配器会在第一次请求前检查全部语音片段，发现不支持的控制和无效的本地设置。这不验证账号权限，也不保证服务一定接受请求。Timbrex 不会按厂商的 token 限制自动拆分文本；较长的台词应分成较短段落。
 
-单次 HTTP 请求超时为两分钟，响应限制为 64 MiB。已知内容长度超过该限制时，不读取响应体即拒绝响应。长度未知或自动解压的响应体仍在读取时受同一上限约束。最终 PCM 输出限制为 1 GiB。运行时错误包含厂商和片段编号。HTTP 错误包含状态码，MiniMax 和 Qwen 的业务错误包含厂商错误代码。诊断不包含响应正文或签名 URL 的查询参数。HTTP 206 部分响应和中断的响应体会报错。请求不会自动重试。
+单次 HTTP 请求超时为两分钟，响应限制为 64 MiB。已知内容长度超过该限制时，不读取响应体即拒绝响应。长度未知或自动解压的响应体仍在读取时受同一上限约束。最终 PCM 输出限制为 1 GiB。合成和解码错误包含厂商和从 1 开始的片段编号；输出文件系统错误说明失败的操作。HTTP 错误包含状态码，MiniMax 和 Qwen 的业务错误包含厂商错误代码。诊断不包含响应正文或签名 URL 的查询参数。HTTP 206 部分响应和中断的响应体会报错。请求不会自动重试。
 
 ### 音频格式检查
 

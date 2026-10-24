@@ -21,8 +21,8 @@ Qwen-Audio-TTS 提供多语言预置及自定义音色、表演指令、发音�
 
 ## 其他 TTS 系列
 
-- **Qwen3-TTS：**独立的 API 和音色目录。无日期的 Flash 别名仍有当前文档，但官方通知已将多种日期快照、instruct、VC 和 VD 版本的计划退役时间设为 2026-10-10。应核对具体 ID，不能直接照搬旧示例。[API](https://www.alibabacloud.com/help/en/model-studio/qwen-tts-api) · [退役通知](https://www.alibabacloud.com/en/notice/model_studio_notice_of_retirement_for_selected_legacy_longtail_models_7d4?_p_lc=1)
-- **TTS-Next（仅语音用途）：**根据文本生成中英文单人语音、多角色对话和语音播客。使用独立 API，最多接受 3,000 个文本字符，非流式返回 WAV、MP3 或 PCM；播客最长 4 分钟，其他语音最长 2 分钟。[模型参考](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-3-1-tts-next)
+- **Qwen3-TTS**：独立的 API 和音色目录。无日期的 Flash 别名仍有当前文档，但官方通知已将多种日期快照、instruct、VC 和 VD 版本的计划退役时间设为 2026-10-10。应核对具体 ID，不能直接照搬旧示例。[API](https://www.alibabacloud.com/help/en/model-studio/qwen-tts-api) · [退役通知](https://www.alibabacloud.com/en/notice/model_studio_notice_of_retirement_for_selected_legacy_longtail_models_7d4?_p_lc=1)
+- **TTS-Next（仅语音用途）**：根据文本生成中英文单人语音、多角色对话和语音播客。使用独立 API，最多接受 3,000 个文本字符，非流式返回 WAV、MP3 或 PCM；播客最长 4 分钟，其他语音最长 2 分钟。[模型参考](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-3-1-tts-next)
 
 ## 标准价格
 

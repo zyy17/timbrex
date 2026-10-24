@@ -70,7 +70,7 @@ mkdir -p out
 ./timbrex synth skills/timbrex/assets/dialogue.tbx --provider stub -o out/dialogue-tone.wav
 ```
 
-第一条命令打印 `ok`，不联系语音服务。第二条生成测试音，而不是朗读台词。Stub 不表现音色、停顿或表演指令。如果输出文件已存在，请换一个新路径。
+第一条命令打印 `ok`，不联系语音服务。`synth` 命令生成测试音，而不是朗读台词。Stub 不表现音色、停顿或表演指令。如果输出文件已存在，请换一个新路径。
 
 通过 `check` 只表示语言检查通过，不代表厂商支持，也不会验证所有参数范围、账号权限或音色 ID。当前没有 `--dry-run` 或独立的厂商预检命令。
 

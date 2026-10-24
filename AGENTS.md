@@ -26,6 +26,7 @@ Three goals:
 | `internal/providers` | IR, the provider interface | Lexing, Cobra |
 | `internal/providers/<name>` | That vendor's API and one `Provider` | The lexer, the parser, Cobra |
 | `internal/config` | koanf, YAML configuration, environment variables, typed settings | AST, IR, provider execution, Cobra |
+| `internal/provideropts` | Typed per-request settings and their validation | I/O, AST, IR, provider execution, Cobra |
 | `internal/cli` | Cobra, configuration, wiring parse → lower → provider | Tag grammar details |
 
 Only `internal/cli` may import Cobra. A provider registers itself from `init`. The CLI blank-imports the providers it ships.
