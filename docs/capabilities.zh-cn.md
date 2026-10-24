@@ -142,7 +142,8 @@ OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒�
 | 标准情绪 | 部分 S2 标记 |
 | 情绪强度，如 `happy 0.8` | 不支持 |
 | `whisper` / `shout` | S2 标记 |
-| `act`、`accent`、`dialect`、自定义 `emotion` | 不支持 |
+| `act` | 自然语言 S2 提示 |
+| `accent`、`dialect`、自定义 `emotion` | 不支持 |
 | `style`、`role` | 不支持 |
 | `emph` | S2 标记 |
 | `laugh`、`cry`、`sigh` 的 **span** | 不支持 |
@@ -192,8 +193,8 @@ Stub 忽略表演语义，输出 8 kHz 测试音，不能验证厂商能力或�
 
 ## Fish Audio
 
-`s2.1-pro` 适配器支持文本、显式音色 reference ID、共用 voice/as/reset 作用域和本地停顿。数值语速是**参数**（0.5–2 倍）；`fast`/`slow` 分别使用 1.2/0.8 倍。音量是 **dB 参数**，采用本地 −60…+20 范围。音高、显式语言/口音、表演/style/role 指令、数值情绪强度和 laugh/cry/sigh span **不支持**。
+Fish 适配器支持 `s2.1-pro`、`s2.1-pro-free` 和 `s2-pro`，可使用文本、显式音色 reference ID、共用 voice/as/reset 作用域和本地停顿。数值语速是**参数**（0.5–2 倍）；`fast`/`slow` 分别使用 1.2/0.8 倍。音量是 **dB 参数**，采用本地 −60…+20 范围。`act` 是**自然语言提示**，接受引号中的指令或 bare note，支持 scene/turn/span/reset 作用域。音高、显式语言/口音、style/role 指令、数值情绪强度和 laugh/cry/sigh span **不支持**。
 
-原生 S2 标记映射为 `happy→[happy]`、`sad→[sad]`、`angry→[angry]`、`fear→[scared]`、`surprise→[surprised]`、`disgust→[disgusted]`、`calm→[calm]`、`excited→[excited]`、`whisper→[whispering]`、`shout→[shouting]`、`emph→[emphasis]`；其他情绪不支持。事件映射为 `laugh→[laughing]`、`chuckle→[chuckling]`、`sigh→[sighing]`、`groan→[groaning]`、`pant→[panting]`、`gasp→[gasping]`、`yawn→[yawning]`、`snore→[snoring]`、`clear-throat→[clear throat]`。标记/事件的参数和注释不支持。这些是请求的表演效果，不保证精确独立声音或声学数值。
+原生 S2 标记映射为 `happy→[happy]`、`sad→[sad]`、`angry→[angry]`、`fear→[scared]`、`surprise→[surprised]`、`disgust→[disgusted]`、`calm→[calm]`、`excited→[excited]`、`whisper→[whispering]`、`shout→[shouting]`、`emph→[emphasis]`；其他专用情绪标签不支持；描述性指令可使用 `act`。事件映射为 `laugh→[laughing]`、`chuckle→[chuckling]`、`sigh→[sighing]`、`groan→[groaning]`、`pant→[panting]`、`gasp→[gasping]`、`yawn→[yawning]`、`snore→[snoring]`、`clear-throat→[clear throat]`。这些固定标记/事件的参数和注释不支持。这些是请求的表演效果，不保证精确独立声音或声学数值。
 
-字面 ASCII `[`/`]` 及原生说话人 token 前缀 `<|` 会被拒绝，以防意外控制。普通圆括号仍作为文本，不生成旧 S1 圆括号标记。前述保留但未实现的功能同样适用。
+台词和表演指令中的字面 ASCII `[`/`]` 及原生 token 前缀 `<|` 会被拒绝，以防意外控制。表演指令不能为空，不能混用位置参数与 note，也不能使用命名参数。普通圆括号仍作为文本，不生成旧 S1 圆括号标记。前述保留但未实现的功能同样适用。
