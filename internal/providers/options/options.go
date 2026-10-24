@@ -13,6 +13,8 @@ type Value interface {
 // Raw values are consumed here; callers receive only typed settings.
 func Decode(id string, raw any) (Value, error) {
 	switch id {
+	case "azure":
+		return decodeAzure(raw)
 	case "elevenlabs":
 		return decodeElevenLabs(raw)
 	case "fish":

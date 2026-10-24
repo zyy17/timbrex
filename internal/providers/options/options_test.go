@@ -11,14 +11,14 @@ func TestDecodeSelectsProviderSchema(t *testing.T) {
 		want Value
 	}{
 		{"elevenlabs", ElevenLabs{}}, {"fish", Fish{}},
-		{"qwen", Qwen{}}, {"minimax", MiniMax{}},
+		{"qwen", Qwen{}}, {"minimax", MiniMax{}}, {"azure", Azure{}},
 	} {
 		got, err := Decode(tc.id, map[string]any{})
 		if err != nil || !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("%s: value=%#v error=%v", tc.id, got, err)
 		}
 	}
-	for _, id := range []string{"stub", "openai", "azure", "gemini", "unknown"} {
+	for _, id := range []string{"stub", "openai", "gemini", "unknown"} {
 		if _, err := Decode(id, map[string]any{}); err == nil {
 			t.Errorf("accepted unsupported schema %q", id)
 		}

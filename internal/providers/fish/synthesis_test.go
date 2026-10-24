@@ -92,7 +92,7 @@ func TestSynthesisOmissionPreservesCompleteRequest(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			r, err := buildWithSynthesis(providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello"}}}, model, value)
+			r, err := value.build(providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello"}}}, model)
 			if err != nil {
 				t.Fatal(err)
 			}

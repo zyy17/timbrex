@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"testing"
 )
@@ -25,6 +26,9 @@ func TestExtendedConfiguredSynthesisConcurrency(t *testing.T) {
 		{"elevenlabs", "empty_dictionaries", `{voice_settings: {}, pronunciation_dictionary_locators: []}`, `{"pronunciation_dictionary_locators":[]}`},
 		{"fish", "bounds_zero_false", `{normalize: true, normalization_language: en-US, prosody: {normalize_loudness: false}, temperature: 0, top_p: 1, chunk_length: 100, min_chunk_length: 0, latency: balanced, condition_on_previous_chunks: false, early_stop_threshold: 0}`, `{"normalize":true,"language":"en-US","prosody":{"normalize_loudness":false},"temperature":0,"top_p":1,"chunk_length":100,"min_chunk_length":0,"latency":"balanced","condition_on_previous_chunks":false,"early_stop_threshold":0}`},
 		{"fish", "bounds_max_true", `{normalize: false, normalization_language: '', prosody: {normalize_loudness: true}, temperature: 1, top_p: 0, chunk_length: 300, min_chunk_length: 100, latency: low, condition_on_previous_chunks: true, early_stop_threshold: 1}`, `{"normalize":false,"language":"","prosody":{"normalize_loudness":true},"temperature":1,"top_p":0,"chunk_length":300,"min_chunk_length":100,"latency":"low","condition_on_previous_chunks":true,"early_stop_threshold":1}`},
+		{"fish", "dictionary_refs", `{features: [quality-guard], pronunciation_dictionary: [{id: first, version: v1}, {id: second, version: v2}]}`, `{"features":["quality-guard"],"pronunciation_dictionary":[{"id":"first","version":"v1"},{"id":"second","version":"v2"}]}`},
+		{"fish", "dictionary_inline", `{pronunciation_dictionary: [{items: [{key: 重庆, value: 'tʂʰʊŋ tɕʰiŋ', case_sensitive: false}, {key: word, value: 'wɜːd'}]}, {items: []}]}`, `{"pronunciation_dictionary":[{"items":[{"key":"重庆","value":"tʂʰʊŋ tɕʰiŋ","case_sensitive":false},{"key":"word","value":"wɜːd"}]},{"items":[]}]}`},
+		{"fish", "empty_features_dictionary", `{features: [], pronunciation_dictionary: []}`, `{"features":[],"pronunciation_dictionary":[]}`},
 		{"qwen", "ordered_unicode_pairs", `{seed: 0, hot_fix: {pronunciation: [{text: 天气, replacement: tian1 qi4}, {text: 天气, replacement: tian2 qi4}], replace: [{text: 今天, replacement: 金天}, {text: 今, replacement: ''}]}}`, `{"input":{"seed":0,"hot_fix":{"pronunciation":[{"天气":"tian1 qi4"},{"天气":"tian2 qi4"}],"replace":[{"今天":"金天"},{"今":""}]}}}`},
 		{"qwen", "max_empty_pairs", `{seed: 65535, hot_fix: {pronunciation: [], replace: []}}`, `{"input":{"seed":65535,"hot_fix":{"pronunciation":[],"replace":[]}}}`},
 		{"minimax", "basic", `{text_normalization_mode: basic}`, `{"text_normalization_mode":"basic"}`},
@@ -103,7 +107,7 @@ func synthesisVendor(t *testing.T, id string) vendorTest {
 func TestExtendedEmptySynthesisPreservesDefaults(t *testing.T) {
 	for _, tc := range []struct{ id, body string }{
 		{"elevenlabs", `{voice_settings: {}}`}, {"fish", `{prosody: {}}`},
-		{"qwen", `{hot_fix: {}}`}, {"minimax", `{}`},
+		{"qwen", `{hot_fix: {}}`}, {"minimax", `{}`}, {"azure", `{}`},
 	} {
 		t.Run(tc.id, func(t *testing.T) {
 			vendor := synthesisVendor(t, tc.id)
@@ -121,7 +125,8 @@ func TestExtendedEmptySynthesisPreservesDefaults(t *testing.T) {
 func TestExtendedConfiguredPreflightPreservesOutput(t *testing.T) {
 	for _, tc := range []struct{ id, body, model, last string }{
 		{"elevenlabs", `{voice_settings: {stability: 0}, pronunciation_dictionary_locators: [{pronunciation_dictionary_id: example}]}`, "eleven_v3", `[pitch 1st|Last]`},
-		{"fish", `{normalization_language: en, prosody: {normalize_loudness: false}}`, "s2.1-pro", `[lang en|Last]`},
+		{"fish", `{normalization_language: en, prosody: {normalize_loudness: false}, pronunciation_dictionary: [{items: [{key: Last, value: lɑːst}]}], features: [quality-guard]}`, "s2.1-pro", `[lang en|Last]`},
+		{"azure", `{deployment_id: existing}`, "", `[act unsupported|Last]`},
 		{"qwen", `{seed: 0, hot_fix: {replace: [{text: Last, replacement: final}]}}`, "qwen-audio-3.1-tts-flash", `[lang xx|Last]`},
 		{"minimax", `{text_normalization_mode: quality}`, "speech-2.8-hd", `[lang xx|Last]`},
 		{"minimax", `{text_normalization_mode: quality}`, "speech-02-hd", `Last`},
@@ -135,7 +140,11 @@ func TestExtendedConfiguredPreflightPreservesOutput(t *testing.T) {
 			t.Setenv(vendor.keyEnv, "test-key")
 			t.Setenv(vendor.endpointEnv, srv.URL)
 			for _, workers := range []int{1, 4} {
-				path, out := concurrencyFiles(t, "---\nprovider: "+tc.id+"\nvoice: test-voice\nmodel: "+tc.model+"\n---\nFirst\n\n"+tc.last+"\n")
+				language := ""
+				if tc.id == "azure" {
+					language = "lang: en-US\n"
+				}
+				path, out := concurrencyFiles(t, "---\nprovider: "+tc.id+"\nvoice: test-voice\nmodel: "+tc.model+"\n"+language+"---\nFirst\n\n"+tc.last+"\n")
 				configPath := filepath.Join(t.TempDir(), "config.yaml")
 				if err := os.WriteFile(configPath, []byte("providers: {"+tc.id+": {synthesis: "+tc.body+"}}"), 0o600); err != nil {
 					t.Fatal(err)
@@ -143,6 +152,9 @@ func TestExtendedConfiguredPreflightPreservesOutput(t *testing.T) {
 				err := run(context.Background(), []string{"--config", configPath, "synth", path, "-o", out, "--concurrency", fmt.Sprint(workers)}, nil, &bytes.Buffer{}, &bytes.Buffer{})
 				if err == nil || calls.Load() != 0 {
 					t.Fatalf("invalid late segment/model: error=%v, requests=%d", err, calls.Load())
+				}
+				if tc.id == "azure" && !strings.Contains(err.Error(), "unsupported tag [act]") {
+					t.Fatalf("expected later Azure control rejection, got %v", err)
 				}
 				assertConcurrentOutputPreserved(t, out)
 			}

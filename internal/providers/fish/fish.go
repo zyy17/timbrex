@@ -23,20 +23,22 @@ func (provider) ID() string { return "fish" }
 // https://docs.fish.audio/developer-guide/core-features/emotions
 // https://docs.fish.audio/developer-guide/models-pricing/models-overview
 type request struct {
-	Text                      string               `json:"text"`
-	ReferenceID               string               `json:"reference_id"`
-	Format                    string               `json:"format"`
-	SampleRate                int                  `json:"sample_rate"`
-	Normalize                 bool                 `json:"normalize"`
-	Prosody                   prosody              `json:"prosody"`
-	Language                  *string              `json:"language,omitempty"`
-	Temperature               *float64             `json:"temperature,omitempty"`
-	TopP                      *float64             `json:"top_p,omitempty"`
-	ChunkLength               *int64               `json:"chunk_length,omitempty"`
-	MinChunkLength            *int64               `json:"min_chunk_length,omitempty"`
-	Latency                   *options.FishLatency `json:"latency,omitempty"`
-	ConditionOnPreviousChunks *bool                `json:"condition_on_previous_chunks,omitempty"`
-	EarlyStopThreshold        *float64             `json:"early_stop_threshold,omitempty"`
+	Features                  *[]options.FishFeature   `json:"features,omitempty"`
+	PronunciationDictionary   *pronunciationDictionary `json:"pronunciation_dictionary,omitempty"`
+	Text                      string                   `json:"text"`
+	ReferenceID               string                   `json:"reference_id"`
+	Format                    string                   `json:"format"`
+	SampleRate                int                      `json:"sample_rate"`
+	Normalize                 bool                     `json:"normalize"`
+	Prosody                   prosody                  `json:"prosody"`
+	Language                  *string                  `json:"language,omitempty"`
+	Temperature               *float64                 `json:"temperature,omitempty"`
+	TopP                      *float64                 `json:"top_p,omitempty"`
+	ChunkLength               *int64                   `json:"chunk_length,omitempty"`
+	MinChunkLength            *int64                   `json:"min_chunk_length,omitempty"`
+	Latency                   *options.FishLatency     `json:"latency,omitempty"`
+	ConditionOnPreviousChunks *bool                    `json:"condition_on_previous_chunks,omitempty"`
+	EarlyStopThreshold        *float64                 `json:"early_stop_threshold,omitempty"`
 }
 
 type prosody struct {
@@ -66,7 +68,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		return providers.Result{}, err
 	}
 	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) {
-		return buildWithSynthesis(seg, opt.Model, synthesis)
+		return synthesis.build(seg, opt.Model)
 	})
 	if err != nil {
 		return providers.Result{}, err

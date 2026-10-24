@@ -94,7 +94,7 @@ A cast voice mapping still takes priority over the fallback voice, including `--
 
 ## Provider synthesis options
 
-The selected YAML file supports typed per-request settings under `providers.elevenlabs.synthesis`, `providers.fish.synthesis`, `providers.qwen.synthesis`, and `providers.minimax.synthesis`. There are no CLI, environment, or script-front-matter overrides for these settings. Other providers reject a `synthesis` section; this is not arbitrary API passthrough and adds no DSL syntax.
+The selected YAML file supports typed per-request settings under `providers.elevenlabs.synthesis`, `providers.fish.synthesis`, `providers.azure.synthesis`, `providers.qwen.synthesis`, and `providers.minimax.synthesis`. There are no CLI, environment, or script-front-matter overrides for these settings. Other providers reject a `synthesis` section; this is not arbitrary API passthrough and adds no DSL syntax.
 
 Omitted fields preserve existing requests. Explicit `0`, `false`, empty strings where permitted, and empty lists remain explicit; lists are not merged or deduplicated. An empty mapping supplies no overrides. Null, unknown or dotted schema keys, incorrect scalar types, non-finite numbers, and out-of-range values fail locally. Every segment is prepared before the first HTTP request or output change. These settings neither create resources nor modify saved voices/dictionaries.
 
@@ -145,6 +145,12 @@ providers:
       latency: balanced
       condition_on_previous_chunks: false
       early_stop_threshold: 0
+      features: [quality-guard]
+      pronunciation_dictionary:
+        - items:
+            - key: Timbrex
+              value: "tɪmbɹɛks"
+              case_sensitive: false
 ```
 
 - `normalize` and `prosody.normalize_loudness`: booleans. Omission retains Timbrex's explicit `normalize: false` and loudness normalization `true`, not new service defaults. Loudness normalization is effective on the three supported S2 models.
@@ -152,8 +158,50 @@ providers:
 - `temperature`, `top_p`, `early_stop_threshold`: numbers `0`–`1`.
 - `chunk_length`: integer `100`–`300`; `min_chunk_length`: integer `0`–`100`. These control server-side chunks within a request, not Timbrex script segmentation.
 - `latency`: `low`, `normal`, or `balanced`; `condition_on_previous_chunks`: boolean.
+- [`features`](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech#body-features): a list accepting only `quality-guard`; unknown flags fail locally. `[]` explicitly requests no flags; omission adds no field. Backend availability determines whether the feature is effective; this is not a quality guarantee.
+- [`pronunciation_dictionary`](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech#body-pronunciation-dictionary): a direct list of at most three dictionaries, all inline or all references, never mixed. Inline dictionaries require `items` with at most 5000 entries. Each entry requires `key` (1–256 Unicode characters) and phonetic `value` (1–1024); optional `case_sensitive` is boolean. Both strings must be valid UTF-8 and exclude `<|phoneme_start|>` and `<|phoneme_end|>`.
 
-`features`, pronunciation dictionaries, `max_new_tokens`, and `repetition_penalty` are not exposed by this schema. See [the configuration example](../examples/fish-synthesis.yaml).
+Alternatively, reference existing dictionaries by both `id` and immutable `version`, each matching `[A-Za-z0-9_-]{1,128}`; there is no implicit latest version:
+
+```yaml
+providers:
+  fish:
+    synthesis:
+      pronunciation_dictionary:
+        - id: YOUR_EXISTING_DICTIONARY_ID
+          version: YOUR_IMMUTABLE_VERSION
+```
+
+The [official dictionary schemas](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json) specify request-wide plain substring matching, leftmost-longest, with ASCII case folding unless `case_sensitive: true`. The backend substitutes phonetic forms, not ordinary spelling aliases. Timbrex does not rewrite script/IR text or fetch dictionary contents. Unresolvable references are silently dropped by the service, so a successful request does not prove a dictionary was applied. Lists retain order and duplicates; explicit `[]`, `items: []`, and `case_sensitive: false` are preserved. Omitted fields stay omitted; `null` is rejected locally. Dictionary data is copied into a private snapshot once per synthesis invocation and reused for its segments.
+
+`max_new_tokens` and `repetition_penalty` remain outside this schema. See [the configuration example](../examples/fish-synthesis.yaml).
+
+### Azure
+
+[`deployment_id`](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech#custom-voices) routes synthesis to one existing custom voice deployment per invocation:
+
+```yaml
+providers:
+  azure:
+    endpoint: https://eastus.voice.speech.microsoft.com/cognitiveservices/v1
+    voice: YOUR_DEPLOYED_CUSTOM_VOICE_NAME
+    synthesis:
+      deployment_id: YOUR_EXISTING_DEPLOYMENT_ID
+```
+
+Use the deployment's actual hosting endpoint without its query, not the standard regional `.tts.speech` endpoint. An explicit endpoint is required: Timbrex does not guess the hosting region or rewrite a standard host. It adds the opaque ID as an encoded `deploymentId` query parameter; it does not require UUID syntax. Blank, invalid UTF-8, or control-character IDs fail locally. The endpoint still rejects credentials, query strings (including a bare `?`), and fragments.
+
+Set `AZURE_SPEECH_KEY` to the key of the resource hosting that deployment, and `voice` to its actual deployed voice name, not the deployment ID. For an opaque voice name without a recognizable locale prefix, use explicit script language, for example:
+
+```tbx
+---
+timbrex: 1
+lang: en-US
+---
+Hello from my custom voice.
+```
+
+See Microsoft's [custom voice usage](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/professional-voice-deploy-endpoint#use-your-custom-voice) and [the configuration example](../examples/azure-synthesis.yaml). This only invokes synthesis; it does not create, train, deploy, manage, or discover voices. Voice/SSML restrictions still apply. Omitting `deployment_id` preserves ordinary endpoint/region routing; no new model field or DSL/IR syntax is introduced.
 
 ### Qwen
 
@@ -196,4 +244,4 @@ Billing caveat: an existing designed/cloned voice can incur an additional voice 
 
 ## Inspect
 
-`timbrex config` prints the merged defaults, file, and environment as YAML. Configured API keys are replaced by `REDACTED`. It does not read a script, apply `synth` flags, test credentials, or contact a provider. Dictionary identifiers and hot-fix text are not redacted; do not publish configuration containing private text. The output is not a credential backup. The repository ignores the root `timbrex.yaml`. Do not commit credentials.
+`timbrex config` prints the merged defaults, file, and environment as YAML. Configured API keys are replaced by `REDACTED`. It does not read a script, apply `synth` flags, test credentials, or contact a provider. Deployment/dictionary identifiers, inline dictionary contents, and hot-fix text are not redacted; do not publish configuration containing private text. The output is not a credential backup. The repository ignores the root `timbrex.yaml`. Do not commit credentials.
