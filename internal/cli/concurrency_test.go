@@ -125,7 +125,7 @@ func TestConcurrentProviderContracts(t *testing.T) {
 			var reference map[string]concurrencyRequest
 			for _, workers := range []int{0, 1, 2, 4, 8} {
 				t.Run(fmt.Sprintf("concurrency_%d", workers), func(t *testing.T) {
-					requests, wav := runConcurrentContract(t, vendor, workers)
+					requests, wav := runConcurrentContract(t, vendor, workers, "")
 					if workers == 0 {
 						reference = requests
 					} else if !reflect.DeepEqual(requests, reference) {
@@ -148,7 +148,7 @@ func TestConcurrentProviderContracts(t *testing.T) {
 	}
 }
 
-func runConcurrentContract(t *testing.T, vendor vendorTest, workers int) (map[string]concurrencyRequest, []byte) {
+func runConcurrentContract(t *testing.T, vendor vendorTest, workers int, configBody string) (map[string]concurrencyRequest, []byte) {
 	t.Helper()
 	clearProviderDefaults(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -215,6 +215,13 @@ func runConcurrentContract(t *testing.T, vendor vendorTest, workers int) (map[st
 	t.Setenv(vendor.endpointEnv, srv.URL)
 	path, out := concurrencyFiles(t, concurrencyScript(vendor.id, true))
 	args := []string{"synth", path, "-o", out}
+	if configBody != "" {
+		configPath := filepath.Join(t.TempDir(), "timbrex.yaml")
+		if err := os.WriteFile(configPath, []byte(configBody), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		args = append(args, "--config", configPath)
+	}
 	if workers != 0 {
 		args = append(args, "--concurrency", strconv.Itoa(workers))
 	}
