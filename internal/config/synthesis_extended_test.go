@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/zyy17/timbrex/internal/provideropts"
 )
 
 func TestExtendedSynthesisConfigurationRoundTrip(t *testing.T) {
@@ -26,8 +24,8 @@ func TestExtendedSynthesisConfigurationRoundTrip(t *testing.T) {
 				t.Fatal(err)
 			}
 			value := c.Providers[tc.id].Synthesis
-			if err := provideropts.Validate(tc.id, value); err != nil || value == nil {
-				t.Fatalf("invalid typed options: %T: %v", value, err)
+			if value == nil {
+				t.Fatal("configuration did not retain typed options")
 			}
 			redacted, err := c.RedactedYAML()
 			if err != nil || strings.Contains(string(redacted), "FAKE-SECRET-DO-NOT-LOG") {

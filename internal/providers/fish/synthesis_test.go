@@ -19,22 +19,22 @@ import (
 	"time"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 func fishPointer[T any](v T) *T { return &v }
 
-func synthesisFixture() provideropts.Fish {
-	return provideropts.Fish{
+func synthesisFixture() options.Fish {
+	return options.Fish{
 		Normalize:                 fishPointer(true),
 		NormalizationLanguage:     fishPointer("es-MX"),
-		Prosody:                   &provideropts.FishProsody{NormalizeLoudness: fishPointer(false)},
+		Prosody:                   &options.FishProsody{NormalizeLoudness: fishPointer(false)},
 		Temperature:               fishPointer(0.0),
 		TopP:                      fishPointer(0.0),
 		ChunkLength:               fishPointer(int64(100)),
 		MinChunkLength:            fishPointer(int64(0)),
-		Latency:                   fishPointer(provideropts.FishLatencyLow),
+		Latency:                   fishPointer(options.FishLatencyLow),
 		ConditionOnPreviousChunks: fishPointer(false),
 		EarlyStopThreshold:        fishPointer(0.0),
 	}
@@ -63,12 +63,12 @@ func TestSynthesisRequestFields(t *testing.T) {
 }
 
 func TestSynthesisUpperBoundsAndExplicitEmptyLanguage(t *testing.T) {
-	value := provideropts.Fish{
+	value := options.Fish{
 		Normalize: fishPointer(false), NormalizationLanguage: fishPointer(""),
-		Prosody:     &provideropts.FishProsody{NormalizeLoudness: fishPointer(true)},
+		Prosody:     &options.FishProsody{NormalizeLoudness: fishPointer(true)},
 		Temperature: fishPointer(1.0), TopP: fishPointer(1.0), EarlyStopThreshold: fishPointer(1.0),
 		ChunkLength: fishPointer(int64(300)), MinChunkLength: fishPointer(int64(100)),
-		ConditionOnPreviousChunks: fishPointer(true), Latency: fishPointer(provideropts.FishLatencyBalanced),
+		ConditionOnPreviousChunks: fishPointer(true), Latency: fishPointer(options.FishLatencyBalanced),
 	}
 	seg := providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello"}}}
 	r, err := buildWithSynthesis(seg, "s2.1-pro", value)
@@ -76,7 +76,7 @@ func TestSynthesisUpperBoundsAndExplicitEmptyLanguage(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertRequestJSON(t, r, `{"text":"Hello","reference_id":"test-reference","format":"wav","sample_rate":24000,"normalize":false,"prosody":{"speed":1,"volume":0,"normalize_loudness":true},"language":"","temperature":1,"top_p":1,"chunk_length":300,"min_chunk_length":100,"latency":"balanced","condition_on_previous_chunks":true,"early_stop_threshold":1}`)
-	value.Latency = fishPointer(provideropts.FishLatencyNormal)
+	value.Latency = fishPointer(options.FishLatencyNormal)
 	value.NormalizationLanguage = fishPointer("auto")
 	r, err = buildWithSynthesis(seg, "s2.1-pro", value)
 	if err != nil || *r.Language != "auto" || *r.Latency != "normal" {
@@ -87,7 +87,7 @@ func TestSynthesisUpperBoundsAndExplicitEmptyLanguage(t *testing.T) {
 func TestSynthesisOmissionPreservesCompleteRequest(t *testing.T) {
 	const want = `{"text":"Hello","reference_id":"test-reference","format":"wav","sample_rate":24000,"normalize":false,"prosody":{"speed":1,"volume":0,"normalize_loudness":true}}`
 	for _, model := range []string{"s2-pro", "s2.1-pro", "s2.1-pro-free"} {
-		for _, input := range []provideropts.Value{nil, provideropts.Fish{}, provideropts.Fish{Prosody: &provideropts.FishProsody{}}} {
+		for _, input := range []options.Value{nil, options.Fish{}, options.Fish{Prosody: &options.FishProsody{}}} {
 			value, err := synthesisOptions(input)
 			if err != nil {
 				t.Fatal(err)
@@ -112,19 +112,15 @@ func TestSynthesisNormalizationDoesNotEnableSpokenLanguage(t *testing.T) {
 	}
 }
 
-func TestSynthesisBuildersRejectInvalidOptions(t *testing.T) {
-	for _, value := range []provideropts.Value{provideropts.ElevenLabs{}, &provideropts.Fish{}, (*provideropts.Fish)(nil)} {
+func TestSynthesisEntryRejectsInvalidOptions(t *testing.T) {
+	for _, value := range []options.Value{options.ElevenLabs{}, &options.Fish{}, (*options.Fish)(nil)} {
 		if _, err := synthesisOptions(value); err == nil {
 			t.Fatal("accepted unsupported synthesis variant")
 		}
 	}
-	invalid := provideropts.Fish{Temperature: fishPointer(math.NaN())}
+	invalid := options.Fish{Temperature: fishPointer(math.NaN())}
 	if _, err := synthesisOptions(invalid); err == nil {
 		t.Fatal("accepted invalid synthesis options")
-	}
-	seg := providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello"}}}
-	if _, err := buildWithSynthesis(seg, "s2.1-pro", invalid); err == nil {
-		t.Fatal("built request with invalid synthesis options")
 	}
 }
 
@@ -144,21 +140,21 @@ func TestSynthesisPreparedRequestsOwnAllValues(t *testing.T) {
 	assertRequestJSON(t, first, want)
 	assertRequestJSON(t, second, want)
 	*first.Language, *first.Temperature, *first.TopP = "auto", 0.5, 0.5
-	*first.ChunkLength, *first.MinChunkLength, *first.Latency = 200, 50, provideropts.FishLatencyNormal
+	*first.ChunkLength, *first.MinChunkLength, *first.Latency = 200, 50, options.FishLatencyNormal
 	*first.ConditionOnPreviousChunks, *first.EarlyStopThreshold = true, 0.5
 	first.Normalize, first.Prosody.NormalizeLoudness = false, true
 	assertRequestJSON(t, second, want)
-	if *value.NormalizationLanguage != "zh-CN" || *value.Temperature != 1 || *value.TopP != 1 || *value.ChunkLength != 300 || *value.MinChunkLength != 100 || *value.Latency != provideropts.FishLatencyBalanced || !*value.ConditionOnPreviousChunks || *value.EarlyStopThreshold != 1 || *value.Normalize || !*value.Prosody.NormalizeLoudness {
+	if *value.NormalizationLanguage != "zh-CN" || *value.Temperature != 1 || *value.TopP != 1 || *value.ChunkLength != 300 || *value.MinChunkLength != 100 || *value.Latency != options.FishLatencyBalanced || !*value.ConditionOnPreviousChunks || *value.EarlyStopThreshold != 1 || *value.Normalize || !*value.Prosody.NormalizeLoudness {
 		t.Fatal("request mutation changed caller options")
 	}
 }
 
-func mutateSynthesisFixture(value provideropts.Fish) {
+func mutateSynthesisFixture(value options.Fish) {
 	*value.Normalize, *value.Prosody.NormalizeLoudness = false, true
 	*value.NormalizationLanguage = "zh-CN"
 	*value.Temperature, *value.TopP, *value.EarlyStopThreshold = 1, 1, 1
 	*value.ChunkLength, *value.MinChunkLength = 300, 100
-	*value.Latency = provideropts.FishLatencyBalanced
+	*value.Latency = options.FishLatencyBalanced
 	*value.ConditionOnPreviousChunks = true
 }
 
@@ -245,29 +241,29 @@ func TestSynthesisPreflightPreservesOutput(t *testing.T) {
 			change func(*ir.Document, *providers.Options)
 		}{
 			{"temperature", func(_ *ir.Document, opt *providers.Options) {
-				opt.Synthesis = provideropts.Fish{Temperature: fishPointer(math.NaN())}
+				opt.Synthesis = options.Fish{Temperature: fishPointer(math.NaN())}
 			}},
 			{"top_p", func(_ *ir.Document, opt *providers.Options) {
-				opt.Synthesis = provideropts.Fish{TopP: fishPointer(math.Inf(1))}
+				opt.Synthesis = options.Fish{TopP: fishPointer(math.Inf(1))}
 			}},
 			{"early_stop", func(_ *ir.Document, opt *providers.Options) {
-				opt.Synthesis = provideropts.Fish{EarlyStopThreshold: fishPointer(-0.1)}
+				opt.Synthesis = options.Fish{EarlyStopThreshold: fishPointer(-0.1)}
 			}},
 			{"chunk", func(_ *ir.Document, opt *providers.Options) {
-				opt.Synthesis = provideropts.Fish{ChunkLength: fishPointer(int64(99))}
+				opt.Synthesis = options.Fish{ChunkLength: fishPointer(int64(99))}
 			}},
 			{"min_chunk", func(_ *ir.Document, opt *providers.Options) {
-				opt.Synthesis = provideropts.Fish{MinChunkLength: fishPointer(int64(101))}
+				opt.Synthesis = options.Fish{MinChunkLength: fishPointer(int64(101))}
 			}},
 			{"latency", func(_ *ir.Document, opt *providers.Options) {
-				opt.Synthesis = provideropts.Fish{Latency: fishPointer(provideropts.FishLatency(""))}
+				opt.Synthesis = options.Fish{Latency: fishPointer(options.FishLatency(""))}
 			}},
 			{"normalization_language", func(_ *ir.Document, opt *providers.Options) {
-				opt.Synthesis = provideropts.Fish{NormalizationLanguage: fishPointer("en.US")}
+				opt.Synthesis = options.Fish{NormalizationLanguage: fishPointer("en.US")}
 			}},
-			{"wrong_vendor", func(_ *ir.Document, opt *providers.Options) { opt.Synthesis = provideropts.ElevenLabs{} }},
-			{"pointer_variant", func(_ *ir.Document, opt *providers.Options) { opt.Synthesis = &provideropts.Fish{} }},
-			{"nil_pointer", func(_ *ir.Document, opt *providers.Options) { opt.Synthesis = (*provideropts.Fish)(nil) }},
+			{"wrong_vendor", func(_ *ir.Document, opt *providers.Options) { opt.Synthesis = options.ElevenLabs{} }},
+			{"pointer_variant", func(_ *ir.Document, opt *providers.Options) { opt.Synthesis = &options.Fish{} }},
+			{"nil_pointer", func(_ *ir.Document, opt *providers.Options) { opt.Synthesis = (*options.Fish)(nil) }},
 			{"model", func(_ *ir.Document, opt *providers.Options) { opt.Model = "s1" }},
 			{"later_tag", func(doc *ir.Document, _ *providers.Options) {
 				doc.Utterances[2].Nodes = []ir.Node{{Kind: ir.State, Name: "pitch", Args: []ir.Arg{{Kind: "semitone", Raw: "2st"}}}, {Text: "third"}}

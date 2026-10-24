@@ -28,11 +28,11 @@ The root [main.go](../main.go) calls the CLI and formats a failed command's erro
 | `internal/cli` | Cobra commands, configuration loading, pipeline wiring, output-path checks | [cli.go](../internal/cli/cli.go), [synth.go](../internal/cli/synth.go) |
 | `internal/inputfile` | Read regular script and configuration files without blocking on FIFOs | [read.go](../internal/inputfile/read.go) |
 | `internal/config` | Typed settings, defaults, YAML and environment merge, provider resolution | [config.go](../internal/config/config.go), [defaults.go](../internal/config/defaults.go) |
-| `internal/provideropts` | Typed per-request settings and validation, shared by configuration and adapters; no I/O | [options.go](../internal/provideropts/options.go) |
 | `internal/lex`, `internal/parse`, `internal/ast` | Tokens, block and inline syntax, front matter, source positions | [lex.go](../internal/lex/lex.go), [parse.go](../internal/parse/parse.go), [ast.go](../internal/ast/ast.go) |
 | `internal/check`, `internal/vocab` | Tag resolution, language diagnostics, standard tag kinds | [check.go](../internal/check/check.go), [vocab.go](../internal/vocab/vocab.go) |
 | `internal/lower`, `internal/ir` | Flatten checked syntax into provider-independent utterances | [lower.go](../internal/lower/lower.go), [ir.go](../internal/ir/ir.go) |
 | `internal/providers` | Registry, scope planning, request preparation, HTTP and audio helpers | [provider.go](../internal/providers/provider.go), [plan.go](../internal/providers/plan.go) |
+| `internal/providers/options` | Provider schemas, strict decoding and field constraints, without I/O | [options.go](../internal/providers/options/options.go), [ElevenLabs schema](../internal/providers/options/elevenlabs.go) |
 | `internal/providers/<name>` | One vendor's request mapping and response decoding | [OpenAI example](../internal/providers/openai/openai.go) |
 | `editors/vscode` | TextMate grammar and editor runtime tests, not the compiler parser | [Editor guide](../editors/vscode/readme.md) |
 
@@ -80,6 +80,8 @@ This is implemented in two stages rather than by feeding everything to one merge
 
 - `config.Load` combines defaults, one YAML file, and documented environment variables. Without `--config`, the file is `./timbrex.yaml` in the working directory, not beside the script. An explicitly selected missing file is an error. Invalid file fields are checked before environment overrides can hide them.
 - After parsing, the CLI chooses strict mode and, for synthesis, the provider, model, and default voice. `Config.Resolve` then requires the selected real provider's credentials and required endpoint/model settings. Adapters receive a `providers.Options` value containing `Out`, `Model`, `Voice`, `APIKey`, `Endpoint`, `Concurrency`, and provider-specific `Synthesis` settings.
+
+Provider-specific `synthesis` settings are decoded by [providers/options](../internal/providers/options/options.go), with each vendor's schema, decoder, and field constraints kept together. Configuration checks all configured providers, including unselected ones. Each adapter checks its own concrete option type and values again for direct Go calls, then applies model restrictions and builds requests. Shared field constraints are checked once per invocation, not once per segment; the planner and request builders still check every segment before HTTP. Large Qwen hot-fix arrays are copied once per invocation and shared read-only by its prepared requests. The options package imports neither IR nor provider execution code, and has no registration side effects.
 
 `synth --concurrency` is CLI-only, defaults to `1`, and accepts `1`–`8`; there is no YAML, environment, or front matter setting. In direct Go calls, zero-valued `Options.Concurrency` also means serial. The separate `stub` path rejects concurrency above `1`. The cap is local, not a vendor account-limit guarantee.
 

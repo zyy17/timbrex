@@ -11,8 +11,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 func init() { providers.Register(provider{}) }
@@ -23,14 +23,14 @@ func (provider) ID() string { return "elevenlabs" }
 
 // https://elevenlabs.io/docs/api-reference/text-to-speech/convert
 type request struct {
-	Text                            string                                `json:"text"`
-	Model                           string                                `json:"model_id"`
-	Language                        string                                `json:"language_code,omitempty"`
-	Settings                        *settings                             `json:"voice_settings,omitempty"`
-	Seed                            *uint32                               `json:"seed,omitempty"`
-	ApplyTextNormalization          *provideropts.ElevenTextNormalization `json:"apply_text_normalization,omitempty"`
-	ApplyLanguageTextNormalization  *bool                                 `json:"apply_language_text_normalization,omitempty"`
-	PronunciationDictionaryLocators *[]pronunciationDictionaryLocator     `json:"pronunciation_dictionary_locators,omitempty"`
+	Text                            string                            `json:"text"`
+	Model                           string                            `json:"model_id"`
+	Language                        string                            `json:"language_code,omitempty"`
+	Settings                        *settings                         `json:"voice_settings,omitempty"`
+	Seed                            *uint32                           `json:"seed,omitempty"`
+	ApplyTextNormalization          *options.ElevenTextNormalization  `json:"apply_text_normalization,omitempty"`
+	ApplyLanguageTextNormalization  *bool                             `json:"apply_language_text_normalization,omitempty"`
+	PronunciationDictionaryLocators *[]pronunciationDictionaryLocator `json:"pronunciation_dictionary_locators,omitempty"`
 }
 
 type settings struct {
@@ -60,7 +60,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := opt.Validate(p.ID()); err != nil {
+	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
 		return providers.Result{}, err
 	}
 	synthesis, err := synthesisOptions(opt.Synthesis)

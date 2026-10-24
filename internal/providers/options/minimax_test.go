@@ -1,4 +1,4 @@
-package provideropts
+package options
 
 import (
 	"strings"

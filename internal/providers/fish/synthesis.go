@@ -3,25 +3,23 @@ package fish
 import (
 	"fmt"
 
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
-func synthesisOptions(value provideropts.Value) (provideropts.Fish, error) {
+func synthesisOptions(value options.Value) (options.Fish, error) {
 	switch v := value.(type) {
 	case nil:
-		return provideropts.Fish{}, nil
-	case provideropts.Fish:
+		return options.Fish{}, nil
+	case options.Fish:
 		return v, v.Validate()
 	default:
-		return provideropts.Fish{}, fmt.Errorf("fish received an unsupported synthesis options type")
+		return options.Fish{}, fmt.Errorf("fish received an unsupported synthesis options type")
 	}
 }
 
-func buildWithSynthesis(seg providers.Segment, model string, value provideropts.Fish) (request, error) {
-	if err := value.Validate(); err != nil {
-		return request{}, err
-	}
+// buildWithSynthesis applies settings already checked by synthesisOptions.
+func buildWithSynthesis(seg providers.Segment, model string, value options.Fish) (request, error) {
 	r, err := build(seg, model)
 	if err != nil {
 		return r, err

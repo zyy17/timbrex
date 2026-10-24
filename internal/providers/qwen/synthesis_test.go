@@ -17,15 +17,15 @@ import (
 	"testing"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 func TestSynthesisCompleteRequest(t *testing.T) {
 	seed := int64(0)
-	pronunciation := []provideropts.QwenTextPair{{Text: "天气", Replacement: "tian1 qi4"}, {Text: "天气", Replacement: "tian1 qi4"}}
-	replace := []provideropts.QwenTextPair{{Text: "今天", Replacement: "金天"}, {Text: "今天", Replacement: "今\"天\n"}}
-	value := provideropts.Qwen{Seed: &seed, HotFix: &provideropts.QwenHotFix{Pronunciation: &pronunciation, Replace: &replace}}
+	pronunciation := []options.QwenTextPair{{Text: "天气", Replacement: "tian1 qi4"}, {Text: "天气", Replacement: "tian1 qi4"}}
+	replace := []options.QwenTextPair{{Text: "今天", Replacement: "金天"}, {Text: "今天", Replacement: "今\"天\n"}}
+	value := options.Qwen{Seed: &seed, HotFix: &options.QwenHotFix{Pronunciation: &pronunciation, Replace: &replace}}
 	seg := providers.Segment{Voice: "longanhuan_v3.1", Lang: "zh-CN", Nodes: []ir.Node{{Kind: ir.Text, Text: "天气，今天。"}}, Controls: []ir.Node{
 		{Name: "speed", Args: []ir.Arg{{Kind: "number", Raw: "1.1"}}},
 		{Name: "pitch", Args: []ir.Arg{{Kind: "semitone", Raw: "+12st"}}},
@@ -44,28 +44,28 @@ func TestSynthesisCompleteRequest(t *testing.T) {
 
 func TestSynthesisOmissionAndExplicitEmptyArrays(t *testing.T) {
 	seg := providers.Segment{Voice: "voice", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}
-	var nilPairs []provideropts.QwenTextPair
-	emptyPairs := []provideropts.QwenTextPair{}
+	var nilPairs []options.QwenTextPair
+	emptyPairs := []options.QwenTextPair{}
 	for _, model := range []string{"qwen-audio-3.1-tts-flash", "qwen-audio-3.1-tts-plus", "qwen-audio-3.0-tts-flash", "qwen-audio-3.0-tts-plus"} {
 		base, err := build(seg, model)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, value := range []provideropts.Qwen{{}, {HotFix: &provideropts.QwenHotFix{}}} {
+		for _, value := range []options.Qwen{{}, {HotFix: &options.QwenHotFix{}}} {
 			r, err := buildWithSynthesis(seg, model, value)
 			if err != nil || requestJSON(t, r) != requestJSON(t, base) {
 				t.Fatalf("omission changed %s: %+v, %v", model, r, err)
 			}
 		}
 		for _, tc := range []struct {
-			fix  provideropts.QwenHotFix
+			fix  options.QwenHotFix
 			want string
 		}{
-			{provideropts.QwenHotFix{Pronunciation: &emptyPairs}, `"hot_fix":{"pronunciation":[]}`},
-			{provideropts.QwenHotFix{Replace: &emptyPairs}, `"hot_fix":{"replace":[]}`},
-			{provideropts.QwenHotFix{Pronunciation: &nilPairs, Replace: &emptyPairs}, `"hot_fix":{"pronunciation":[],"replace":[]}`},
+			{options.QwenHotFix{Pronunciation: &emptyPairs}, `"hot_fix":{"pronunciation":[]}`},
+			{options.QwenHotFix{Replace: &emptyPairs}, `"hot_fix":{"replace":[]}`},
+			{options.QwenHotFix{Pronunciation: &nilPairs, Replace: &emptyPairs}, `"hot_fix":{"pronunciation":[],"replace":[]}`},
 		} {
-			r, err := buildWithSynthesis(seg, model, provideropts.Qwen{HotFix: &tc.fix})
+			r, err := buildWithSynthesis(seg, model, options.Qwen{HotFix: &tc.fix})
 			if err != nil || !strings.Contains(requestJSON(t, r), tc.want) {
 				t.Fatalf("explicit empty array: %+v, %v; want %s", r, err, tc.want)
 			}
@@ -75,8 +75,8 @@ func TestSynthesisOmissionAndExplicitEmptyArrays(t *testing.T) {
 
 func TestSynthesisSnapshotsNestedValues(t *testing.T) {
 	seed := int64(65535)
-	pairs := []provideropts.QwenTextPair{{Text: " 天气\"\n", Replacement: ""}, {Text: "天气", Replacement: "tian1 qi4"}}
-	value := provideropts.Qwen{Seed: &seed, HotFix: &provideropts.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
+	pairs := []options.QwenTextPair{{Text: " 天气\"\n", Replacement: ""}, {Text: "天气", Replacement: "tian1 qi4"}}
+	value := options.Qwen{Seed: &seed, HotFix: &options.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
 	seg := providers.Segment{Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}
 	first, err := buildWithSynthesis(seg, "qwen-audio-3.1-tts-flash", value)
 	if err != nil {
@@ -89,7 +89,7 @@ func TestSynthesisSnapshotsNestedValues(t *testing.T) {
 	want := requestJSON(t, first)
 	seed = 0
 	pairs[0].Text, pairs[0].Replacement = "mutated", "caller"
-	pairs = append(pairs, provideropts.QwenTextPair{Text: "extra", Replacement: "new"})
+	pairs = append(pairs, options.QwenTextPair{Text: "extra", Replacement: "new"})
 	value.HotFix.Pronunciation = nil
 	if requestJSON(t, first) != want || requestJSON(t, second) != want {
 		t.Fatal("request shares nested caller options")
@@ -105,24 +105,24 @@ func TestSynthesisSnapshotsNestedValues(t *testing.T) {
 func TestSynthesisInvalidOptionsAndLastSegmentPreflight(t *testing.T) {
 	badSeed := int64(65536)
 	negativeSeed := int64(-1)
-	pairs := []provideropts.QwenTextPair{{Text: "", Replacement: "bad"}}
-	invalidText := []provideropts.QwenTextPair{{Text: "PRIVATE_SOURCE_\xff", Replacement: "value"}}
-	invalidReplacement := []provideropts.QwenTextPair{{Text: "source", Replacement: "PRIVATE_VALUE_\xff"}}
-	goodPairs := []provideropts.QwenTextPair{{Text: "天气", Replacement: "tian1 qi4"}}
-	valid := provideropts.Qwen{HotFix: &provideropts.QwenHotFix{Pronunciation: &goodPairs}}
+	pairs := []options.QwenTextPair{{Text: "", Replacement: "bad"}}
+	invalidText := []options.QwenTextPair{{Text: "PRIVATE_SOURCE_\xff", Replacement: "value"}}
+	invalidReplacement := []options.QwenTextPair{{Text: "source", Replacement: "PRIVATE_VALUE_\xff"}}
+	goodPairs := []options.QwenTextPair{{Text: "天气", Replacement: "tian1 qi4"}}
+	valid := options.Qwen{HotFix: &options.QwenHotFix{Pronunciation: &goodPairs}}
 	for _, tc := range []struct {
 		name  string
-		value provideropts.Value
+		value options.Value
 		model string
 		bad   bool
 	}{
-		{"seed overflow", provideropts.Qwen{Seed: &badSeed}, "qwen-audio-3.1-tts-flash", false},
-		{"negative seed", provideropts.Qwen{Seed: &negativeSeed}, "qwen-audio-3.1-tts-flash", false},
-		{"empty source", provideropts.Qwen{HotFix: &provideropts.QwenHotFix{Replace: &pairs}}, "qwen-audio-3.1-tts-flash", false},
-		{"invalid UTF-8 source", provideropts.Qwen{HotFix: &provideropts.QwenHotFix{Pronunciation: &invalidText}}, "qwen-audio-3.1-tts-flash", false},
-		{"invalid UTF-8 replacement", provideropts.Qwen{HotFix: &provideropts.QwenHotFix{Replace: &invalidReplacement}}, "qwen-audio-3.1-tts-flash", false},
-		{"wrong options", provideropts.ElevenLabs{}, "qwen-audio-3.1-tts-flash", false},
-		{"pointer options", &provideropts.Qwen{}, "qwen-audio-3.1-tts-flash", false},
+		{"seed overflow", options.Qwen{Seed: &badSeed}, "qwen-audio-3.1-tts-flash", false},
+		{"negative seed", options.Qwen{Seed: &negativeSeed}, "qwen-audio-3.1-tts-flash", false},
+		{"empty source", options.Qwen{HotFix: &options.QwenHotFix{Replace: &pairs}}, "qwen-audio-3.1-tts-flash", false},
+		{"invalid UTF-8 source", options.Qwen{HotFix: &options.QwenHotFix{Pronunciation: &invalidText}}, "qwen-audio-3.1-tts-flash", false},
+		{"invalid UTF-8 replacement", options.Qwen{HotFix: &options.QwenHotFix{Replace: &invalidReplacement}}, "qwen-audio-3.1-tts-flash", false},
+		{"wrong options", options.ElevenLabs{}, "qwen-audio-3.1-tts-flash", false},
+		{"pointer options", &options.Qwen{}, "qwen-audio-3.1-tts-flash", false},
 		{"unknown model", valid, "qwen3-tts-flash", false},
 		{"invalid last segment", valid, "qwen-audio-3.1-tts-flash", true},
 	} {
@@ -162,8 +162,8 @@ func TestSynthesisSerialConcurrentSnapshots(t *testing.T) {
 	var baselineBodies []string
 	for _, concurrency := range []int{1, 4} {
 		seed := int64(65535)
-		pairs := []provideropts.QwenTextPair{{Text: "天气", Replacement: "tian1 qi4"}, {Text: "天气", Replacement: "new"}}
-		value := provideropts.Qwen{Seed: &seed, HotFix: &provideropts.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
+		pairs := []options.QwenTextPair{{Text: "天气", Replacement: "tian1 qi4"}, {Text: "天气", Replacement: "new"}}
+		value := options.Qwen{Seed: &seed, HotFix: &options.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
 		var once sync.Once
 		var mu sync.Mutex
 		var bodies []string
@@ -248,7 +248,7 @@ func TestSynthesisCancellationPreservesOutput(t *testing.T) {
 				}
 				seed := int64(0)
 				out := preservedOutput(t)
-				_, err := p.Synthesize(ctx, synthesisDocument(), providers.Options{Out: out, Voice: "voice", Model: "qwen-audio-3.1-tts-flash", Endpoint: "https://example.invalid/speech", Synthesis: provideropts.Qwen{Seed: &seed}, Concurrency: concurrency})
+				_, err := p.Synthesize(ctx, synthesisDocument(), providers.Options{Out: out, Voice: "voice", Model: "qwen-audio-3.1-tts-flash", Endpoint: "https://example.invalid/speech", Synthesis: options.Qwen{Seed: &seed}, Concurrency: concurrency})
 				if !errors.Is(err, context.Canceled) || preCanceled && calls.Load() != 0 || !preCanceled && calls.Load() == 0 {
 					t.Fatalf("error = %v, calls = %d", err, calls.Load())
 				}
