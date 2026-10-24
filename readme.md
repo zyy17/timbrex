@@ -6,7 +6,7 @@
 
 Timbrex is a scripting language and CLI for turning written dialogue into speech. Put the words, speakers, delivery directions, and pauses in a text file, then render it to WAV through a text-to-speech (TTS) provider.
 
-Timbrex combines *timbre* (voice quality) and *expression*.
+Timbrex combines *timbre* (voice quality) and *expression*; the name fuses the two.
 
 A TTS API handles speech generation. Timbrex handles the script around those calls: which voice speaks each line, which directions apply to a passage, and where to insert silence. Those choices stay beside the dialogue in a file you can edit, review, and version in Git; the adapter builds the requests and assembles the audio.
 
