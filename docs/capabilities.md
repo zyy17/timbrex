@@ -186,9 +186,35 @@ The stub ignores performance semantics and writes an 8 kHz test tone. It cannot 
 
 ## Gemini TTS
 
-The `gemini-3.8-flash-tts` adapter supports text, prebuilt cast voices, shared voice/as/reset scopes and local pauses. Standard emotions (including numeric intensity), `act`, `style`, `role`, `accent`, `dialect`, custom `emotion`, `whisper`, `shout`, `emph`, and laugh/cry/sigh spans become **instructions** in `speechMetadata.style`. `fast` and `slow` request faster/slower speech without an exact multiplier. Numeric speed, pitch and volume are **unsupported**. `lang` is a native language-code parameter with the restricted list documented in setup.
+The Gemini adapter supports `gemini-3.8-flash-tts` and `gemini-3.8-flash-lite-tts` with text, prebuilt cast voices, shared voice/as/reset scopes and local pauses. Standard emotions (including numeric intensity), `act`, `style`, `role`, `accent`, `dialect`, custom `emotion`, `whisper`, `shout`, `emph`, and laugh/cry/sigh spans become **instructions** in `speechMetadata.style`. `fast` and `slow` request faster/slower speech without an exact multiplier. Numeric speed, pitch and volume are **unsupported**. `lang` is a native language-code parameter with the restricted list documented in setup.
 
-Standalone events map `laugh→<laugh>`, `sigh→<sigh>`, `cough→<cough>`, `breath→<breath>`, and `gasp→<gasp>`; arguments/notes and other events are unsupported. Native cues request a performance, not an exact isolated sound. Literal ASCII `<` and `>` in text are conservatively rejected to avoid native cue interpretation; use Unicode alternatives when they must remain text. Instructions stay separate from the transcript. The reserved unsupported features above also apply.
+Both models support these standalone events, using the documented [TTS vocal tags](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#vocal-bursts-and-non-speech-sounds).
+
+| DSL event | Native transcript tag |
+| --- | --- |
+| `[laugh]` | `<laugh>` |
+| `[sigh]` | `<sigh>` |
+| `[cough]` | `<cough>` |
+| `[breath]` | `<breath>` |
+| `[gasp]` | `<gasp>` |
+| `[exhale]` | `<exhales>` |
+| `[chuckle]` | `<chuckle>` |
+| `[giggle]` | `<giggle>` |
+| `[cackle]` | `<cackle>` |
+| `[snort]` | `<snort>` |
+| `[cry]` | `<cry>` |
+| `[sob]` | `<sob>` |
+| `[whimper]` | `<whimper>` |
+| `[pant]` | `<pant>` |
+| `[groan]` | `<groan>` |
+| `[grunt]` | `<grunt>` |
+| `[moan]` | `<moan>` |
+| `[sneeze]` | `<sneeze>` |
+| `[yawn]` | `<yawn>` |
+| `[hiss]` | `<hiss>` |
+| `[clear-throat]` | `<throat-clearing>` |
+
+Arguments, notes and unlisted standalone events are rejected; near-synonym mappings are not guessed. `whisper` and `shout` remain style instructions. Exact-duration `pause` and related events still create local silence, not native pause tags. Native cues request a performance, not an exact isolated sound. Literal ASCII `<` and `>` in text are conservatively rejected even when DSL-escaped; use Unicode alternatives when they must remain text. Instructions stay separate from the transcript. The reserved unsupported features above also apply.
 
 ## Fish Audio
 
