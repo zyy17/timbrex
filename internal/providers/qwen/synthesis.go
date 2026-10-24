@@ -7,34 +7,52 @@ import (
 	"github.com/zyy17/timbrex/internal/providers"
 )
 
-func synthesisOptions(value provideropts.Value) (provideropts.Qwen, error) {
+// synthesisSnapshot is detached from caller storage and read-only after creation.
+// One invocation shares it across prepared requests instead of retaining one
+// dictionary copy per segment. Separate invocations never share a snapshot.
+type synthesisSnapshot struct {
+	seed   *uint16
+	hotFix *hotFix
+}
+
+func synthesisOptions(value provideropts.Value) (synthesisSnapshot, error) {
 	switch v := value.(type) {
 	case nil:
-		return provideropts.Qwen{}, nil
+		return synthesisSnapshot{}, nil
 	case provideropts.Qwen:
-		return v, v.Validate()
+		if err := v.Validate(); err != nil {
+			return synthesisSnapshot{}, err
+		}
+		var snapshot synthesisSnapshot
+		if v.Seed != nil {
+			seed := uint16(*v.Seed)
+			snapshot.seed = &seed
+		}
+		if fix := v.HotFix; fix != nil && (fix.Pronunciation != nil || fix.Replace != nil) {
+			// The API nests both arrays under hot_fix, not input.replace:
+			// https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api
+			snapshot.hotFix = &hotFix{Pronunciation: textPairs(fix.Pronunciation), Replace: textPairs(fix.Replace)}
+		}
+		return snapshot, nil
 	default:
-		return provideropts.Qwen{}, fmt.Errorf("qwen received an unsupported synthesis options type")
+		return synthesisSnapshot{}, fmt.Errorf("qwen received an unsupported synthesis options type")
 	}
 }
 
 func buildWithSynthesis(seg providers.Segment, model string, value provideropts.Qwen) (request, error) {
-	if err := value.Validate(); err != nil {
+	snapshot, err := synthesisOptions(value)
+	if err != nil {
 		return request{}, err
 	}
+	return snapshot.build(seg, model)
+}
+
+func (snapshot synthesisSnapshot) build(seg providers.Segment, model string) (request, error) {
 	r, err := build(seg, model)
 	if err != nil {
 		return r, err
 	}
-	if value.Seed != nil {
-		seed := uint16(*value.Seed)
-		r.Input.Seed = &seed
-	}
-	if fix := value.HotFix; fix != nil && (fix.Pronunciation != nil || fix.Replace != nil) {
-		// The API nests both arrays under hot_fix, not input.replace:
-		// https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api
-		r.Input.HotFix = &hotFix{Pronunciation: textPairs(fix.Pronunciation), Replace: textPairs(fix.Replace)}
-	}
+	r.Input.Seed, r.Input.HotFix = snapshot.seed, snapshot.hotFix
 	return r, nil
 }
 
@@ -42,7 +60,7 @@ func textPairs(pairs *[]provideropts.QwenTextPair) *[]map[string]string {
 	if pairs == nil {
 		return nil
 	}
-	// Each prepared request owns its array and maps before concurrent rendering.
+	// The invocation owns its array and maps before concurrent rendering.
 	// Preserve duplicate keys in separate objects without assigning precedence.
 	result := make([]map[string]string, len(*pairs))
 	for i, pair := range *pairs {
