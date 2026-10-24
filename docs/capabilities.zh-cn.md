@@ -202,9 +202,35 @@ Stub 忽略表演语义，输出 8 kHz 测试音，不能验证厂商能力或�
 
 ## Gemini TTS
 
-`gemini-3.8-flash-tts` 适配器支持文本、预置角色音色、共用 voice/as/reset 作用域和本地停顿。标准情绪（含数值强度）、`act`、`style`、`role`、`accent`、`dialect`、自定义 `emotion`、`whisper`、`shout`、`emph` 及 laugh/cry/sigh span 会转换为 `speechMetadata.style` 中的**指令**。`fast` 和 `slow` 请求更快/更慢的语音，不承诺精确倍率。数值 speed、pitch 和 volume **不支持**。`lang` 是原生语言代码参数，允许的子集见接入说明。
+Gemini 适配器支持 `gemini-3.8-flash-tts` 和 `gemini-3.8-flash-lite-tts`，可使用文本、预置角色音色、共用 voice/as/reset 作用域和本地停顿。标准情绪（含数值强度）、`act`、`style`、`role`、`accent`、`dialect`、自定义 `emotion`、`whisper`、`shout`、`emph` 及 laugh/cry/sigh span 会转换为 `speechMetadata.style` 中的**指令**。`fast` 和 `slow` 请求更快/更慢的语音，不承诺精确倍率。数值 speed、pitch 和 volume **不支持**。`lang` 是原生语言代码参数，允许的子集见接入说明。
 
-独立事件映射为 `laugh→<laugh>`、`sigh→<sigh>`、`cough→<cough>`、`breath→<breath>`、`gasp→<gasp>`；事件参数/注释及其他事件不支持。原生标记请求表演效果，不保证精确的独立声音。文本中的字面 ASCII `<`、`>` 会被保守拒绝，以避免原生标记解释；需要保留字面含义时请用 Unicode 替代。指令与台词分开传递。前述保留但未实现的功能同样适用。
+两个模型均支持下表中的独立事件，映射依据官方 [TTS 原生发声标记](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#vocal-bursts-and-non-speech-sounds)。
+
+| DSL 事件 | 原生台词标记 |
+| --- | --- |
+| `[laugh]` | `<laugh>` |
+| `[sigh]` | `<sigh>` |
+| `[cough]` | `<cough>` |
+| `[breath]` | `<breath>` |
+| `[gasp]` | `<gasp>` |
+| `[exhale]` | `<exhales>` |
+| `[chuckle]` | `<chuckle>` |
+| `[giggle]` | `<giggle>` |
+| `[cackle]` | `<cackle>` |
+| `[snort]` | `<snort>` |
+| `[cry]` | `<cry>` |
+| `[sob]` | `<sob>` |
+| `[whimper]` | `<whimper>` |
+| `[pant]` | `<pant>` |
+| `[groan]` | `<groan>` |
+| `[grunt]` | `<grunt>` |
+| `[moan]` | `<moan>` |
+| `[sneeze]` | `<sneeze>` |
+| `[yawn]` | `<yawn>` |
+| `[hiss]` | `<hiss>` |
+| `[clear-throat]` | `<throat-clearing>` |
+
+事件参数、注释和未列出的独立事件会被拒绝；不猜测近义映射。`whisper`、`shout` 仍为风格指令，`pause` 等精确时长事件仍在本地生成静音，不输出原生 pause 标记。原生标记请求表演效果，不保证精确的独立声音。文本中的字面 ASCII `<`、`>` 会被保守拒绝，即使添加 DSL 转义也不能绕过此限制；需要保留字面含义时请用 Unicode 替代。指令与台词分开传递。前述保留但未实现的功能同样适用。
 
 ## Fish Audio
 

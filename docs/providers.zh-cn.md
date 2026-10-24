@@ -150,13 +150,17 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 ./timbrex synth examples/gemini.tbx -o gemini.wav
 ```
 
-使用 **Google Gemini API**，不是 Google Cloud Text-to-Speech 或 Interactions：通过 `x-goog-api-key` 调用 `POST /v1beta/models/gemini-3.8-flash-tts:generateContent`。初版仅支持该模型及官方列出的 30 个预置音色，默认 `Kore`。自定义/复制音色、创建音色、流式模式和旧模型 schema 不在本适配器范围内。各角色使用独立的片段请求，不使用原生对话合成；可选并发也不会合并这些请求。
+使用 **Google Gemini API**，不是 Google Cloud Text-to-Speech 或 Interactions：通过 `x-goog-api-key` 调用 `POST /v1beta/models/{model}:generateContent`。支持 `gemini-3.8-flash-tts`（默认）和 `gemini-3.8-flash-lite-tts`，二者使用相同的请求 schema。音色限于官方列出的 30 个预置音色，默认 `Kore`。扩展音色库、自定义/复制音色、创建或管理音色、流式模式和旧模型 schema 不在本适配器范围内。各角色使用独立的片段请求，不使用原生对话合成；可选并发也不会合并这些请求。
 
-台词和 `speechMetadata.style` 分开传递。`fast`/`slow`、表演、情绪和发声控制是近似风格指令；数值 `speed`、`pitch` 和 `volume` 会被拒绝。部分事件映射到原生尖括号标记。显式 `lang` 映射到 `speechConfig.languageCode`，只接受 API 参考列出的 BCP-47 代码（如 `en-US`、`cmn-CN`，不接受 `en`、`zh-CN`）；未指定时由模型自动识别。台词加风格总计限制为 4096 个 Unicode 字符，仅作为本地资源上限，**不是** token 计数；服务端 8192-token 输入预算仍适用。
+台词和 `speechMetadata.style` 分开传递。`fast`/`slow`、表演、情绪和发声控制是近似风格指令；数值 `speed`、`pitch` 和 `volume` 会被拒绝。21 个独立事件使用原生尖括号标记，精确映射见[能力参考](capabilities.zh-cn.md#gemini-tts)。
+
+显式 `lang` 映射到 `speechConfig.languageCode`。两个模型都接受 `de-DE`、`en-AU`、`en-GB`、`en-IN`、`en-US`、`es-US`、`fr-FR`、`hi-IN`、`pt-BR`、`ar-XA`、`es-ES`、`fr-CA`、`id-ID`、`it-IT`、`ja-JP`、`tr-TR`、`vi-VN`、`bn-IN`、`gu-IN`、`kn-IN`、`ml-IN`、`mr-IN`、`ta-IN`、`te-IN`、`nl-NL`、`ko-KR`、`cmn-CN`、`pl-PL`、`ru-RU`。`th-TH` 仅支持 Flash：TTS 语言表明确列出 Flash-Lite 不支持泰语。`en`、`zh-CN` 等其他代码会被拒绝。未指定时由模型自动识别，适配器不检测文本语言；服务支持的语言范围因模型而异（Flash 为 130 种，Flash-Lite 为 101 种），不是所有语言都能作为显式语言提示。
+
+两个模型采用相同的本地限制：生成的台词（含事件标记）加风格总计不超过 4096 个 Unicode 码点。这**不是** token 计数，也不保证满足服务预算；两个模型的服务端输入上限均为 8192 tokens，输出上限均为 16384 tokens。
 
 请求明确指定 `AUDIO_WAV`、`INLINE` 和 24000 Hz。响应必须恰好包含一个 `STOP` 候选和一个内联 `audio/wav` part，且输入/输出未被拦截。额外 part、多个候选、无效 JSON/base64 和 API 错误对象均失败。音频可以附带文档规定的非载荷元数据，但带有 thought 标记的音频和额外载荷会被拒绝。64 MiB HTTP 限制包含 JSON/base64 开销。WAV 解码遵循下文的共用格式检查。
 
-参考：[GenerateContent TTS 指南](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation)、[GenerateContent schema](https://ai.google.dev/api/generate-content)、[模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)。[当前产品 TTS 指南](https://ai.google.dev/gemini-api/docs/speech-generation) 以 Interactions API 为主，本适配器不调用该接口。离线样例验证所选 schema 和拒绝行为，尚未进行真实账号或声学验证。
+参考：[GenerateContent TTS 指南](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation)、[GenerateContent schema](https://ai.google.dev/api/generate-content)、[Flash 模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)、[Flash-Lite 模型及限制](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-lite-tts)。[当前产品 TTS 指南](https://ai.google.dev/gemini-api/docs/speech-generation) 以 Interactions API 为主，本适配器不调用该接口。离线样例验证所选 schema 和拒绝行为，尚未进行真实账号或声学验证。
 
 ## Fish Audio
 

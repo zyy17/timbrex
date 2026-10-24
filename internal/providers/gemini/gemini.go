@@ -22,7 +22,9 @@ type provider struct{ client *http.Client }
 func (provider) ID() string { return "gemini" }
 
 // https://ai.google.dev/api/generate-content
+// https://ai.google.dev/gemini-api/docs/generate-content/speech-generation
 // https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts
+// https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-lite-tts
 type request struct {
 	Contents         []content        `json:"contents"`
 	GenerationConfig generationConfig `json:"generationConfig"`
@@ -71,11 +73,21 @@ type prebuiltVoice struct {
 	VoiceName string `json:"voiceName"`
 }
 
+var models = []string{"gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"}
+
 var voices = strings.Fields("Zephyr Puck Charon Kore Fenrir Leda Orus Aoede Callirrhoe Autonoe Enceladus Iapetus Umbriel Algieba Despina Erinome Algenib Rasalgethi Laomedeia Achernar Alnilam Schedar Gacrux Pulcherrima Achird Zubenelgenubi Vindemiatrix Sadachbia Sadaltager Sulafat")
 
 var languages = strings.Fields("de-DE en-AU en-GB en-IN en-US es-US fr-FR hi-IN pt-BR ar-XA es-ES fr-CA id-ID it-IT ja-JP tr-TR vi-VN bn-IN gu-IN kn-IN ml-IN mr-IN ta-IN te-IN nl-NL ko-KR cmn-CN pl-PL ru-RU th-TH")
 
-var events = map[string]string{"laugh": "<laugh>", "sigh": "<sigh>", "cough": "<cough>", "breath": "<breath>", "gasp": "<gasp>"}
+// Only registered DSL events with documented native counterparts belong here.
+// https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#vocal-bursts-and-non-speech-sounds
+var events = map[string]string{
+	"laugh": "<laugh>", "sigh": "<sigh>", "cough": "<cough>", "breath": "<breath>", "gasp": "<gasp>",
+	"exhale": "<exhales>", "chuckle": "<chuckle>", "giggle": "<giggle>", "cackle": "<cackle>", "snort": "<snort>",
+	"cry": "<cry>", "sob": "<sob>", "whimper": "<whimper>", "pant": "<pant>", "groan": "<groan>",
+	"grunt": "<grunt>", "moan": "<moan>", "sneeze": "<sneeze>", "yawn": "<yawn>", "hiss": "<hiss>",
+	"clear-throat": "<throat-clearing>",
+}
 
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
 	if err := ctx.Err(); err != nil {
@@ -83,6 +95,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	}
 	if err := opt.Validate(p.ID()); err != nil {
 		return providers.Result{}, err
+	}
+	if !slices.Contains(models, opt.Model) {
+		return providers.Result{}, fmt.Errorf("unsupported Gemini TTS model")
 	}
 	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) { return build(seg, opt.Model) })
 	if err != nil {
@@ -100,7 +115,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 
 func build(seg providers.Segment, model string) (request, error) {
 	var r request
-	if model != "gemini-3.8-flash-tts" {
+	if !slices.Contains(models, model) {
 		return r, fmt.Errorf("unsupported Gemini TTS model")
 	}
 	if !slices.Contains(voices, seg.Voice) {
@@ -108,6 +123,11 @@ func build(seg providers.Segment, model string) (request, error) {
 	}
 	if seg.Lang != "" && !slices.Contains(languages, seg.Lang) {
 		return r, fmt.Errorf("unsupported Gemini speech language code")
+	}
+	// The API's generic languageCode list is broader than Flash-Lite's TTS
+	// language inventory: Thai is documented only for Flash.
+	if model == "gemini-3.8-flash-lite-tts" && seg.Lang == "th-TH" {
+		return r, fmt.Errorf("gemini-3.8-flash-lite-tts does not support the th-TH language code")
 	}
 	if err := providers.ReservedText(seg.Nodes, "<", ">"); err != nil {
 		return r, err
