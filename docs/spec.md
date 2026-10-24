@@ -107,7 +107,7 @@ The vocabulary declares four kinds:
 | State | A point tag lasts to the end of the turn, or persists from a scene line; a span applies locally |
 | Event | Occurs at its position; only designated events allow accompanying-speech spans |
 | Wrap | Requires content: `[lang en-US\|Hello]` |
-| Turn | Only at the beginning of a turn, or on a scene line |
+| Turn | Only before non-whitespace content or non-Turn tags in an explicit speaker turn, or on a scene line; not in unprefixed narration |
 
 Inner controls replace outer controls of the same feature. Different features coexist when the provider can represent them. The shared planner groups `speed/fast/slow`, `voice/as`, `whisper/shout`, and the emotions into their respective features. Leaving a span restores its enclosing state. Each new turn starts from scene state.
 
@@ -165,6 +165,8 @@ The renderer concatenates compatible raw PCM segments into one WAV. It does not 
 
 ## 8. Unimplemented features
 
-External vocabularies, registered provider namespaces, raw passthrough, capability files, lock files, and dataset templates are not implemented. Neither are pronunciation controls, mixing, fallback planning, streaming, native dialogue, or voice management. The language does not include loops or conditionals. These features would need their own design, implementation, and tests.
+External vocabularies, registered provider namespaces, raw passthrough, capability files, lock files, and dataset templates are not implemented. Neither are provider mappings for DSL pronunciation wrappers such as `ipa` and `pinyin`, mixing, fallback planning, streaming, native dialogue, or voice management. The language does not include loops or conditionals. These features would need their own design, implementation, and tests.
+
+Provider-specific pronunciation dictionaries and replacements are available through [synthesis configuration](configuration.md#provider-synthesis-options), not new language syntax.
 
 `fix`, `fmt`, `expand`, `compile`, `caps`, `voices`, `tags`, `migrate`, an LSP, and a public Go SDK are not shipped commands or APIs. See the [design rationale](reflection.md) for the tradeoffs behind the current implementation.

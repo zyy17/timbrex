@@ -40,4 +40,4 @@ Pay-as-you-go and subscriptions are available. Monthly plans start at $6; includ
 
 192 kbps MP3 requires Creator+; 44.1 kHz PCM/WAV requires Pro+. Enterprise options include zero retention and [regional environments](https://elevenlabs.io/docs/overview/administration/data-residency), with separate accounts/resources and availability checks.
 
-**Documentation caveat:** official materials disagree about v3 speed support and the REST speed range. Verify the selected model before relying on speed control; v4 does not expose the usual speed/style controls.
+**Documentation caveat:** official materials disagree about v3 speed support and the REST speed range. Verify the selected model before relying on speed control; v4 does not expose the usual speed/style controls. [Product guidance](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech), [prompting guidance](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices), [REST parameters](https://elevenlabs.io/docs/api-reference/text-to-speech/convert).

@@ -15,17 +15,17 @@
 
 ## 语音能力
 
-- **表达控制：**通过每轮自然语言指令描述情绪、语速、音高、音量、耳语及重音。这些是表演要求，不是可精确量化的倍速、半音或分贝。
-- **非语言发声：**可内联表达笑、哭、咳嗽、呼吸、清嗓、哈欠以及短暂停顿或长停顿；不以非人声音效为目标。
-- **对话：**单次请求最多使用两个预置音色，逐轮指定说话人和风格；支持原生应和及重叠提示。自定义音色对话需要逐个说话人、逐轮合成。
-- **音色身份：**应选择合适的已有地区音色；不要将长期口音、年龄和身份改变视为普通表达调整。
-- **发音与时间信息：**本次查阅的 TTS 文档没有确立音素 / SSML 词典接口或有保证的词级对齐。
+- **表达控制**：通过每轮自然语言指令描述情绪、语速、音高、音量、耳语及重音。这些是表演要求，不是可精确量化的倍速、半音或分贝。
+- **非语言发声**：可内联表达笑、哭、咳嗽、呼吸、清嗓、哈欠以及短暂停顿或长停顿；不以非人声音效为目标。
+- **对话**：单次请求最多使用两个预置音色，逐轮指定说话人和风格；支持原生应和及重叠提示。自定义音色对话需要逐个说话人、逐轮合成。
+- **音色身份**：应选择合适的已有地区音色；不要将长期口音、年龄和身份改变视为普通表达调整。
+- **发音与时间信息**：本次查阅的 TTS 文档没有确立音素 / SSML 词典接口或有保证的词级对齐。
 
 参见[语音指南](https://ai.google.dev/gemini-api/docs/speech-generation)及 [GenerateContent 指南](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation)。
 
 ## 音色
 
-- **音色目录：**包括 Kore、Puck 在内的 30 个精选音色，以及 Extended Voice Library 中数百个可搜索音色。[目录](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#voice-options)
+- **音色目录**：包括 Kore、Puck 在内的 30 个精选音色，以及 Extended Voice Library 中数百个可搜索音色。[目录](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#voices)
 
 合成可使用已有自定义音色 ID；音色创建和管理不在本参考范围内。[音色选择](https://ai.google.dev/gemini-api/docs/speech-generation)
 

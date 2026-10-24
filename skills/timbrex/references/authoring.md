@@ -61,7 +61,7 @@ Tag names are case-insensitive and normalize `_` to `-`; IDs/values do not. With
 
 - Use unquoted numeric controls: `[speed 1.1]`, `[speed 110%]`, `[pitch +2st]`, `[volume -3dB]`. `110%` means 1.1 times normal speed, not a 110% increase.
 - Put a digit before decimals: `0.5s`, not `.5s`. Scientific notation and quoted numbers are not numeric controls.
-- `pause`, `silence`, and `break` accept `0ms` through `1min`, in `ms`, `s`, or `min`. `gap` uses the same durations but belongs at the beginning of a turn or on a scene line.
+- `pause`, `silence`, and `break` accept `0ms` through `1min`, in `ms`, `s`, or `min`. `gap` uses the same durations but must lead an explicitly recognized speaker turn, before spoken text or state tags, or appear on a scene line. Use `pause` in unprefixed narration.
 - Bare pause defaults to 250 ms; `short`/`medium`/`long` mean 250 ms/500 ms/1 s. Write zero as `0ms`, not `0`. `1m` and `1s250ms` are not supported durations.
 - Named arguments such as `intensity=0.5` parse but have no adapter mappings. Do not use them as vendor controls. Numeric emotion intensity is only an approximate text instruction on certain adapters.
 - The checker validates pauses but not all other argument types/ranges. Review the selected adapter's bounds separately.

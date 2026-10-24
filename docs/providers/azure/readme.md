@@ -17,11 +17,11 @@ Azure Speech is worth considering for multilingual applications that need explic
 
 ## Limits worth knowing
 
-Realtime synthesis produces at most 10 minutes per request; use batch for longer jobs. F0 allows 20 transactions per 60 seconds; S0 defaults to 30 transactions/second. A voice's regional capacity can still cause throttling below an account quota. [Quotas](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-services-quotas-and-limits#text-to-speech-quotas-and-limits-per-resource)
+Realtime synthesis produces at most 10 minutes per request. For longer output, split the text into requests or use Batch synthesis with a supported voice on S0. F0 allows 20 transactions per 60 seconds; S0 defaults to 30 transactions/second. A voice's regional capacity can still cause throttling below an account quota. [Quotas](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-services-quotas-and-limits#text-to-speech-quotas-and-limits-per-resource)
 
 Microsoft's HD support table and examples disagree on some `express-as` and `prosody` support. Validate the exact voice/version before relying on these controls. The MAI-specific guide documents 2.1 models while the broader catalog still lists some 2-series IDs. [HD support](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/high-definition-voices#supported-and-unsupported-ssml-elements-for-azure-speech-hd-voices), [MAI guide](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/mai-voices)
 
-For new long-form work, use Batch synthesis. The older Long Audio API is scheduled to retire on **2027-04-01**. [Lifecycle and migration](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-synthesis)
+For new long-form work with batch-supported voices, prefer Batch synthesis. The older Long Audio API is scheduled to retire on **2027-04-01**. [Lifecycle and migration](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-synthesis)
 
 ## Pricing
 

@@ -20,12 +20,12 @@ S1 使用圆括号提示，S2 使用方括号指令。官方说明 S1 退役后�
 
 ## 能力范围
 
-- **表演指令：**情绪、表达方式和人声反应。S2 支持自然语言描述，不限于固定情绪列表。Drama 3 增加词语范围的成对标签和实验性语言切换。
-- **音色选择：**通过已有的音色库或自定义音色 ID 选择合成音色。
-- **多角色对话：**S2 和 Drama 3 可一次生成多个说话人的对话，无需分别生成后拼接。
-- **发音与文本处理：**音素提示、内联或托管发音词典、数字与日期及单位规范化。language 选项影响规范化和时间对齐，不直接改变音色或口音。
-- **生成控制：**0.5–2 倍语速、dB 音量、响度规范化、采样变化、延迟模式、分块和前序音频上下文。可选的 quality-guard 功能取决于后端。
-- **交付方式：**HTTP 音频、双向 WebSocket 和流式词级对齐快照；支持 WAV/PCM、MP3、Opus。WAV/PCM 为单声道 16 位，采样率最高 44.1 kHz；Opus 使用 48 kHz。
+- **表演指令**：情绪、表达方式和人声反应。S2 支持自然语言描述，不限于固定情绪列表。Drama 3 增加词语范围的成对标签和实验性语言切换。
+- **音色选择**：通过已有的音色库或自定义音色 ID 选择合成音色。
+- **多角色对话**：S2 和 Drama 3 可一次生成多个说话人的对话，无需分别生成后拼接。
+- **发音与文本处理**：音素提示、内联或托管发音词典、数字与日期及单位规范化。language 选项影响规范化和时间对齐，不直接改变音色或口音。
+- **生成控制**：0.5–2 倍语速、dB 音量、响度规范化、采样变化、延迟模式、分块和前序音频上下文。可选的 quality-guard 功能取决于后端。
+- **交付方式**：HTTP 音频、双向 WebSocket 和流式词级对齐快照；支持 WAV/PCM、MP3、Opus。WAV/PCM 为单声道 16 位，采样率最高 44.1 kHz；Opus 使用 48 kHz。
 
 参考：[TTS API](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[情绪控制](https://docs.fish.audio/developer-guide/core-features/emotions)、[Drama 3](https://docs.fish.audio/features/text-to-speech/drama-3)、[流式接口](https://docs.fish.audio/api-reference/endpoint/websocket/tts-live)和[时间戳](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps)。
 

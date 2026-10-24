@@ -28,6 +28,7 @@ CLI 调用的是 `parse.Parse`。该函数先提取 front matter，再在内部�
 | `internal/cli` | Cobra 命令、配置加载、流程编排、输出路径检查 | [cli.go](../internal/cli/cli.go)、[synth.go](../internal/cli/synth.go) |
 | `internal/inputfile` | 读取普通脚本和配置文件，避免在 FIFO 上阻塞 | [read.go](../internal/inputfile/read.go) |
 | `internal/config` | 类型化配置、默认值、YAML 与环境变量合并、厂商设置解析 | [config.go](../internal/config/config.go)、[defaults.go](../internal/config/defaults.go) |
+| `internal/provideropts` | 配置与适配器共用的类型化请求选项及校验，不做 I/O | [options.go](../internal/provideropts/options.go) |
 | `internal/lex`、`internal/parse`、`internal/ast` | token、块与行内语法、front matter、源码位置 | [lex.go](../internal/lex/lex.go)、[parse.go](../internal/parse/parse.go)、[ast.go](../internal/ast/ast.go) |
 | `internal/check`、`internal/vocab` | 标签含义解析、语言诊断、标准标签分类 | [check.go](../internal/check/check.go)、[vocab.go](../internal/vocab/vocab.go) |
 | `internal/lower`、`internal/ir` | 将已检查的语法树展平为与厂商无关的 utterance | [lower.go](../internal/lower/lower.go)、[ir.go](../internal/ir/ir.go) |
@@ -78,7 +79,7 @@ make build
 实现分为两步，并不是把所有来源交给同一次合并：
 
 - `config.Load` 合并默认值、一份 YAML 文件和已登记的环境变量。不指定 `--config` 时，读取工作目录中的 `./timbrex.yaml`，而不是脚本所在目录。显式指定的文件不存在会报错。环境变量覆盖前会先校验文件，避免覆盖值掩盖其中的错误字段。
-- 解析脚本后，CLI 决定严格模式；合成时还会选择厂商、模型和默认音色。随后 `Config.Resolve` 检查所选真实厂商的凭证，以及必需的端点和模型设置。适配器收到的 `providers.Options` 包含 `Out`、`Model`、`Voice`、`APIKey`、`Endpoint` 和 `Concurrency`。
+- 解析脚本后，CLI 决定严格模式；合成时还会选择厂商、模型和默认音色。随后 `Config.Resolve` 检查所选真实厂商的凭证，以及必需的端点和模型设置。适配器收到的 `providers.Options` 包含 `Out`、`Model`、`Voice`、`APIKey`、`Endpoint`、`Concurrency`，以及厂商专属的 `Synthesis` 设置。
 
 `synth --concurrency` 仅通过 CLI 设置，默认值为 `1`，接受 `1`–`8`；没有 YAML、环境变量或 front matter 对应项。直接在 Go 中调用时，`Options.Concurrency` 的零值也表示串行。独立的 `stub` 路径拒绝大于 `1` 的并发数。该上限是本地限制，不保证厂商账号允许相同数量的并发请求。
 

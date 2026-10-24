@@ -186,7 +186,7 @@ chen: [slow|我有事要告诉你。]
 ./timbrex synth pauses.tbx --provider stub -o pauses.wav
 ```
 
-使用真实厂商时，`pause`、`silence`、`break` 和非负的 `gap` 会插入本地静音。`gap` 只能放在发言开头或场景行中。默认时长为 250 ms；`short`、`medium`、`long` 分别为 250 ms、500 ms、1 s。显式时长使用 `ms`、`s` 或 `min`，范围为 `0ms` 到 `1min`。零时长写作 `0ms`：`[pause 0]` 是数字而非时长，无法通过 `check`。
+使用真实厂商时，`pause`、`silence`、`break` 和非负的 `gap` 会插入本地静音。`gap` 必须位于已识别的角色发言开头，在台词或状态标签之前，也可以放在场景行中。无角色前缀的旁白开头不能使用 `gap`，可改用 `pause`。默认时长为 250 ms；`short`、`medium`、`long` 分别为 250 ms、500 ms、1 s。显式时长使用 `ms`、`s` 或 `min`，范围为 `0ms` 到 `1min`。零时长写作 `0ms`：`[pause 0]` 是数字而非时长，无法通过 `check`。
 
 发言之间不会自动添加停顿，需要时应显式写出。重叠发言尚未实现。上面的 stub 输出不会表现停顿；要听到停顿效果，需要切换到真实厂商。
 

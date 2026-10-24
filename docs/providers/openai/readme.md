@@ -11,7 +11,7 @@ OpenAI's Speech API is a compact option for prompt-directed narration and multil
 ## Features and tradeoffs
 
 - **Expressive narration:** GPT-4o Mini TTS accepts delivery instructions for accent, emotion, intonation, pace and whispering. `tts-1` favors latency; `tts-1-hd` favors quality, but neither accepts these instructions. Voices are optimized for English, with multilingual speech available. [Speech guide](https://developers.openai.com/api/docs/guides/text-to-speech)
-- **Voice choice:** the Speech API lists 13 built-in voices and accepts approved custom voice references. Voice availability depends on the model. [Speech reference](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)
+- **Voice choice:** the Speech API lists 13 built-in voices and accepts eligible custom voice references created from audio samples. Voice availability depends on the model. [Speech reference](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)
 - **Audio delivery:** MP3, Opus, AAC, FLAC, WAV and raw PCM; audio can arrive incrementally. Raw PCM is 24 kHz, signed 16-bit little-endian. SSE is also available, except on `tts-1`/`tts-1-hd`. [Formats](https://developers.openai.com/api/docs/guides/text-to-speech#supported-output-formats), [streaming options](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create)
 
 ## Limits worth knowing

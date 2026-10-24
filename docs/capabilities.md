@@ -215,7 +215,7 @@ The stub ignores performance semantics and writes an 8 kHz test tone. It cannot 
 
 The Gemini adapter supports `gemini-3.8-flash-tts` and `gemini-3.8-flash-lite-tts` with text, prebuilt cast voices, shared voice/as/reset scopes and local pauses. Standard emotions (including numeric intensity), `act`, `style`, `role`, `accent`, `dialect`, custom `emotion`, `whisper`, `shout`, `emph`, and laugh/cry/sigh spans become **instructions** in `speechMetadata.style`. `fast` and `slow` request faster/slower speech without an exact multiplier. Numeric speed, pitch and volume are **unsupported**. `lang` is a native language-code parameter with the restricted list documented in setup.
 
-Both models support these standalone events, using the documented [TTS vocal tags](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#vocal-bursts-and-non-speech-sounds).
+Both models support these standalone events, using the documented [TTS vocal tags](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#vocal-bursts).
 
 | DSL event | Native transcript tag |
 | --- | --- |

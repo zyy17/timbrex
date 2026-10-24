@@ -25,7 +25,7 @@ See the [speech guide](https://ai.google.dev/gemini-api/docs/speech-generation) 
 
 ## Voices
 
-- **Catalog:** 30 featured voices, including Kore and Puck, plus hundreds in the searchable Extended Voice Library. [Catalog](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#voice-options)
+- **Catalog:** 30 featured voices, including Kore and Puck, plus hundreds in the searchable Extended Voice Library. [Catalog](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#voices)
 
 Existing custom voice IDs can be used for synthesis; voice creation and management are outside this reference. [Voice selection](https://ai.google.dev/gemini-api/docs/speech-generation)
 

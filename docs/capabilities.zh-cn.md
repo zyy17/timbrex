@@ -215,7 +215,7 @@ Stub 忽略表演语义，输出 8 kHz 测试音，不能验证厂商能力或�
 
 Gemini 适配器支持 `gemini-3.8-flash-tts` 和 `gemini-3.8-flash-lite-tts`，可使用文本、预置角色音色、共用 voice/as/reset 作用域和本地停顿。标准情绪（含数值强度）、`act`、`style`、`role`、`accent`、`dialect`、自定义 `emotion`、`whisper`、`shout`、`emph` 及 laugh/cry/sigh span 会转换为 `speechMetadata.style` 中的**指令**。`fast` 和 `slow` 请求更快/更慢的语音，不承诺精确倍率。数值 speed、pitch 和 volume **不支持**。`lang` 是原生语言代码参数，允许的子集见接入说明。
 
-两个模型均支持下表中的独立事件，映射依据官方 [TTS 原生发声标记](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#vocal-bursts-and-non-speech-sounds)。
+两个模型均支持下表中的独立事件，映射依据官方 [TTS 原生发声标记](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation#vocal-bursts)。
 
 | DSL 事件 | 原生台词标记 |
 | --- | --- |

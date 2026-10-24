@@ -186,7 +186,7 @@ Wait. [pause 500ms] Now go. [pause short] One more beat.
 ./timbrex synth pauses.tbx --provider stub -o pauses.wav
 ```
 
-With a real provider, `pause`, `silence`, `break`, and nonnegative `gap` insert local silence. `gap` must be at the beginning of a turn or on a scene line. The default is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations use `ms`, `s`, or `min`, from `0ms` to `1min`. Write zero as `0ms`: `[pause 0]` is a number rather than a duration and fails `check`.
+With a real provider, `pause`, `silence`, `break`, and nonnegative `gap` insert local silence. `gap` must lead an explicitly recognized speaker turn, before spoken text or state tags, or appear on a scene line. It is not allowed at the start of unprefixed narration; use `pause` there. The default is 250 ms; `short`, `medium`, and `long` mean 250 ms, 500 ms, and 1 s. Explicit durations use `ms`, `s`, or `min`, from `0ms` to `1min`. Write zero as `0ms`: `[pause 0]` is a number rather than a duration and fails `check`.
 
 There is no implicit pause between turns. Use a pause where one is needed. Overlapping speech is not implemented. The stub output above does not reproduce pauses; switch to a real provider to hear them.
 
