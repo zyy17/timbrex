@@ -12,3 +12,10 @@ providers:
       seed: 42
       apply_text_normalization: auto
       apply_language_text_normalization: false
+      voice_settings:
+        stability: 0.5
+        similarity_boost: 0.75
+        style: 0
+        use_speaker_boost: false
+      # Replace [] only with existing dictionary IDs you are authorized to use.
+      pronunciation_dictionary_locators: []

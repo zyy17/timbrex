@@ -70,7 +70,7 @@ The file contains one YAML mapping. Keys are case-sensitive. Unknown keys, unkno
 | `providers.<id>.voice` | Fallback voice for speakers without cast mappings |
 | `providers.<id>.endpoint` | API base URL for OpenAI, ElevenLabs, MiniMax, Gemini, and Fish; full request URL for Azure and Qwen |
 | `providers.azure.region` | Azure region used when no endpoint is set |
-| `providers.elevenlabs.synthesis` | Typed per-request options described below; not stored voice settings |
+| `providers.<id>.synthesis` | Typed per-request options described below; not stored voice settings |
 
 Provider IDs are `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, `qwen`, `gemini`, and `fish`. Defaults and the supported environment variable names are listed in [provider setup](providers.md). The [complete example](../examples/timbrex.yaml) includes the speech services. The stub ignores speech settings.
 
@@ -92,9 +92,15 @@ A cast voice mapping still takes priority over the fallback voice, including `--
 
 `--strict-tags=false` explicitly disables strict mode; `--no-strict-tags=false` enables it. The two flag names are mutually exclusive. This preserves the distinction between an omitted boolean and an explicit `false`.
 
-## ElevenLabs synthesis options
+## Provider synthesis options
 
-The selected YAML file can supply these [Create Speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert) options. They have no CLI, environment, or script-front-matter overrides. Other providers reject a `synthesis` section; this is not arbitrary API passthrough.
+The selected YAML file supports typed per-request settings under `providers.elevenlabs.synthesis`, `providers.fish.synthesis`, `providers.qwen.synthesis`, and `providers.minimax.synthesis`. There are no CLI, environment, or script-front-matter overrides for these settings. Other providers reject a `synthesis` section; this is not arbitrary API passthrough and adds no DSL syntax.
+
+Omitted fields preserve existing requests. Explicit `0`, `false`, empty strings where permitted, and empty lists remain explicit; lists are not merged or deduplicated. An empty mapping supplies no overrides. Null, unknown or dotted schema keys, incorrect scalar types, non-finite numbers, and out-of-range values fail locally. Every segment is prepared before the first HTTP request or output change. These settings neither create resources nor modify saved voices/dictionaries.
+
+### ElevenLabs
+
+[Create Speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert) supports the following request overrides; see also the [voice settings schema](https://elevenlabs.io/docs/api-reference/voices/settings/update).
 
 ```yaml
 providers:
@@ -103,13 +109,86 @@ providers:
       seed: 42
       apply_text_normalization: auto
       apply_language_text_normalization: false
+      voice_settings:
+        stability: 0.5
+        similarity_boost: 0.75
+        style: 0
+        use_speaker_boost: false
+      pronunciation_dictionary_locators:
+        - pronunciation_dictionary_id: YOUR_EXISTING_DICTIONARY_ID
+          version_id: YOUR_EXISTING_VERSION_ID
 ```
 
-- `seed`: integer from `0` through `4294967295`. The same seed is sent to every speech segment, in serial or concurrent synthesis. Determinism is best effort, not guaranteed; changing segmentation, text, model, or voice changes the request.
-- `apply_text_normalization`: exactly `auto`, `on`, or `off`, controlling whether the service normalizes text such as numbers.
-- `apply_language_text_normalization`: boolean. ElevenLabs currently documents Japanese support only and warns that enabling it can substantially increase latency. Timbrex does not require a language hint or infer the spoken language; the existing model-specific `lang` restrictions still apply.
+- `seed`: integer `0`–`4294967295`, sent unchanged to each segment. Determinism is best effort; changing segmentation, text, model, or voice changes the request.
+- `apply_text_normalization`: `auto`, `on`, or `off`. `apply_language_text_normalization` is a boolean; ElevenLabs currently documents Japanese support and potentially substantial added latency. It does not replace the existing `lang` rules.
+- `voice_settings.stability` and `similarity_boost`: numbers `0`–`1`. `style` is a finite number for vendor style exaggeration, not the textual DSL `style`; the linked API schema publishes no numeric bounds, so Timbrex does not invent them. `use_speaker_boost` is boolean. These settings coexist with existing DSL speed without overriding it.
+- `pronunciation_dictionary_locators`: at most three existing dictionaries, applied in supplied order. Each entry requires `pronunciation_dictionary_id`; `version_id` is optional. Timbrex locally rejects empty or invalid UTF-8 IDs and IDs/explicit versions containing whitespace or control characters, preserves duplicates, and sends `[]` when explicitly supplied. It does not fetch dictionary contents or validate model compatibility of their individual pronunciation rules.
 
-Omitted fields remain absent from requests, preserving existing behavior. Explicit `0` and `false` are sent, and an empty mapping supplies no overrides. Null, unknown keys, incorrect scalar types, and out-of-range seeds fail locally before synthesis. These settings do not modify saved voices. See [the configuration example](../examples/elevenlabs-synthesis.yaml); supply your voice ID and `ELEVENLABS_API_KEY` before using it with `synth`.
+The [Playground guide](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech) describes model-dependent UI availability that is not a complete HTTP eligibility contract. Passing local schema checks does not prove every setting is effective on every model. No new model gate is inferred from hidden UI controls. See [the configuration example](../examples/elevenlabs-synthesis.yaml); set your accessible voice and API key before synthesis.
+
+### Fish
+
+The [TTS API](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech) and [OpenAPI schema](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json) define these S2 request controls:
+
+```yaml
+providers:
+  fish:
+    synthesis:
+      normalize: true
+      normalization_language: en
+      prosody:
+        normalize_loudness: false
+      temperature: 0.7
+      top_p: 0.7
+      chunk_length: 200
+      min_chunk_length: 0
+      latency: balanced
+      condition_on_previous_chunks: false
+      early_stop_threshold: 0
+```
+
+- `normalize` and `prosody.normalize_loudness`: booleans. Omission retains Timbrex's explicit `normalize: false` and loudness normalization `true`, not new service defaults. Loudness normalization is effective on the three supported S2 models.
+- `normalization_language`: maps to API `language` for normalization/alignment, not spoken language or accent. At most 35 ASCII letters, digits, `_`, or `-`; `""` and `auto` are permitted. It does not make DSL `lang` supported.
+- `temperature`, `top_p`, `early_stop_threshold`: numbers `0`–`1`.
+- `chunk_length`: integer `100`–`300`; `min_chunk_length`: integer `0`–`100`. These control server-side chunks within a request, not Timbrex script segmentation.
+- `latency`: `low`, `normal`, or `balanced`; `condition_on_previous_chunks`: boolean.
+
+`features`, pronunciation dictionaries, `max_new_tokens`, and `repetition_penalty` are not exposed by this schema. See [the configuration example](../examples/fish-synthesis.yaml).
+
+### Qwen
+
+The [Qwen-Audio-TTS HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api) accepts `input.seed` and `input.hot_fix`:
+
+```yaml
+providers:
+  qwen:
+    synthesis:
+      seed: 0
+      hot_fix:
+        pronunciation:
+          - text: 天气
+            replacement: tian1 qi4
+        replace:
+          - text: 今天
+            replacement: 金天
+```
+
+`seed` is an integer `0`–`65535`, unchanged for each segment. Each hot-fix list uses typed `text`/`replacement` string pairs, serialized as ordered single-entry objects under `input.hot_fix.pronunciation` or `input.hot_fix.replace`, never `input.replace`. Both keys are required. Timbrex locally rejects empty source text or invalid UTF-8 pair strings; it preserves literal whitespace, Unicode, empty replacement strings, duplicate source keys, and overlapping words. The documentation does not establish duplicate/overlap precedence or empty-replacement behavior: order preservation is not a promise of a matching algorithm. An explicit list `[]` is sent; omitted lists and an empty `hot_fix` mapping add no fields. See [the configuration example](../examples/qwen-synthesis.yaml).
+
+### MiniMax
+
+The [synchronous TTS API](https://platform.minimax.io/docs/api-reference/speech-t2a-http) supports top-level `text_normalization_mode`:
+
+```yaml
+providers:
+  minimax:
+    synthesis:
+      text_normalization_mode: quality
+```
+
+Allowed values are `basic` and `quality`. `quality` requires non-streaming `speech-2.8-hd`, `speech-2.8-turbo`, `speech-2.6-hd`, or `speech-2.6-turbo`; Timbrex rejects it for other model IDs rather than accepting a silent downgrade. The current adapter is non-streaming. Omission leaves normalization disabled as before; no deprecated `voice_setting.text_normalization` field is added. See [the configuration example](../examples/minimax-synthesis.yaml).
+
+Billing caveat: an existing designed/cloned voice can incur an additional voice fee on its first synthesis use, even though Timbrex creates no voice ([pricing](https://platform.minimax.io/docs/pricing/overview#audio)). For normalized text, do not estimate usage from the original script alone: the [response schema](https://platform.minimax.io/docs/api-reference/speech-t2a-http.md) distinguishes billable `usage_characters`, reference-only `word_count`, and high-quality normalization `norm_text_char_count` (also reference-only, not currently billed). Timbrex does not yet expose this usage metadata or `usage_voice_count`.
 
 ## Synthesis concurrency
 
@@ -117,4 +196,4 @@ Omitted fields remain absent from requests, preserving existing behavior. Explic
 
 ## Inspect
 
-`timbrex config` prints the merged defaults, file, and environment as YAML. Configured API keys are replaced by `REDACTED`. It does not read a script, apply `synth` flags, test credentials, or contact a provider. The output is not a credential backup. The repository ignores the root `timbrex.yaml`. Do not commit credentials.
+`timbrex config` prints the merged defaults, file, and environment as YAML. Configured API keys are replaced by `REDACTED`. It does not read a script, apply `synth` flags, test credentials, or contact a provider. Dictionary identifiers and hot-fix text are not redacted; do not publish configuration containing private text. The output is not a credential backup. The repository ignores the root `timbrex.yaml`. Do not commit credentials.

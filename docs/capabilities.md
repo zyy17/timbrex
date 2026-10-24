@@ -6,6 +6,17 @@ The tables below describe Timbrex's current adapters, not everything the vendors
 
 OpenAI instructions require a model that supports `instructions`; `tts-1` and `tts-1-hd` reject them. ElevenLabs acting and events require `eleven_v3`, `eleven_v4`, or `eleven_v4_turbo`. Explicit speed controls are rejected on `eleven_v4` and `eleven_v4_turbo`, which do not support the speed setting. For other models, the adapter's speed range is conservatively limited to the range in the linked product guide. For other ranges and language restrictions, see [provider setup](providers.md). ElevenLabs language hints fail locally on `eleven_multilingual_v2`, when the primary subtag is empty, or when it is not `en` on English-only `eleven_flash_v2` / `eleven_turbo_v2`. Other models' language support is not queried, and unsupported codes may be ignored by the service.
 
+## Per-request configuration
+
+Typed YAML options are separate from the DSL controls below. See [configuration](configuration.md#provider-synthesis-options) for exact keys, ranges, defaults, examples, and local validation policies.
+
+- [ElevenLabs](https://elevenlabs.io/docs/api-reference/text-to-speech/convert): seed and text normalization, four per-request voice settings, and up to three ordered existing dictionary locators. Dictionary contents/model efficacy are not inspected; UI availability is not treated as an HTTP contract.
+- [Fish](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json): text/loudness normalization, normalization language, sampling, chunk lengths, latency, previous-chunk conditioning, and early stopping on the supported S2 models. Normalization language is not a spoken-language override. Fish dictionaries remain unimplemented.
+- [Qwen](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api): per-segment seed and ordered `input.hot_fix` pronunciation/replacement pairs. Duplicate/overlap matching precedence is not established.
+- [MiniMax](https://platform.minimax.io/docs/api-reference/speech-t2a-http): `basic` or `quality` text normalization; quality is limited to non-streaming 2.8/2.6 HD/Turbo and rejected elsewhere.
+
+These additions preserve omitted defaults and do not implement inline pronunciation spans, resource creation/management, new output formats, native dialogue, or streaming. Contract tests are offline, not live-account or acoustic verification.
+
 ## Controls by provider
 
 [OpenAI](#openai) · [ElevenLabs](#elevenlabs) · [MiniMax](#minimax) · [Azure](#azure) · [Qwen](#qwen) · [Gemini](#gemini) · [Fish](#fish)

@@ -194,7 +194,7 @@ func TestFailurePreservesOutput(t *testing.T) {
 				t.Fatal(err)
 			}
 			doc := &ir.Document{Utterances: []ir.Utterance{{Nodes: []ir.Node{{Text: "private-text"}}}}}
-			_, err := (provider{}).Synthesize(ctx, doc, providers.Options{APIKey: "FAKE-KEY", Model: "s2.1-pro", Voice: "test-reference", Endpoint: srv.URL, Out: out})
+			_, err := (provider{}).Synthesize(ctx, doc, providers.Options{APIKey: "FAKE-KEY", Model: "s2.1-pro", Voice: "test-reference", Endpoint: srv.URL, Out: out, Synthesis: synthesisFixture()})
 			if err == nil || calls.Load() != 1 || strings.Contains(err.Error(), "FAKE-KEY") || strings.Contains(err.Error(), "private-text") {
 				t.Fatalf("err=%v calls=%d", err, calls.Load())
 			}

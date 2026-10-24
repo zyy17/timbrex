@@ -1,0 +1,16 @@
+# Set DASHSCOPE_API_KEY and your verified regional QWEN_ENDPOINT.
+# Inspect offline: timbrex --config examples/qwen-synthesis.yaml config
+provider: qwen
+providers:
+  qwen:
+    model: qwen-audio-3.1-tts-flash
+    voice: longanhuan_v3.1
+    synthesis:
+      seed: 0
+      hot_fix:
+        pronunciation:
+          - text: 天气
+            replacement: tian1 qi4
+        replace:
+          - text: 今天
+            replacement: 金天

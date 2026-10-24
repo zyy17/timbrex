@@ -36,6 +36,13 @@ type input struct {
 	Pitch       float64  `json:"pitch,omitempty"`
 	Volume      *int     `json:"volume,omitempty"`
 	Languages   []string `json:"language_hints,omitempty"`
+	Seed        *uint16  `json:"seed,omitempty"`
+	HotFix      *hotFix  `json:"hot_fix,omitempty"`
+}
+
+type hotFix struct {
+	Pronunciation *[]map[string]string `json:"pronunciation,omitempty"`
+	Replace       *[]map[string]string `json:"replace,omitempty"`
 }
 
 var events = map[string]string{"laugh": "[laughing]", "sigh": "[sighing]", "gasp": "[gasp]", "clear-throat": "[clears throat]", "giggle": "[giggles]", "cough": "[cough]", "snort": "[snorts]"}
@@ -47,7 +54,13 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := opt.Validate(p.ID()); err != nil {
 		return providers.Result{}, err
 	}
-	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) { return build(seg, opt.Model) })
+	synthesis, err := synthesisOptions(opt.Synthesis)
+	if err != nil {
+		return providers.Result{}, err
+	}
+	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) {
+		return synthesis.build(seg, opt.Model)
+	})
 	if err != nil {
 		return providers.Result{}, err
 	}
