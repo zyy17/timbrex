@@ -82,4 +82,4 @@ No current adapter implements pronunciation wrappers (`ipa`, `pinyin`, `say`, `s
 
 For effects or overlap, preserve intent in non-spoken production notes and explain the external editing step or ask about an alternative. For pronunciation, offer a user-approved text rewrite or documented instruction-capable provider without promising phonetic accuracy.
 
-Baseline: [DSL specification](https://github.com/zyy17/timbrex/blob/47d478de8b5ba0ec4134d9745bde0151a73155c5/docs/spec.md) and [vocabulary registry](https://github.com/zyy17/timbrex/blob/47d478de8b5ba0ec4134d9745bde0151a73155c5/internal/vocab/vocab.go). Use matching documentation for another revision.
+Language baseline: [DSL specification](https://github.com/zyy17/timbrex/blob/47d478de8b5ba0ec4134d9745bde0151a73155c5/docs/spec.md) and [vocabulary registry](https://github.com/zyy17/timbrex/blob/47d478de8b5ba0ec4134d9745bde0151a73155c5/internal/vocab/vocab.go). These pinned sources describe grammar, not current provider support.

@@ -1,12 +1,12 @@
 # Providers, execution, and troubleshooting
 
-Use this beyond provider-neutral authoring. These are adapter constraints at the skill's pinned revision, not a complete vendor manual or proof of current service availability.
+Use this beyond provider-neutral authoring. These are adapter constraints shipped with this skill, not a complete vendor manual or proof of current service availability.
 
 ## Establish the target
 
 Inspect the trusted CLI's `version`, `synth --help`, and, when relevant, `config`. `config` prints merged file/environment defaults with API keys redacted; it does not read a script, apply synthesis flags, or test credentials. Do not dump environment variables or paste configuration wholesale into a public report.
 
-For details, read only the selected provider's sections in matching `docs/providers.md` and `docs/capabilities.md` when a checkout exists, or the baseline links below otherwise. Verify current official vendor documentation before relying on model availability, pricing, voice access, or service-specific claims. Do not silently substitute a new vendor model that the installed adapter does not implement.
+For details, read only the selected provider's sections in `docs/providers.md` and `docs/capabilities.md` from the matching checkout or revision. If unavailable, use the upstream links below for research. Verify current official vendor documentation before relying on model availability, pricing, voice access, or service-specific claims. Do not silently substitute a new vendor model that the installed adapter does not implement.
 
 Keep writing if the target is not chosen. For generation, establish provider, usable model/voices, intended text, output destination, and spending constraints. If an effect is unsupported, explain the mismatch and offer an adaptation before changing creative intent.
 
@@ -94,4 +94,4 @@ Inspect successful output. Audition when possible: verify words, voices, pauses,
 - **No output or old output remains**: inspect exit status/stderr. Failed runs preserve existing output before publication; an old WAV is not proof of success.
 - **Only a tone**: stub was selected. Speech requires a real provider and account setup.
 
-Baseline: [setup and official vendor links](https://github.com/zyy17/timbrex/blob/47d478de8b5ba0ec4134d9745bde0151a73155c5/docs/providers.md), [exact capabilities and literal-text restrictions](https://github.com/zyy17/timbrex/blob/47d478de8b5ba0ec4134d9745bde0151a73155c5/docs/capabilities.md), and [configuration](https://github.com/zyy17/timbrex/blob/47d478de8b5ba0ec4134d9745bde0151a73155c5/docs/configuration.md).
+Current upstream: [setup and official vendor links](https://github.com/zyy17/timbrex/blob/main/docs/providers.md), [exact capabilities and literal-text restrictions](https://github.com/zyy17/timbrex/blob/main/docs/capabilities.md), and [configuration](https://github.com/zyy17/timbrex/blob/main/docs/configuration.md). These moving `main` pages may differ from the installed revision.
