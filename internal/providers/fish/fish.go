@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -56,6 +57,8 @@ var events = map[string]string{
 	"laugh": "[laughing]", "chuckle": "[chuckling]", "sigh": "[sighing]", "groan": "[groaning]", "pant": "[panting]", "gasp": "[gasping]", "yawn": "[yawning]", "snore": "[snoring]", "clear-throat": "[clear throat]",
 }
 
+var models = []string{"s2.1-pro", "s2.1-pro-free", "s2-pro"}
+
 func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.Options) (providers.Result, error) {
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
@@ -66,6 +69,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	synthesis, err := synthesisOptions(opt.Synthesis)
 	if err != nil {
 		return providers.Result{}, err
+	}
+	if !slices.Contains(models, opt.Model) {
+		return providers.Result{}, fmt.Errorf("unsupported Fish TTS model")
 	}
 	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) {
 		return synthesis.build(seg, opt.Model)
@@ -90,9 +96,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 func build(seg providers.Segment, model string) (request, error) {
 	r := request{ReferenceID: seg.Voice, Format: "wav", SampleRate: providers.SampleRate, Normalize: false, Prosody: prosody{Speed: 1, NormalizeLoudness: true}}
 	// Unknown model headers silently fall back at the service; never allow that.
-	switch model {
-	case "s2.1-pro", "s2.1-pro-free", "s2-pro":
-	default:
+	if !slices.Contains(models, model) {
 		return r, fmt.Errorf("unsupported Fish TTS model")
 	}
 	if strings.TrimSpace(seg.Voice) == "" {
