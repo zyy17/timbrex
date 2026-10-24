@@ -2,7 +2,7 @@
 
 [English](architecture.md) · [贡献指南](../contributing.zh-cn.md) · [DSL 规范 v1](spec.zh-cn.md)
 
-本文面向熟悉 Go、初次接触 Timbrex 的开发者。读完后，你应能跟着一份脚本走到 WAV 输出，找到某个行为对应的代码，并在不修改语言的前提下扩展适配器。本文介绍当前实现；语言规则以 [DSL 规范](spec.zh-cn.md)为准，设置项见[配置参考](configuration.zh-cn.md)，厂商相关约定见[厂商接入指南](providers.zh-cn.md)和[能力参考](capabilities.zh-cn.md)。
+本文面向熟悉 Go、初次接触 Timbrex 的开发者。读完后，你应能跟着一份脚本走到音频输出，找到某个行为对应的代码，并在不修改语言的前提下扩展适配器。本文介绍当前实现；语言规则以 [DSL 规范](spec.zh-cn.md)为准，设置项见[配置参考](configuration.zh-cn.md)，厂商相关约定见[厂商接入指南](providers.zh-cn.md)和[能力参考](capabilities.zh-cn.md)。
 
 Timbrex 由一个小型编译器和音频渲染器组成。编译器把台词、角色和表演指令转换为与厂商无关的中间表示（IR），供后续请求规划使用。真实厂商适配器再把这些结构转换成语音请求，默认串行或按可选的有界并发调用同一家服务，并按脚本顺序将返回的 PCM 与本地静音拼接起来。Timbrex 自身不生成语音，同一份脚本也不保证在不同厂商下得到相同的表演效果。
 
@@ -15,6 +15,8 @@ flowchart TD
     Adapter --> WAV["WAV 文件"]
 ```
 
+图中展示共用的拼接路径。原生 WAV 到这里结束；可选的 CLI 最终文件导出在此后转换完整 WAV。
+
 CLI 调用的是 `parse.Parse`。该函数先提取 front matter，再在内部调用词法分析器，调用方不需要手动连接 lexer 和 parser。`check.Apply` 既生成诊断，也原地更新标签节点。只有通过检查的 AST 才应交给 `lower.Script`。
 
 `check` 到完成检查的 AST 为止；`synth` 继续将其转换为中间表示，再选择厂商。当前七个真实厂商适配器都使用 `Prepare` 与 `Render`，但这两个函数只是共享辅助函数，并不是 `Provider` 接口要求实现的方法。`stub` 刻意采用另一条路径：生成 **8 kHz、单声道、16 位测试音**，不读出台词，也不重现脚本里的停顿和表演指令。
@@ -26,6 +28,7 @@ CLI 调用的是 `parse.Parse`。该函数先提取 front matter，再在内部�
 | 位置 | 职责 | 建议入口 |
 | --- | --- | --- |
 | `internal/cli` | Cobra 命令、配置加载、流程编排、输出路径检查 | [cli.go](../internal/cli/cli.go)、[synth.go](../internal/cli/synth.go) |
+| `internal/audioexport` | 仅供 CLI 使用的最终文件校验、FFmpeg 预检、编码与发布 | [export.go](../internal/audioexport/export.go)、[process.go](../internal/audioexport/process.go) |
 | `internal/inputfile` | 读取普通脚本和配置文件，避免在 FIFO 上阻塞 | [read.go](../internal/inputfile/read.go) |
 | `internal/config` | 类型化配置、默认值、YAML 与环境变量合并、厂商设置解析 | [config.go](../internal/config/config.go)、[defaults.go](../internal/config/defaults.go) |
 | `internal/lex`、`internal/parse`、`internal/ast` | token、块与行内语法、front matter、源码位置 | [lex.go](../internal/lex/lex.go)、[parse.go](../internal/parse/parse.go)、[ast.go](../internal/ast/ast.go) |
@@ -273,7 +276,7 @@ sequenceDiagram
     R->>R: 完成并发布 WAV
 ```
 
-图中展示串行成功路径。语音 PCM 在写入前经过检查；最终发布包括补齐头部、关闭文件、检查取消和重命名。
+图中展示渲染器的串行成功路径。语音 PCM 在写入前经过检查；WAV 发布包括补齐头部、关闭文件、检查取消和重命名。选择压缩输出时，这个 WAV 是 CLI 导出阶段的私有中间输入，不是用户目标文件。
 
 使用 `--concurrency N` 时，滚动窗口内最多有 `N` 个片段任务并行进行，但仍由单一写入流程按脚本顺序追加语音与本地静音。记录到第一个错误后，会停止接收新任务、取消在途请求，并等待已启动任务退出，再返回错误且不发布临时文件。
 
@@ -291,7 +294,13 @@ sequenceDiagram
 
 [WriteOutput](../internal/providers/output.go) 在目标目录创建 `.timbrex-*.partial` 临时文件。完整写入后关闭文件，检查取消状态，再用 `os.Rename` 发布；正常失败流程会清理临时文件。如果合成、解码或写入在发布前失败，已有输出不会被覆盖。新建和替换后的文件使用 `CreateTemp` 在应用 umask 前的私有 `0600` 权限，而不是保留旧目标文件的权限。
 
-这是完整文件的发布机制，不是文件系统事务，也不保证崩溃后的持久性。实现没有执行文件或目录 `fsync`，重命名语义取决于操作系统和文件系统。后续片段失败也无法撤销已经完成的远程请求。CLI 会拒绝非 WAV 扩展名、目录，以及与源码为同一文件的输出路径，不会自动创建缺失的父目录。
+这是完整文件的发布机制，不是文件系统事务，也不保证崩溃后的持久性。实现没有执行文件或目录 `fsync`，重命名语义取决于操作系统和文件系统。后续片段失败也无法撤销已经完成的远程请求。CLI 会在调用厂商前拒绝不支持的输出扩展名、目录、缺失的父目录，以及与源码为同一文件的输出路径。
+
+### 最终文件导出
+
+[internal/audioexport](../internal/audioexport/export.go) 位于 CLI 边界，不进入厂商适配器。原生 `.wav` 保留现有渲染器，不启动 FFmpeg。选择 `.mp3`、`.flac`、`.opus` 或 `.aac` 时，准备阶段从 `PATH` 定位 `ffmpeg`，在任何厂商网络请求前，以私有的微小 24 kHz 单声道 WAV 实测所选解封装器、解码器、编码器与封装器。请仅使用可信的 FFmpeg 安装；Timbrex 不验证其来源。探测超时为十秒。厂商请求载荷、PCM 顺序拼接和停顿都不改变。
+
+厂商先写出完整的私有 `source.wav`，导出器再一次性转码到私有同级目录中的可寻址文件，检查成功和取消状态，最后只把成品重命名到目标路径。失败会清理中间文件并保留旧目标。进程执行使用固定参数、不经过 shell、仅允许本地文件协议，采用不含厂商凭证的最小环境，限制诊断大小，并检查完成后的编码文件大小。同样适用前述操作系统、文件系统与崩溃持久性限制。固定编码器、FFmpeg 官方参考、Opus 时钟语义和 AAC 填充限制见[音频输出](audio-output.zh-cn.md)。
 
 ## 错误与取消
 
@@ -305,7 +314,7 @@ sequenceDiagram
 
 实现不会把全部已完成音频保存在内存里。串行模式先写入一个片段，再请求下一个。并发模式将活动任务数和尚未写入的片段索引窗口都限制在 `N` 以内，其中也包括本地停顿；后完成的音频只在该窗口内等待。首个片段较慢时，窗口停止推进，而不是让 PCM 无限积压。在内存中等待的已完成 PCM 数据长度随“窗口大小 × 最大解码片段”增长，不随整份脚本长度增长。这不是所占堆内存的上限：PCM 切片可能让更大的 WAV 底层数组继续保留。
 
-它**不是流式合成或流式播放**。每个 HTTP 响应仍会在大小限制内完整读入，HTTP 缓冲、JSON/hex/base64 解码和 WAV 底层缓冲可能与解码后的 PCM 同时存在，最终 WAV 也只有在整次渲染成功后才发布。
+它**不是流式合成或流式播放**。每个 HTTP 响应仍会在大小限制内完整读入，HTTP 缓冲、JSON/hex/base64 解码和 WAV 底层缓冲可能与解码后的 PCM 同时存在，最终音频也只有在整次渲染及所选导出均成功后才发布。
 
 源码、AST、IR、规划片段和全部已准备的请求对象可能同时存在。目前没有全局内存预算，也不会自动拆分长脚本。64 MiB 响应上限与 1 GiB 输出上限保护的是不同资源，都不等于进程总内存上限。
 
@@ -356,6 +365,6 @@ Markdown 测试允许 Mermaid 围栏，但不解析或渲染其中的图表；�
 3. [lower.go](../internal/lower/lower.go) 和 [ir.go](../internal/ir/ir.go)：跟踪一个 span 如何变成扁平的成对标记。
 4. [plan.go](../internal/providers/plan.go) 及其测试：推演示例的六个片段和 reset 行为。
 5. [prepare.go](../internal/providers/prepare.go) 和 [openai.go](../internal/providers/openai/openai.go)：区分本地请求构造与网络执行。
-6. [http.go](../internal/providers/http.go)、[audio.go](../internal/providers/audio.go) 和 [output.go](../internal/providers/output.go)：跟踪一个响应如何成为最终发布的 WAV。
+6. [http.go](../internal/providers/http.go)、[audio.go](../internal/providers/audio.go) 和 [output.go](../internal/providers/output.go)：跟踪一个响应如何成为完整 WAV，再看 [audioexport/export.go](../internal/audioexport/export.go) 中可选的最终文件编码。
 
 沿这条路径即可读完主实现，不必一开始就了解每家厂商的 API。

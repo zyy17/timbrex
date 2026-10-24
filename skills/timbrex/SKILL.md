@@ -1,6 +1,6 @@
 ---
 name: timbrex
-description: Write, edit, validate, configure, synthesize, and troubleshoot Timbrex dialogue and narration scripts (.tbx or .timbrex). Use for turning natural-language briefs into expressive speech scripts, adapting scripts to a TTS provider, and producing requested WAV audio. Not for implementing Timbrex itself.
+description: Write, edit, validate, configure, synthesize, and troubleshoot Timbrex dialogue and narration scripts (.tbx or .timbrex). Use for turning natural-language briefs into expressive speech scripts, adapting scripts to a TTS provider, and producing requested audio files. Not for implementing Timbrex itself.
 ---
 
 # Timbrex
@@ -49,7 +49,7 @@ Read [references/running.md](references/running.md) for provider selection, voic
 - Keep API keys out of scripts, generated examples, chat, logs, and Git. Use existing environment/secret-manager setup. Do not print the environment or read secret values merely to check setup.
 - Real-provider synthesis sends the script to that service and may cost money. Run it only within requested generation scope and approved spending constraints. If only writing/checking was requested, stop there. Do not use `synth` as a dry run: no public provider-only preflight or `--dry-run` exists.
 - For a requested offline output smoke test, force `--provider stub`; never rely on configured defaults. Stub produces a tone, not speech, and ignores performance and pauses.
-- Use a new `.wav` destination unless replacement is intended. Its parent directory must exist. Start serial; increase `--concurrency` only when appropriate for the user's account and task.
+- Use a new destination unless replacement is intended. Its parent directory must exist. Default `.wav` needs no FFmpeg; `.mp3`, `.flac`, `.opus`, and `.aac` use a trusted local FFmpeg installation. Check the installed version and [running reference](references/running.md) before choosing another format; never auto-install tools. Start serial; increase `--concurrency` only when appropriate for the user's account and task.
 - After success, verify the output exists and is nonempty. Listen if playback is available and the task needs auditory review; otherwise say it was generated but not auditioned. Re-running an uncertain or failed paid request can incur charges again.
 
 ## Report precisely

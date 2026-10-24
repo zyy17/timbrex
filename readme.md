@@ -4,7 +4,7 @@
 
 [简体中文](readme.zh-cn.md)
 
-Timbrex is a scripting language and CLI for turning written dialogue into speech. Put the words, speakers, delivery directions, and pauses in a text file, then render it to WAV through a text-to-speech (TTS) provider.
+Timbrex is a scripting language and CLI for turning written dialogue into speech. Put the words, speakers, delivery directions, and pauses in a text file, then render it to audio through a text-to-speech (TTS) provider.
 
 Timbrex combines *timbre* (voice quality) and *expression*; the name fuses the two.
 
@@ -63,7 +63,7 @@ Adapters are included for **OpenAI, ElevenLabs, MiniMax, Azure Speech, Qwen, Gem
 
 Real adapters validate all planned speech segments before sending synthesis requests. Passing `check` establishes language validity, not provider support; an unsupported control used by a speech segment fails during synthesis preparation.
 
-Speech is synthesized sequentially by default, with pauses added locally, into a **24 kHz mono 16-bit PCM WAV**. Real providers can opt into [bounded concurrency](docs/providers.md#concurrent-generation) with `--concurrency 2`; audio still follows script order. Mixing, overlapping dialogue, streaming output, automatic provider fallback, and voice creation or cloning are not implemented.
+By default, speech is synthesized sequentially with local pauses and written as **24 kHz mono 16-bit PCM WAV**, without FFmpeg. Choose `.mp3`, `.flac`, `.opus`, or `.aac` with `-o` for optional local [final-file export](docs/audio-output.md) using a trusted FFmpeg installation. Real providers can opt into [bounded concurrency](docs/providers.md#concurrent-generation) with `--concurrency 2`; audio still follows script order. Mixing, overlapping dialogue, streaming output, automatic provider fallback, and voice creation or cloning are not implemented.
 
 The project is under development. [DSL Specification v1](docs/spec.md) describes the current language and may evolve. Adapters have offline request and response tests; live account compatibility and acoustic quality remain unverified.
 
@@ -76,6 +76,7 @@ The project is under development. [DSL Specification v1](docs/spec.md) describes
 | Understand the compiler and synthesis implementation | [Architecture](docs/architecture.md) |
 | Look up syntax, scope, or diagnostics | [DSL Specification v1](docs/spec.md) |
 | Set defaults, credentials, and overrides | [Configuration](docs/configuration.md) |
+| Choose WAV, MP3, FLAC, Opus, or AAC output | [Audio output](docs/audio-output.md) |
 | Choose a provider and supported controls | [Provider setup](docs/providers.md) · [Capabilities](docs/capabilities.md) |
 | Enable syntax highlighting | [VS Code / Cursor](editors/vscode/readme.md) |
 

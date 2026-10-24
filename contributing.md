@@ -22,7 +22,7 @@ make build
 
 ## Find the code to change
 
-The [architecture guide](docs/architecture.md) follows one script through the compiler, request planning, and WAV output, with diagrams and source links.
+The [architecture guide](docs/architecture.md) follows one script through the compiler, request planning, and final audio output, with diagrams and source links.
 
 The main path is `internal/lex` → `internal/parse` and `internal/ast` → `internal/check` → `internal/lower` and `internal/ir` → `internal/providers`. The standard tags are in `internal/vocab`. Command wiring is in `internal/cli`; YAML settings and environment bindings are in `internal/config`. Tests live beside the code they exercise.
 
@@ -45,6 +45,8 @@ make verify
 Install dependencies during setup with `go mod download` and `make editor-deps`. Verification does not run `npm ci` or contact TTS services; with the Go modules and tools already cached, it can run offline. Repeat dependency installation only when dependencies change.
 
 To collect Go coverage without skipping subprocess tests, run `go test -count=1 -coverprofile=coverage.out ./...`. The CLI input helper inherits an allowlist of runtime variables, including `GOCOVERDIR`, but no provider credentials or configuration. Go collects its child counters in the parent profile. Separately built CLI binaries, editor runtime tests, and live service behavior are not included; statement coverage does not establish branch coverage or audio quality.
+
+Real-codec export tests require trusted `ffmpeg` and `ffprobe` on `PATH`. Normal `go test ./...` runs those tests when both tools are available and skips them only when a tool is absent; an installed but incompatible build fails rather than skips. Run `TIMBREX_TEST_FFMPEG=1 go test ./...` to require them locally. Linux CI sets `TIMBREX_TEST_FFMPEG=1`, so missing tools or codecs fail that required check. These tests encode and inspect local fixtures, not paid TTS requests. Native WAV and fake-process failure tests do not require FFmpeg. See [audio output](docs/audio-output.md) for the supported codecs.
 
 Tests must be offline by default. Use `httptest` for vendor requests, and add regression coverage for behavioral fixes and boundary cases. Normal tests must not require credentials or spend money. If you edit the TextMate YAML grammar, regenerate its packaged JSON with `go test ./editors/vscode -update`; see the [editor guide](editors/vscode/readme.md).
 

@@ -96,7 +96,7 @@ The following example sends the script to OpenAI and may incur charges. Run it o
 
 The prepared copy gives Lin and Chen different voices; the untouched bundled example has no mappings and would use the same fallback for everyone. For another provider, use its model/voice IDs and compatible controls; Azure chooses its model through the voice and rejects `--model`.
 
-You can instead ask the agent to do the authorized generation, naming provider, voices, output file, and any spending constraints. It should not make a paid request merely to test compatibility. After generation, check the actual audio; a valid WAV does not prove every word or direction sounds right.
+You can instead ask the agent to do the authorized generation, naming provider, voices, output file, and any spending constraints. It should not make a paid request merely to test compatibility. After generation, check the actual audio; a valid audio file does not prove every word or direction sounds right. For optional MP3, FLAC, Opus, or AAC export and its local FFmpeg requirement, see [audio output](audio-output.md).
 
 ## 6. Revise and troubleshoot
 

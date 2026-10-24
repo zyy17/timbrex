@@ -16,7 +16,7 @@ OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒�
 - [Qwen](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api)：每片段 seed 和有序的 `input.hot_fix` 发音/替换对。重复项或重叠项的匹配优先级尚未明确。
 - [MiniMax](https://platform.minimax.io/docs/api-reference/speech-t2a-http)：`basic` 或 `quality` 文本规范化；quality 只适用于非流式 2.8/2.6 HD/Turbo，其他组合会被拒绝。
 
-这些新增选项保留省略字段时的默认行为，不实现内联发音 span、资源创建/管理、新输出格式、原生对话或流式请求。契约测试是离线验证，不是真实账户或声学验证。
+这些新增选项保留省略字段时的默认行为，不实现内联发音 span、资源创建/管理、原生对话或流式请求。最终文件格式由独立的[本地导出阶段](audio-output.zh-cn.md)处理，不是新增厂商请求格式。契约测试是离线验证，不是真实账户或声学验证。
 
 ## 按厂商查询控制
 

@@ -4,7 +4,7 @@
 
 [English](readme.md)
 
-Timbrex 是一门语音脚本语言和配套 CLI。将台词、角色、表演指令和停顿写在文本文件中，再通过语音合成（TTS）厂商生成 WAV 音频。
+Timbrex 是一门语音脚本语言和配套 CLI。将台词、角色、表演指令和停顿写在文本文件中，再通过语音合成（TTS）厂商生成音频。
 
 Timbrex 取意于音色（timbre）与表达（expression）。二者融合即为 Timbrex。
 
@@ -63,7 +63,7 @@ make build
 
 真实语音适配器在发送合成请求前，会验证全部计划合成的语音片段。通过 `check` 表示脚本符合语言规则，不代表厂商支持；语音片段使用了不支持的控制时，会在合成准备阶段报错。
 
-语音默认串行合成，停顿在本地插入，最终输出 **24 kHz、单声道、16 位 PCM WAV**。真实厂商可通过 `--concurrency 2` 启用[有界并发](docs/providers.zh-cn.md#并发生成)，音频仍按脚本顺序输出。目前未实现混音、重叠对话、流式输出、厂商自动回退，以及音色创建或克隆。
+默认串行合成语音、在本地插入停顿，并输出 **24 kHz、单声道、16 位 PCM WAV**，无需 FFmpeg。通过 `-o` 选择 `.mp3`、`.flac`、`.opus` 或 `.aac`，可用本地可信的 FFmpeg 执行可选的[最终文件导出](docs/audio-output.zh-cn.md)。真实厂商可通过 `--concurrency 2` 启用[有界并发](docs/providers.zh-cn.md#并发生成)，音频仍按脚本顺序输出。目前未实现混音、重叠对话、流式输出、厂商自动回退，以及音色创建或克隆。
 
 项目仍在开发中，[DSL 规范 v1](docs/spec.zh-cn.md) 描述当前语言规则，后续可能调整。适配器已有离线请求与响应测试，真实账号兼容性和声音效果尚未验证。
 
@@ -76,6 +76,7 @@ make build
 | 理解编译器与合成实现 | [整体架构](docs/architecture.zh-cn.md) |
 | 查询语法、作用域或诊断 | [DSL 规范 v1](docs/spec.zh-cn.md) |
 | 配置默认值、凭证和覆盖项 | [配置](docs/configuration.zh-cn.md) |
+| 选择 WAV、MP3、FLAC、Opus 或 AAC 输出 | [音频输出](docs/audio-output.zh-cn.md) |
 | 选择厂商并查询支持的控制 | [厂商接入](docs/providers.zh-cn.md) · [能力表](docs/capabilities.zh-cn.md) |
 | 启用语法高亮 | [VS Code / Cursor](editors/vscode/readme.zh-cn.md) |
 
