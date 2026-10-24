@@ -63,11 +63,11 @@ OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒�
 | 情绪强度，如 `happy 0.8` | 不支持 |
 | `whisper` / `shout` | 仅 2.6 支持耳语，不支持喊叫 |
 | `act`、`accent`、`dialect`、自定义 `emotion` | 不支持 |
-| `style`、`role` | 不支持 |
+| `style`、`role` | 仅 2.6 支持 `style fluent`；无 role |
 | `emph` | 不支持 |
 | `laugh`、`cry`、`sigh` 的 **span** | 不支持 |
 | 独立非语言事件 | 2.8 下的部分事件 |
-| `lang` span / front matter | Language boost |
+| `lang` span / front matter | 40 种语言/方言 boost 和显式 auto；受模型限制 |
 | `voice`、`as` span；`reset` | 共享规划器 |
 
 ### Azure
@@ -154,11 +154,26 @@ OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒�
 
 ## 具体映射
 
-MiniMax 情绪映射为：`happy→happy`、`sad→sad`、`angry→angry`、`fear→fearful`、`disgust→disgusted`、`surprise→surprised`、`calm→calm`。`whisper` 与情绪占用相同 API 字段，不能同时使用。`speech-2.8-hd` 和 `speech-2.8-turbo` 支持的事件为：
+MiniMax 情绪映射为：`happy→happy`、`sad→sad`、`angry→angry`、`fear→fearful`、`disgust→disgusted`、`surprise→surprised`、`calm→calm`。`whisper` 和 `[style fluent]` 与情绪占用相同 API 字段，要求 2.6 模型，不能彼此组合，也不能与另一种情绪组合。`speech-2.8-hd` 和 `speech-2.8-turbo` 支持的事件为：
 
 ```text
 laugh chuckle cough clear-throat groan breath pant inhale exhale gasp
 sniff sigh snort burp lip-smack hum hiss emm sneeze
+```
+
+MiniMax 主要语言代码映射不区分大小写。Locale 处理、`auto` 和模型限制见[接入说明](providers.zh-cn.md#minimax)。右侧是精确的 `language_boost` API 字符串：
+
+```text
+af→Afrikaans ar→Arabic bg→Bulgarian ca→Catalan
+cs→Czech da→Danish de→German el→Greek
+en→English es→Spanish fa→Persian fi→Finnish
+fil→Filipino fr→French he→Hebrew hi→Hindi
+hr→Croatian hu→Hungarian id→Indonesian it→Italian
+ja→Japanese ko→Korean ms→Malay nl→Dutch
+nn→Nynorsk no→Norwegian pl→Polish pt→Portuguese
+ro→Romanian ru→Russian sk→Slovak sl→Slovenian
+sv→Swedish ta→Tamil th→Thai tr→Turkish
+uk→Ukrainian vi→Vietnamese yue→Chinese,Yue zh→Chinese
 ```
 
 Azure style 映射为：`happy→cheerful`、`sad→sad`、`angry→angry`、`fear→fearful`、`excited→excited`、`calm→calm`、`tender→gentle`、`serious→serious`、`whisper→whispering`、`shout→shouting`、`crying→crying`、`neutral→neutral`。`[style "vendor-style"]` 传递 style 名称。每个片段只能使用一个 style，且所选音色必须支持；Azure 可能忽略不支持的 style。Timbrex 当前不会探测音色能力。

@@ -63,11 +63,11 @@ OpenAI instructions require a model that supports `instructions`; `tts-1` and `t
 | Emotion intensity, e.g. `happy 0.8` | Unsupported |
 | `whisper` / `shout` | Whisper on 2.6 only; no shout |
 | `act`, `accent`, `dialect`, custom `emotion` | Unsupported |
-| `style`, `role` | Unsupported |
+| `style`, `role` | `style fluent` on 2.6 only; no role |
 | `emph` | Unsupported |
 | `laugh`, `cry`, `sigh` **spans** | Unsupported |
 | Standalone nonverbal events | Selected events on 2.8 |
-| `lang` span / front matter | Language boost |
+| `lang` span / front matter | 40 language/dialect boosts and explicit auto; model limits apply |
 | `voice`, `as` spans; `reset` | Shared planner |
 
 ### Azure
@@ -154,11 +154,26 @@ OpenAI instructions require a model that supports `instructions`; `tts-1` and `t
 
 ## Exact mappings
 
-MiniMax emotion mappings: `happy→happy`, `sad→sad`, `angry→angry`, `fear→fearful`, `disgust→disgusted`, `surprise→surprised`, `calm→calm`. `whisper` occupies the same API field as emotion and cannot be combined with one. Supported events on `speech-2.8-hd` and `speech-2.8-turbo`:
+MiniMax emotion mappings: `happy→happy`, `sad→sad`, `angry→angry`, `fear→fearful`, `disgust→disgusted`, `surprise→surprised`, `calm→calm`. `whisper` and `[style fluent]` occupy the same API field as emotion, require a 2.6 model, and cannot be combined with each other or another emotion. Supported events on `speech-2.8-hd` and `speech-2.8-turbo`:
 
 ```text
 laugh chuckle cough clear-throat groan breath pant inhale exhale gasp
 sniff sigh snort burp lip-smack hum hiss emm sneeze
+```
+
+MiniMax primary-language mappings are case-insensitive. Locale handling, `auto`, and model restrictions are described in [provider setup](providers.md#minimax). The values on the right are the exact `language_boost` API strings:
+
+```text
+af→Afrikaans ar→Arabic bg→Bulgarian ca→Catalan
+cs→Czech da→Danish de→German el→Greek
+en→English es→Spanish fa→Persian fi→Finnish
+fil→Filipino fr→French he→Hebrew hi→Hindi
+hr→Croatian hu→Hungarian id→Indonesian it→Italian
+ja→Japanese ko→Korean ms→Malay nl→Dutch
+nn→Nynorsk no→Norwegian pl→Polish pt→Portuguese
+ro→Romanian ru→Russian sk→Slovak sl→Slovenian
+sv→Swedish ta→Tamil th→Thai tr→Turkish
+uk→Ukrainian vi→Vietnamese yue→Chinese,Yue zh→Chinese
 ```
 
 Azure style mappings: `happy→cheerful`, `sad→sad`, `angry→angry`, `fear→fearful`, `excited→excited`, `calm→calm`, `tender→gentle`, `serious→serious`, `whisper→whispering`, `shout→shouting`, `crying→crying`, `neutral→neutral`. `[style "vendor-style"]` passes a style name. Only one style is allowed per segment. The selected voice must support it; Azure can ignore unsupported styles. Timbrex currently does not probe voices.
