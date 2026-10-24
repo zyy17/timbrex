@@ -97,16 +97,9 @@ func build(seg providers.Segment, model string) (request, error) {
 		return r, err
 	}
 	r.Text = text
-	if seg.Lang != "" {
-		lang := strings.ToLower(seg.Lang)
-		languages := map[string]string{"zh": "Chinese", "en": "English", "ja": "Japanese", "ko": "Korean", "fr": "French", "de": "German", "es": "Spanish", "ru": "Russian", "pt": "Portuguese", "it": "Italian", "ar": "Arabic", "hi": "Hindi", "th": "Thai", "id": "Indonesian", "vi": "Vietnamese", "yue": "Chinese,Yue"}
-		r.Language = languages[strings.Split(lang, "-")[0]]
-		if lang == "zh-hk" || lang == "zh-mo" {
-			r.Language = "Chinese,Yue"
-		}
-		if r.Language == "" {
-			return r, fmt.Errorf("unsupported language hint %q", seg.Lang)
-		}
+	r.Language, err = languageBoost(seg.Lang, model)
+	if err != nil {
+		return r, err
 	}
 	if utf8.RuneCountInString(text) >= 10000 {
 		return r, fmt.Errorf("speech segment must be shorter than 10000 characters")
@@ -126,14 +119,26 @@ func build(seg providers.Segment, model string) (request, error) {
 			var db float64
 			db, err = providers.Number(n, "dB", -60, 20)
 			r.Voice.Volume = math.Pow(10, db/20)
-		case "whisper":
+		case "whisper", "style":
+			delivery := n.Name
+			if n.Name == "style" {
+				delivery, err = providers.Value(n)
+				if err != nil {
+					return r, err
+				}
+				if delivery != "fluent" {
+					return r, fmt.Errorf("MiniMax only supports [style fluent]")
+				}
+			} else if err = providers.NoArgs(n); err != nil {
+				return r, err
+			}
 			if model != "speech-2.6-hd" && model != "speech-2.6-turbo" {
-				return r, fmt.Errorf("[whisper] requires speech-2.6-hd or speech-2.6-turbo")
+				return r, fmt.Errorf("MiniMax %s requires speech-2.6-hd or speech-2.6-turbo", delivery)
 			}
 			if r.Voice.Emotion != "" {
-				return r, fmt.Errorf("MiniMax cannot combine whisper with another emotion")
+				return r, fmt.Errorf("MiniMax cannot combine multiple emotions or delivery styles")
 			}
-			r.Voice.Emotion, err = "whisper", providers.NoArgs(n)
+			r.Voice.Emotion = delivery
 		default:
 			emotion, ok := emotions[n.Name]
 			if !ok {

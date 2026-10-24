@@ -77,7 +77,13 @@ Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致
 
 使用 bearer 认证调用 `POST https://api.minimax.io/v1/t2a_v2`，请求非流式 hex 输出和 PCM 音频。适配器要求 `base_resp.status_code` 明确表示成功，检查完成状态和 hex 解码，并拒绝可选 `extra_info` 音频元数据中冲突的采样率、声道数、格式或解码后字节数。每段文字必须少于 10000 字符。
 
-默认的 `speech-2.8-hd` 支持已映射的非语言事件。适配器仅在 `speech-2.6-hd` 或 `speech-2.6-turbo` 下支持耳语，且同一片段不能同时使用耳语和另一种情绪。音高要求整数半音。语言提示当前映射 `zh en ja ko fr de es ru pt it ar hi th id vi yue`，`zh-HK` 和 `zh-MO` 映射为粤语。其他提示会在本地报错。这是适配器实现的子集，不代表厂商完整语言覆盖。
+默认的 `speech-2.8-hd` 支持已映射的非语言事件。`[whisper]` 和 `[style fluent]` 要求使用 `speech-2.6-hd` 或 `speech-2.6-turbo`。它们占用情绪字段，同一片段中不能彼此组合，也不能与另一种情绪组合。其他 style 不支持。音高要求整数半音。
+
+语言提示覆盖文档列出的全部 40 种语言/方言，见[主要语言代码的具体映射](capabilities.zh-cn.md#具体映射)。显式提示要求使用 `speech-2.8-hd`、`speech-2.8-turbo`、`speech-2.6-hd`、`speech-2.6-turbo`、`speech-02-hd`、`speech-02-turbo`、`speech-01-hd` 或 `speech-01-turbo`。波斯语（`fa`）、菲律宾语（`fil`）和泰米尔语（`ta`）要求 2.6 或 2.8 模型，带 locale 后缀时也适用此限制。未指定 `lang` 时仍省略 `language_boost`；显式 `lang: auto` 或 `[lang auto|Text]` 发送 `"auto"`。无语言提示的请求仍允许原样传递模型 ID；未知模型与显式语言提示组合时会在本地失败。
+
+提示不区分大小写，接受 `language[-Script][-REGION]`：已映射的主要语言代码，可选的四字母 script，以及可选的两字母或三数字 region。Script 和 region 后缀会被忽略，不保证口音；适配器只检查其形式，不核验注册表。仅保留完全匹配的旧别名 `zh-HK` 和 `zh-MO` 来选择粤语。其他 `zh` 形式（含 `zh-Hant-HK`）仍映射为 Chinese；明确指定粤语请用 `yue` 或 `yue-Hant-HK`。`no` 映射为 Norwegian，`nn` 映射为 Nynorsk。不会把 `nb` 和 `tl` 推断为 Norwegian 和 Filipino 的别名，也不会将 `UA` 或 `PH` 等国家代码当作语言提示。
+
+未知代码、`en-foo` 等格式不符的提示，以及 extlang、variant、extension、private-use 形式，都会在任何合成请求前失败。这有意收紧了旧版只提取前缀的处理方式，避免格式错误的后缀被静默接受。请改用支持的主要语言代码或上述简单 locale 形式。
 
 参考：[同步语音合成 API](https://platform.minimax.io/docs/api-reference/speech-t2a-http)。
 
