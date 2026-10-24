@@ -27,7 +27,8 @@ Three goals:
 | `internal/providers/options` | Typed provider schemas, strict decoding, field constraints | I/O, IR, provider execution, registration |
 | `internal/providers/<name>` | That vendor's API, typed options, and one `Provider` | The lexer, the parser, Cobra |
 | `internal/config` | koanf, YAML configuration, environment variables, `providers/options` | AST, IR, provider execution, Cobra |
-| `internal/cli` | Cobra, configuration, wiring parse → lower → provider | Tag grammar details |
+| `internal/audioexport` | Final-file formats, local FFmpeg, private staging files | Provider requests, the parser, Cobra |
+| `internal/cli` | Cobra, configuration, wiring parse → lower → provider → export | Tag grammar details |
 
 Only `internal/cli` may import Cobra. A provider registers itself from `init`. The CLI blank-imports the providers it ships.
 
@@ -70,6 +71,7 @@ In:
 - Explicit `[act "…"]` in strict mode. Implicit free-form tags become `act` when strict mode is off
 - Lowering to IR with typed arguments. Stub synthesis and real HTTP providers: ElevenLabs, OpenAI, MiniMax, Azure, Qwen, Gemini, and Fish Audio
 - Cast voice mappings, scene/turn/span planning, local pauses, bounded optional concurrent synthesis with ordered PCM output into WAV
+- CLI final-file export to MP3, FLAC, Opus, or AAC using optional user-installed FFmpeg; WAV stays dependency-free. See [audio output](docs/audio-output.md) for preflight and publication requirements.
 - Centralized koanf configuration, environment bindings, and Cobra command execution
 - TextMate grammar in `editors/vscode` for `.tbx`
 

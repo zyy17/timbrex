@@ -22,7 +22,7 @@ make build
 
 ## 找到需要修改的代码
 
-[架构指南](docs/architecture.zh-cn.md)用一份脚本贯穿编译器、请求规划和 WAV 输出，配有图表与源码链接。
+[架构指南](docs/architecture.zh-cn.md)用一份脚本贯穿编译器、请求规划和最终音频输出，配有图表与源码链接。
 
 主要处理流程是 `internal/lex` → `internal/parse` 和 `internal/ast` → `internal/check` → `internal/lower` 和 `internal/ir` → `internal/providers`。标准标签位于 `internal/vocab`，命令组装位于 `internal/cli`，YAML 配置和环境变量映射位于 `internal/config`。测试与对应代码放在一起。
 
@@ -45,6 +45,8 @@ make verify
 准备环境时，用 `go mod download` 和 `make editor-deps` 安装依赖。验证过程不会执行 `npm ci`，也不会联系 TTS 服务；Go 模块和工具已缓存后，可以离线运行。依赖变化时再重新安装。
 
 收集 Go 覆盖率时，运行 `go test -count=1 -coverprofile=coverage.out ./...`，无需跳过子进程测试。CLI 输入辅助进程只继承白名单中的运行时环境变量（包括 `GOCOVERDIR`），不继承厂商凭证或配置；Go 会将其子进程计数合并到父进程的覆盖率报告中。单独构建的 CLI 二进制、编辑器运行时测试和真实服务行为不计入该报告；语句覆盖率不能证明分支覆盖率或音频质量。
+
+真实编码器导出测试需要 `PATH` 中有可信的 `ffmpeg` 和 `ffprobe`。普通 `go test ./...` 在两者可用时运行这些测试，仅在缺少工具时跳过；已安装但不兼容的构建会失败，不会跳过。本地可运行 `TIMBREX_TEST_FFMPEG=1 go test ./...` 强制要求这些测试。Linux CI 设置 `TIMBREX_TEST_FFMPEG=1`，缺少工具或编码器会使该必需检查失败。测试只编码和检查本地样本，不发送付费 TTS 请求。原生 WAV 与模拟进程失败测试不依赖 FFmpeg。支持的编码器见[音频输出](docs/audio-output.zh-cn.md)。
 
 默认测试必须离线。用 `httptest` 验证厂商请求，为行为修复和边界情况补充回归测试。常规测试不能要求凭证或产生费用。修改 TextMate YAML 语法后，用 `go test ./editors/vscode -update` 重新生成随包提供的 JSON，详见 [编辑器指南](editors/vscode/readme.zh-cn.md)。
 

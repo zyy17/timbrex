@@ -2,7 +2,7 @@
 
 [简体中文](architecture.zh-cn.md) · [Contributor guide](../contributing.md) · [DSL Specification v1](spec.md)
 
-This guide is for developers who know Go and want to follow Timbrex from a script to a WAV file, find the code responsible for a behavior, or extend an adapter without changing the language. It describes the current implementation. Use the [specification](spec.md) for language rules, [configuration](configuration.md) for settings, and [provider setup](providers.md) and [capabilities](capabilities.md) for vendor-specific contracts.
+This guide is for developers who know Go and want to follow Timbrex from a script to an audio file, find the code responsible for a behavior, or extend an adapter without changing the language. It describes the current implementation. Use the [specification](spec.md) for language rules, [configuration](configuration.md) for settings, and [provider setup](providers.md) and [capabilities](capabilities.md) for vendor-specific contracts.
 
 Timbrex is a small compiler plus an audio renderer. The compiler converts the author's words, speakers, and directions into a provider-independent intermediate representation (IR) for request planning. A real provider adapter resolves that structure into speech requests, calls one vendor serially by default or with optional bounded concurrency, and joins the returned PCM with local silence in script order. Timbrex does not generate speech itself, and the same script does not promise the same performance across vendors.
 
@@ -15,6 +15,8 @@ flowchart TD
     Adapter --> WAV["WAV file"]
 ```
 
+This diagram shows the shared composition path. Native WAV ends here; optional CLI final-file export converts the complete WAV afterward.
+
 The CLI calls `parse.Parse`, which extracts front matter and invokes the lexer internally; callers do not manually connect a lexer to a parser. `check.Apply` both reports diagnostics and resolves tag nodes in place. Only a successfully checked AST should reach `lower.Script`.
 
 `check` stops at the checked AST. `synth` continues by converting it to IR and selecting a provider. All seven real adapters currently use `Prepare` and `Render`; these helpers are not methods required by the `Provider` interface. The `stub` implementation is deliberately different: it produces an **8 kHz mono 16-bit test tone**, not speech, and does not reproduce the script's pauses or directions.
@@ -26,6 +28,7 @@ The root [main.go](../main.go) calls the CLI and formats a failed command's erro
 | Area | Responsibility | Starting point |
 | --- | --- | --- |
 | `internal/cli` | Cobra commands, configuration loading, pipeline wiring, output-path checks | [cli.go](../internal/cli/cli.go), [synth.go](../internal/cli/synth.go) |
+| `internal/audioexport` | CLI-only final-file validation, FFmpeg preflight, encoding, and publication | [export.go](../internal/audioexport/export.go), [process.go](../internal/audioexport/process.go) |
 | `internal/inputfile` | Read regular script and configuration files without blocking on FIFOs | [read.go](../internal/inputfile/read.go) |
 | `internal/config` | Typed settings, defaults, YAML and environment merge, provider resolution | [config.go](../internal/config/config.go), [defaults.go](../internal/config/defaults.go) |
 | `internal/lex`, `internal/parse`, `internal/ast` | Tokens, block and inline syntax, front matter, source positions | [lex.go](../internal/lex/lex.go), [parse.go](../internal/parse/parse.go), [ast.go](../internal/ast/ast.go) |
@@ -273,7 +276,7 @@ sequenceDiagram
     R->>R: Complete and publish WAV
 ```
 
-The diagram shows the serial success path. Speech PCM is validated before writing; final publication fills the header, closes the file, checks cancellation, and renames it.
+The diagram shows the serial renderer success path. Speech PCM is validated before writing; WAV publication fills the header, closes the file, checks cancellation, and renames it. For compressed output, this WAV is private intermediate input to the CLI export stage, not the user destination.
 
 With `--concurrency N`, up to `N` segment jobs overlap inside a rolling window, but one writer still appends speech and local silence in script order. The first recorded error stops new admission, cancels in-flight requests, and waits for started jobs before returning without publishing the temporary file.
 
@@ -291,7 +294,13 @@ Adapters handle their own envelopes: some request raw PCM directly, others decod
 
 [WriteOutput](../internal/providers/output.go) creates a `.timbrex-*.partial` file in the destination directory. It closes the complete file, checks cancellation, and publishes it with `os.Rename`; cleanup removes the temporary file on ordinary failure. An existing output is left untouched when synthesis, decoding, or writing fails before publication. New and replaced files use `CreateTemp`'s private `0600` mode before umask, rather than preserving the old destination's permissions.
 
-This is complete-file publication, not a filesystem transaction or crash-durability guarantee. There is no `fsync` or directory sync; rename semantics depend on the OS and filesystem. Completed remote requests cannot be undone if a later segment fails. The CLI rejects non-WAV output extensions, directories, and a destination that is the same file as the source script. It does not create missing parent directories.
+This is complete-file publication, not a filesystem transaction or crash-durability guarantee. There is no `fsync` or directory sync; rename semantics depend on the OS and filesystem. Completed remote requests cannot be undone if a later segment fails. The CLI rejects unsupported output extensions, directories, missing parent directories, and a destination that is the same file as the source script before provider execution.
+
+### Final-file export
+
+[internal/audioexport](../internal/audioexport/export.go) sits at the CLI boundary, not inside adapters. Native `.wav` keeps the existing renderer without launching FFmpeg. For `.mp3`, `.flac`, `.opus`, or `.aac`, preparation locates `ffmpeg` on `PATH` and exercises the selected demuxer/decoder/encoder/muxer with a tiny private 24 kHz mono WAV before any provider network request. Use only a trusted FFmpeg installation; Timbrex does not verify its provenance. The probe has a ten-second timeout. Provider payloads, ordered PCM composition, and pauses stay unchanged.
+
+The provider writes a complete private `source.wav`. The exporter transcodes it once into a seekable file in a private sibling directory, checks success and cancellation, then renames only the final result into place. Failure cleans up intermediates and preserves the old destination. The process runner uses fixed arguments without a shell, a local-file protocol whitelist, a minimal environment without provider credentials, bounded diagnostics, and a final encoded-file size check. The same OS/filesystem and crash-durability caveats apply. Fixed codecs, official FFmpeg references, Opus clock semantics, and AAC padding limits are documented in [audio output](audio-output.md).
 
 ## Errors and cancellation
 
@@ -305,7 +314,7 @@ Cancellation and failure tests verify preservation of an existing destination an
 
 The implementation avoids retaining all completed audio in memory. Serial rendering writes a segment before requesting the next. Concurrent rendering bounds both active jobs and the window of unwritten segment indices by `N`, including local pauses; later completed audio waits only inside that window. A slow first segment prevents the window from advancing rather than allowing unbounded PCM accumulation. The byte lengths of completed PCM payloads waiting in memory scale with the window size times the largest decoded segment, not total script length. This is not a retained-heap bound: a PCM slice can keep a larger WAV backing array alive.
 
-This is **not streaming synthesis or streaming playback**. Each HTTP response is read fully within its bound, HTTP buffers, JSON/hex/base64 decoding and WAV backing buffers can coexist with decoded PCM, and the final WAV is not published until the entire render succeeds.
+This is **not streaming synthesis or streaming playback**. Each HTTP response is read fully within its bound, HTTP buffers, JSON/hex/base64 decoding and WAV backing buffers can coexist with decoded PCM, and the final audio is not published until rendering and any requested export succeed.
 
 The source, AST, IR, planned segments, and all prepared request objects can also coexist. There is no global memory budget or automatic long-script partitioning. The 64 MiB response limit and 1 GiB output limit protect different resources; neither is a bound on total process memory.
 
@@ -356,6 +365,6 @@ For a first code-reading pass, follow the running example in this order:
 3. [lower.go](../internal/lower/lower.go) and [ir.go](../internal/ir/ir.go): follow one span into paired flat markers.
 4. [plan.go](../internal/providers/plan.go) and its tests: trace the example's six segments and reset behavior.
 5. [prepare.go](../internal/providers/prepare.go) and [openai.go](../internal/providers/openai/openai.go): separate local request construction from network execution.
-6. [http.go](../internal/providers/http.go), [audio.go](../internal/providers/audio.go), and [output.go](../internal/providers/output.go): follow one response into the published WAV.
+6. [http.go](../internal/providers/http.go), [audio.go](../internal/providers/audio.go), and [output.go](../internal/providers/output.go): follow one response into the complete WAV; then [audioexport/export.go](../internal/audioexport/export.go) for optional final-file encoding.
 
 This path covers the complete implementation before requiring a reader to learn every vendor's API.

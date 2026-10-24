@@ -18,7 +18,12 @@ jobs:
         with:
           go-version-file: go.mod
       - run: make tidy
+      - name: Install optional audio export codecs
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: make test
+        env:
+          TIMBREX_TEST_FFMPEG: ${{ runner.os == 'Linux' && '1' || '' }}
 
   lint:
     runs-on: ubuntu-latest

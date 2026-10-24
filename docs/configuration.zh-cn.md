@@ -96,7 +96,7 @@ Cast 音色映射仍然优先于兜底音色，包括 `--voice`。`voice` 或 `a
 
 选中的 YAML 文件支持在 `providers.elevenlabs.synthesis`、`providers.fish.synthesis`、`providers.azure.synthesis`、`providers.qwen.synthesis` 和 `providers.minimax.synthesis` 下设置强类型的单次请求选项。这些选项没有 CLI、环境变量或脚本 front matter 覆盖项。其他厂商拒绝 `synthesis` 配置段；它不是任意 API 参数透传，也不增加 DSL 语法。
 
-省略字段会保留原请求。显式 `0`、`false`、允许的空字符串和空列表会原样保留；列表不会合并或去重。空映射不提供覆盖值。Null、未知或带点的 schema 键、错误标量类型、非有限数值和超范围值会在本地失败。所有片段都会在首个 HTTP 请求或输出变更前完成准备。这些选项不会创建资源，也不会修改已保存的音色或词典。
+省略字段会保留原请求。显式 `0`、`false`、允许的空字符串和空列表会原样保留；列表不会合并或去重。空映射不提供覆盖值。Null、未知或带点的 schema 键、错误标量类型、非有限数值和超范围值会在本地失败。所有片段都会在首次合成请求或替换目标文件前完成准备；可选导出的预检可能更早创建私有探测文件。这些选项不会创建资源，也不会修改已保存的音色或词典。
 
 ### ElevenLabs
 
@@ -237,6 +237,10 @@ providers:
 允许值为 `basic` 和 `quality`。`quality` 要求非流式 `speech-2.8-hd`、`speech-2.8-turbo`、`speech-2.6-hd` 或 `speech-2.6-turbo`；其他模型 ID 会被 Timbrex 拒绝，避免静默降级。当前适配器采用非流式请求。省略时仍关闭文本规范化；不会添加已弃用的 `voice_setting.text_normalization` 字段。见[配置示例](../examples/minimax-synthesis.yaml)。
 
 计费提醒：即使 Timbrex 不创建音色，使用现有设计或克隆音色进行首次合成仍可能产生额外音色费用（见[价格说明](https://platform.minimax.io/docs/pricing/overview#audio)）。对于规范化文本，不要只根据原脚本估算用量：[响应 schema](https://platform.minimax.io/docs/api-reference/speech-t2a-http.md) 区分计费字符 `usage_characters`、仅供参考的 `word_count` 和高质量规范化字符 `norm_text_char_count`（同样仅供参考，目前不用于计费）。Timbrex 尚不显示这些用量元数据或 `usage_voice_count`。
+
+## 输出格式
+
+`synth --out` / `-o` 根据 `.wav`、`.mp3`、`.flac`、`.opus` 或 `.aac` 扩展名选择最终格式。省略时保留输入路径，将扩展名改为 `.wav`。它仅是 CLI 参数，不是 YAML 键、front matter 字段或环境变量；`timbrex config` 不显示它。WAV 不依赖 FFmpeg，其他格式在拼接后使用可选的本地 FFmpeg，不改变厂商请求。依赖、固定预设和失败处理见[音频输出](audio-output.zh-cn.md)。
 
 ## 合成并发数
 

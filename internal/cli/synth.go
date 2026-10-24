@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/zyy17/timbrex/internal/audioexport"
 	"github.com/zyy17/timbrex/internal/check"
 	"github.com/zyy17/timbrex/internal/config"
 	"github.com/zyy17/timbrex/internal/lower"
@@ -33,7 +34,7 @@ func synthCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.provider, "provider", "", "provider id (overrides front matter and configuration)")
-	cmd.Flags().StringVarP(&flags.out, "out", "o", "", "output audio file (default: script path with .wav)")
+	cmd.Flags().StringVarP(&flags.out, "out", "o", "", "output .wav, .mp3, .flac, .opus, or .aac file (default: script path with .wav; non-WAV requires FFmpeg)")
 	cmd.Flags().StringVar(&flags.model, "model", "", "provider model (overrides front matter and configuration)")
 	cmd.Flags().StringVar(&flags.voice, "voice", "", "default voice for speakers without a cast voice mapping")
 	cmd.Flags().IntVar(&flags.concurrency, "concurrency", 1, "maximum simultaneous speech requests (1-8; default 1)")
@@ -76,34 +77,39 @@ func synthesize(cmd *cobra.Command, path string, flags synthFlags, cfg config.Co
 	if err := checkOutput(path, outPath); err != nil {
 		return err
 	}
+	export, err := audioexport.Prepare(cmd.Context(), outPath)
+	if err != nil {
+		return err
+	}
+	defer export.Close()
 	opt := providers.Options{
-		Out: outPath, Model: settings.Model, Voice: settings.Voice,
+		Out: export.InputPath(), Model: settings.Model, Voice: settings.Voice,
 		APIKey: settings.APIKey, Endpoint: settings.Endpoint, Concurrency: flags.concurrency,
 		Synthesis: settings.Synthesis,
 	}
 	if err := cmd.Context().Err(); err != nil {
 		return err
 	}
-	res, err := p.Synthesize(cmd.Context(), doc, opt)
+	_, err = p.Synthesize(cmd.Context(), doc, opt)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(cmd.OutOrStdout(), res.Path)
+	if err := export.Finish(cmd.Context()); err != nil {
+		return err
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), outPath)
 	return nil
 }
 
 func checkOutput(path, out string) error {
-	if !strings.EqualFold(filepath.Ext(out), ".wav") {
-		return fmt.Errorf("output must use the .wav extension")
+	if err := audioexport.ValidatePath(out); err != nil {
+		return err
 	}
 	src, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
 	dst, err := os.Stat(out)
-	if err == nil && dst.IsDir() {
-		return fmt.Errorf("output path is a directory")
-	}
 	if err == nil && os.SameFile(src, dst) {
 		return fmt.Errorf("output must not replace the source script")
 	}

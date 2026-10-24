@@ -16,7 +16,7 @@ Typed YAML options are separate from the DSL controls below. See [configuration]
 - [Qwen](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api): per-segment seed and ordered `input.hot_fix` pronunciation/replacement pairs. Duplicate/overlap matching precedence is not established.
 - [MiniMax](https://platform.minimax.io/docs/api-reference/speech-t2a-http): `basic` or `quality` text normalization; quality is limited to non-streaming 2.8/2.6 HD/Turbo and rejected elsewhere.
 
-These additions preserve omitted defaults and do not implement inline pronunciation spans, resource creation/management, new output formats, native dialogue, or streaming. Contract tests are offline, not live-account or acoustic verification.
+These additions preserve omitted defaults and do not implement inline pronunciation spans, resource creation/management, native dialogue, or streaming. Final-file formats are a separate [local export stage](audio-output.md), not new vendor request formats. Contract tests are offline, not live-account or acoustic verification.
 
 ## Controls by provider
 

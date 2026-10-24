@@ -96,7 +96,7 @@ A cast voice mapping still takes priority over the fallback voice, including `--
 
 The selected YAML file supports typed per-request settings under `providers.elevenlabs.synthesis`, `providers.fish.synthesis`, `providers.azure.synthesis`, `providers.qwen.synthesis`, and `providers.minimax.synthesis`. There are no CLI, environment, or script-front-matter overrides for these settings. Other providers reject a `synthesis` section; this is not arbitrary API passthrough and adds no DSL syntax.
 
-Omitted fields preserve existing requests. Explicit `0`, `false`, empty strings where permitted, and empty lists remain explicit; lists are not merged or deduplicated. An empty mapping supplies no overrides. Null, unknown or dotted schema keys, incorrect scalar types, non-finite numbers, and out-of-range values fail locally. Every segment is prepared before the first HTTP request or output change. These settings neither create resources nor modify saved voices/dictionaries.
+Omitted fields preserve existing requests. Explicit `0`, `false`, empty strings where permitted, and empty lists remain explicit; lists are not merged or deduplicated. An empty mapping supplies no overrides. Null, unknown or dotted schema keys, incorrect scalar types, non-finite numbers, and out-of-range values fail locally. Every segment is prepared before the first synthesis request or replacement of the destination; optional export preflight may create private probe files earlier. These settings neither create resources nor modify saved voices/dictionaries.
 
 ### ElevenLabs
 
@@ -237,6 +237,10 @@ providers:
 Allowed values are `basic` and `quality`. `quality` requires non-streaming `speech-2.8-hd`, `speech-2.8-turbo`, `speech-2.6-hd`, or `speech-2.6-turbo`; Timbrex rejects it for other model IDs rather than accepting a silent downgrade. The current adapter is non-streaming. Omission leaves normalization disabled as before; no deprecated `voice_setting.text_normalization` field is added. See [the configuration example](../examples/minimax-synthesis.yaml).
 
 Billing caveat: an existing designed/cloned voice can incur an additional voice fee on its first synthesis use, even though Timbrex creates no voice ([pricing](https://platform.minimax.io/docs/pricing/overview#audio)). For normalized text, do not estimate usage from the original script alone: the [response schema](https://platform.minimax.io/docs/api-reference/speech-t2a-http.md) distinguishes billable `usage_characters`, reference-only `word_count`, and high-quality normalization `norm_text_char_count` (also reference-only, not currently billed). Timbrex does not yet expose this usage metadata or `usage_voice_count`.
+
+## Output format
+
+`synth --out` / `-o` chooses the final format from `.wav`, `.mp3`, `.flac`, `.opus`, or `.aac`. Omission keeps the input path with a `.wav` extension. This is CLI-only, not a YAML key, front matter field, or environment variable; `timbrex config` does not display it. WAV has no FFmpeg dependency. Other formats use optional local FFmpeg after composition and do not change provider requests. See [audio output](audio-output.md) for prerequisites, fixed presets, and failure handling.
 
 ## Synthesis concurrency
 

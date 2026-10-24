@@ -40,7 +40,7 @@ Keep credentials in existing environment/secret-manager setup. Do not create rea
 
 ## Adapter selection
 
-All real adapters support text, cast voices, scoped `voice`/`as`/`reset`, and local pauses. They render 24 kHz mono 16-bit WAV; mixing/overlap are not implemented. Read the relevant bullet, then consult that provider's exact mapping as needed:
+All real adapters support text, cast voices, scoped `voice`/`as`/`reset`, and local pauses. They compose 24 kHz mono 16-bit WAV before optional final-file export; mixing/overlap are not implemented. Read the relevant bullet, then consult that provider's exact mapping as needed:
 
 - **OpenAI (`openai`)**: `OPENAI_API_KEY`; baseline model `gpt-4o-mini-tts`, fallback `coral`. Speed 0.25–4; no pitch/volume. Instruction-capable models handle `act`, emotions, delivery, language, and laugh/cry/sigh speech spans, not standalone events. `tts-1`/`tts-1-hd` reject instructions. The baseline guide records lifecycle/deprecation notices: verify live availability; a model-string change cannot migrate to a different API.
 - **ElevenLabs (`elevenlabs`)**: `ELEVENLABS_API_KEY` and accessible voice ID (`ELEVENLABS_VOICE_ID` or mapping); no default voice. Baseline `eleven_v3`. Acting/events require v3/v4/v4 Turbo; v4/v4 Turbo reject speed controls. Other supported speed mappings use 0.7–1.2; no pitch/volume. Language/model constraints apply, including no explicit `lang` for `eleven_multilingual_v2`.
@@ -80,13 +80,15 @@ mkdir -p out
 timbrex synth dialogue.tbx --provider openai --model gpt-4o-mini-tts --voice coral -o out/dialogue.wav
 ```
 
-Use actual chosen IDs; do not execute unresolved placeholders. Azure has no model flag. Cast mappings may make fallback voice unused. `-o` must end in `.wav` and its parent must exist; default output is the input path with a `.wav` extension.
+Use actual chosen IDs; do not execute unresolved placeholders. Azure has no model flag. Cast mappings may make fallback voice unused. `-o` selects `.wav`, `.mp3`, `.flac`, `.opus`, or `.aac`, and its parent must exist; default output is the input path with a `.wav` extension. Check the installed version before using newer export formats. WAV needs no FFmpeg. Other formats require trusted `ffmpeg` on `PATH`; Timbrex locally tests the chosen path with a tiny WAV before any provider request and never auto-installs tools. The complete composed WAV is converted once, not per segment, without changing vendor requests. Read `docs/audio-output.md` from the matching checkout for fixed presets, official references, and the Opus decoding-clock/AAC-padding caveats. There are no raw-output or output-rate options.
 
 Default concurrency is `1`. Real providers permit `--concurrency 1` through `8`, but account limits may be lower; stub permits only `1`. Higher concurrency overlaps requests, not speakers, preserving output order. It adds no retries/cache/resume.
 
-Inspect successful output. Audition when possible: verify words, voices, pauses, and performance, not just WAV format. Do not claim listening from metadata. After edits, recheck before another authorized generation; no partial rebuild or resume is available.
+Inspect successful output. Audition when possible: verify words, voices, pauses, and performance, not just file format. Do not claim listening from metadata. After edits, recheck before another authorized generation; no partial rebuild or resume is available.
 
 ## Troubleshooting
+
+- **Local export check fails**: use `.wav`, or have the user install a trusted FFmpeg build with the selected codec. Missing demuxer, decoder, encoder, or muxer support fails before provider requests. Do not claim a paid request was sent just because `synth` was invoked.
 
 - **`V041`**: unknown strict-mode tag. Correct a typo or use explicit `act` if supported; do not disable strict mode merely to suppress it.
 - **`V012` / `V013`**: unclosed tag or BBCode syntax. Use balanced `[tag|content]` within a paragraph.
@@ -97,7 +99,7 @@ Inspect successful output. Audition when possible: verify words, voices, pauses,
 - **Missing key/endpoint or authentication error**: identify required variable names, region, and access. Do not ask for keys in chat or expose values.
 - **HTTP 429/timeouts/service errors**: retain provider and segment number; remove private text/secrets from reports. Diagnose account limits/service conditions. No automatic retry exists. A timeout or failed later segment may still cost money; never blindly rerun an uncertain paid job.
 - **Long segment rejected**: split into shorter paragraphs, repeating speaker prefixes and reapplying intended turn controls. The CLI does not tokenize to vendor limits or split automatically.
-- **No output or old output remains**: inspect exit status/stderr. Failed runs preserve existing output before publication; an old WAV is not proof of success.
+- **No output or old output remains**: inspect exit status/stderr. Failed runs preserve existing output before publication; an old audio file is not proof of success.
 - **Only a tone**: stub was selected. Speech requires a real provider and account setup.
 
 Current upstream: [setup and official vendor links](https://github.com/zyy17/timbrex/blob/main/docs/providers.md), [exact capabilities and literal-text restrictions](https://github.com/zyy17/timbrex/blob/main/docs/capabilities.md), and [configuration](https://github.com/zyy17/timbrex/blob/main/docs/configuration.md). These moving `main` pages may differ from the installed revision.
