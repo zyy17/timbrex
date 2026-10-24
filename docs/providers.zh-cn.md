@@ -99,11 +99,13 @@ export AZURE_SPEECH_REGION=eastus
 
 使用订阅密钥和 SSML 调用 `POST https://{region}.tts.speech.microsoft.com/cognitiveservices/v1`，请求 `raw-24khz-16bit-mono-pcm`。文本和属性均进行 XML 转义。音色名称决定模型；指定 `--model` 或 front matter 的 `model:` 会报错。
 
-Style、role 和强调能力依赖所选音色。Azure 可能忽略音色不支持的 style，Timbrex 尚未查询音色能力。适配器只允许每个片段一个 style，冲突时会报错。`[role Boy]` 需要同一作用域中存在 style。根 SSML 语言使用音色名称中可识别的语言区域前缀。显式 `lang` 与该语言区域不同时，会在 `voice` 内生成 `<lang xml:lang="…">`，以表达多语言或口音覆盖；所选音色必须支持目标语言。没有语言区域前缀的自定义音色使用显式 `lang` 作为根默认语言。
+Style、role 和强调能力依赖所选音色。Azure 可能忽略音色不支持的 style，Timbrex 尚未查询音色能力。适配器只允许每个片段一个 style，冲突时会报错。`[role Boy]` 需要同一作用域中存在 style。与韵律控制组合时，强调元素包裹一个包含所请求语速、音高和音量属性的 prosody 元素，因此等效控制无论按什么标签顺序书写，都会生成相同且符合文档要求的 SSML 层级。这只保证请求结构正确，不代表所选音色支持这些控制。尤其不能根据音色名称推断 HD 控制能力：Microsoft 的 [HD 支持表](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/high-definition-voices#supported-and-unsupported-ssml-elements-for-azure-speech-hd-voices)与部分 SSML 示例对韵律和风格的支持说明不一致。
+
+根 SSML 语言使用音色名称中可识别的 `language[-Script]-region` 前缀，包括 `sr-Latn-RS-NicholasNeural` 和小写的 `en-us-Ava:DragonHDLatestNeural`。推断出的语言标记会规范大小写，音色 ID 保持原样。显式 `lang` 与该语言标记存在大小写以外的差异时，会在 `voice` 内生成 `<lang xml:lang="…">`，以表达多语言或口音覆盖；所选音色必须支持目标语言。不符合此语言标记形式的名称需要显式 `lang` 作为根默认语言。语言推断不会验证音色是否可用。
 
 Azure REST 会在十分钟处截断音频，且可能仍返回 HTTP 200。片段达到或超过 28,800,000 字节（所请求的 24 kHz 单声道 S16LE PCM 的十分钟长度）时，Timbrex 会报错而不会视为完整结果；请将较长语音拆成较短段落。由于原始 PCM 没有完成标记，恰好十分钟且完整的片段也会被拒绝。该边界检查不能证明更短的音频包含全部请求文字。
 
-参考：[REST API](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech)、[音色、风格、角色和韵律](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice)。
+参考：[REST API](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech)、[音色、风格、角色和韵律](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice)、[SSML 结构](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-structure#document-structure)、[音色目录](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts#text-to-speech)。
 
 ## Qwen
 
