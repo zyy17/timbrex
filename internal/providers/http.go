@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -40,10 +41,32 @@ func PostJSON(ctx context.Context, client *http.Client, endpoint string, headers
 	return Request(ctx, client, http.MethodPost, endpoint, "application/json", headers, data, expected)
 }
 
-func Request(ctx context.Context, client *http.Client, method, endpoint, contentType string, headers map[string]string, body []byte, expected ResponseKind) ([]byte, error) {
+// ValidateEndpoint accepts complete HTTP URLs, including custom proxy queries.
+// Fragments are rejected because HTTP never sends them to the server.
+func ValidateEndpoint(endpoint string) error {
 	u, err := url.Parse(endpoint)
-	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
-		return nil, fmt.Errorf("invalid HTTP endpoint")
+	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil || strings.Contains(endpoint, "#") {
+		return fmt.Errorf("expected an HTTP(S) endpoint without credentials or fragment")
+	}
+	return nil
+}
+
+// ValidateBaseEndpoint also forbids queries before an adapter appends its route.
+// Escaped path characters such as %3F and %23 are not URL delimiters.
+func ValidateBaseEndpoint(endpoint string) error {
+	if err := ValidateEndpoint(endpoint); err != nil {
+		return err
+	}
+	u, _ := url.Parse(endpoint)
+	if u.RawQuery != "" || u.ForceQuery {
+		return fmt.Errorf("expected an HTTP(S) base endpoint without query")
+	}
+	return nil
+}
+
+func Request(ctx context.Context, client *http.Client, method, endpoint, contentType string, headers map[string]string, body []byte, expected ResponseKind) ([]byte, error) {
+	if err := ValidateEndpoint(endpoint); err != nil {
+		return nil, err
 	}
 	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewReader(body))
 	if err != nil {

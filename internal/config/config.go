@@ -189,7 +189,7 @@ func (c Config) Resolve(id, model, voice string) (Provider, error) {
 
 func validateEndpoint(endpoint string) error {
 	u, err := url.Parse(endpoint)
-	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil || u.RawQuery != "" || u.ForceQuery || strings.Contains(endpoint, "#") {
 		return fmt.Errorf("expected an HTTP(S) URL without credentials, query, or fragment")
 	}
 	return nil

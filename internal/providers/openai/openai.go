@@ -42,6 +42,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err != nil {
 		return providers.Result{}, err
 	}
+	if err := providers.ValidateBaseEndpoint(opt.Endpoint); err != nil {
+		return providers.Result{}, err
+	}
 	endpoint := strings.TrimRight(opt.Endpoint, "/") + "/audio/speech"
 	headers := map[string]string{
 		"Authorization": "Bearer " + opt.APIKey,

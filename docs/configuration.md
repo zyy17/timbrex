@@ -74,7 +74,7 @@ The file contains one YAML mapping. Keys are case-sensitive. Unknown keys, unkno
 
 Provider IDs are `stub`, `openai`, `elevenlabs`, `minimax`, `azure`, `qwen`, `gemini`, and `fish`. Defaults and the supported environment variable names are listed in [provider setup](providers.md). The [complete example](../examples/timbrex.yaml) includes the speech services. The stub ignores speech settings.
 
-Endpoints must be HTTP(S) URLs without embedded credentials, query strings, or fragments. Credentials are sent to the configured endpoint; use a trusted service or gateway. Azure's explicit endpoint takes priority over its region. Checking scripts and displaying configuration do not require credentials; synthesis checks the selected provider's credentials and endpoint.
+Endpoints must be HTTP(S) URLs without embedded credentials, query strings, or fragments. Bare `?` and `#` delimiters are invalid too; percent-encoded `%3F` and `%23` within the path remain valid. Credentials are sent to the configured endpoint; use a trusted service or gateway. Azure's explicit endpoint takes priority over its region. Checking scripts and displaying configuration do not require credentials; synthesis checks the selected provider's credentials and endpoint.
 
 ## Precedence
 

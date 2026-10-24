@@ -364,3 +364,38 @@ func TestHTTPResponseKindIsIndependentOfAccept(t *testing.T) {
 		})
 	}
 }
+
+func TestEndpointRoles(t *testing.T) {
+	for _, tc := range []struct {
+		endpoint       string
+		complete, base bool
+	}{
+		{"https://example.invalid/v1", true, true},
+		{"http://127.0.0.1:8080/proxy%3Froute%23", true, true},
+		{"https://example.invalid/speech?", true, false},
+		{"https://example.invalid/speech?existing=value%3F%23", true, false},
+		{"https://example.invalid/v1#", false, false},
+		{"https://example.invalid/v1#secret", false, false},
+		{"https://example.invalid/v1?#", false, false},
+		{"https://user:secret@example.invalid/v1", false, false},
+		{"ftp://example.invalid/v1", false, false},
+		{"/relative/v1", false, false},
+		{"https://example.invalid/%zz", false, false},
+		{"", false, false},
+	} {
+		t.Run(tc.endpoint, func(t *testing.T) {
+			for _, check := range []struct {
+				name     string
+				valid    bool
+				validate func(string) error
+			}{
+				{"complete", tc.complete, ValidateEndpoint}, {"base", tc.base, ValidateBaseEndpoint},
+			} {
+				err := check.validate(tc.endpoint)
+				if (err == nil) != check.valid || err != nil && strings.Contains(err.Error(), "secret") {
+					t.Errorf("%s valid=%t error=%v", check.name, check.valid, err)
+				}
+			}
+		})
+	}
+}

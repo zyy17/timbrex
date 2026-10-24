@@ -272,3 +272,25 @@ func TestDotEnvIsNotAutomaticallyLoaded(t *testing.T) {
 		t.Fatalf("local .env must not change configuration: %v", err)
 	}
 }
+
+func TestEndpointsRejectQueryAndFragmentDelimiters(t *testing.T) {
+	for id := range providerDefaults {
+		for _, suffix := range []string{"?", "#", "?#", "?secret-value", "#secret-value"} {
+			t.Run(id+"/"+suffix, func(t *testing.T) {
+				_, err := loadTest(t, "providers: {"+id+": {endpoint: 'https://example.com/proxy"+suffix+"'}}")
+				if err == nil || strings.Contains(err.Error(), "secret-value") {
+					t.Fatalf("query/fragment delimiter accepted or exposed: %v", err)
+				}
+			})
+		}
+		for _, path := range []string{"/proxy%3Froute", "/proxy%23route", "/proxy%3froute%23"} {
+			t.Run(id+"/"+path, func(t *testing.T) {
+				endpoint := "https://example.com" + path
+				cfg, err := loadTest(t, "providers: {"+id+": {endpoint: '"+endpoint+"'}}")
+				if err != nil || cfg.Providers[id].Endpoint != endpoint {
+					t.Fatalf("legal escaped path changed or rejected: %v", err)
+				}
+			})
+		}
+	}
+}

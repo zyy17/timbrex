@@ -73,6 +73,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err != nil {
 		return providers.Result{}, err
 	}
+	if err := providers.ValidateBaseEndpoint(opt.Endpoint); err != nil {
+		return providers.Result{}, err
+	}
 	headers := map[string]string{"Authorization": "Bearer " + opt.APIKey, "model": opt.Model}
 	endpoint := strings.TrimRight(opt.Endpoint, "/") + "/tts"
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
