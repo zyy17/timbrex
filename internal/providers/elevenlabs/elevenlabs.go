@@ -76,6 +76,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err != nil {
 		return providers.Result{}, err
 	}
+	if err := providers.ValidateBaseEndpoint(opt.Endpoint); err != nil {
+		return providers.Result{}, err
+	}
 	base := strings.TrimRight(opt.Endpoint, "/") + "/text-to-speech/"
 	headers := map[string]string{
 		"xi-api-key": opt.APIKey,

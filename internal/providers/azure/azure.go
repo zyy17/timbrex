@@ -49,6 +49,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err != nil {
 		return providers.Result{}, err
 	}
+	if err := providers.ValidateEndpoint(opt.Endpoint); err != nil {
+		return providers.Result{}, err
+	}
 	// https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech
 	headers := map[string]string{
 		"Accept":                    "audio/pcm, application/octet-stream",

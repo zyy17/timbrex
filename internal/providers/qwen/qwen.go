@@ -64,6 +64,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err != nil {
 		return providers.Result{}, err
 	}
+	if err := providers.ValidateEndpoint(opt.Endpoint); err != nil {
+		return providers.Result{}, err
+	}
 	headers := map[string]string{"Authorization": "Bearer " + opt.APIKey}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
 		data, err := providers.PostJSON(ctx, p.client, opt.Endpoint, headers, requests[i], providers.ResponseBody)

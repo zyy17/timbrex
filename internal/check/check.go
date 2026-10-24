@@ -226,9 +226,13 @@ func (c *checker) free(n *ast.Node, raw string) {
 		}
 		return
 	}
-	msg := `unregistered tag "` + raw + `"; for free-form acting write [act "` + raw + `"]`
+	// Timbrex quoted values only unescape quotes and backslashes.
+	quoted := strings.ReplaceAll(raw, `\`, `\\`)
+	quoted = strings.ReplaceAll(quoted, `"`, `\"`)
+	repair := `[act "` + quoted + `"]`
+	msg := `unregistered tag "` + raw + `"; for free-form acting write ` + repair
 	if s := c.suggest(raw); s != "" {
-		msg = `unregistered tag "` + raw + `"; did you mean [` + s + `]? for free-form acting write [act "` + raw + `"]`
+		msg = `unregistered tag "` + raw + `"; did you mean [` + s + `]? for free-form acting write ` + repair
 	}
 	c.error(n, "V041", msg)
 }

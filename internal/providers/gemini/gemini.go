@@ -106,6 +106,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err != nil {
 		return providers.Result{}, err
 	}
+	if err := providers.ValidateBaseEndpoint(opt.Endpoint); err != nil {
+		return providers.Result{}, err
+	}
 	endpoint := strings.TrimRight(opt.Endpoint, "/") + "/models/" + opt.Model + ":generateContent"
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
 		data, err := providers.PostJSON(ctx, p.client, endpoint, map[string]string{"x-goog-api-key": opt.APIKey}, requests[i], providers.ResponseBody)
