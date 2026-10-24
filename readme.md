@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/logo.png" alt="Timbrex" width="420"></p>
+
 # Timbrex
 
 [简体中文](readme.zh-cn.md)
