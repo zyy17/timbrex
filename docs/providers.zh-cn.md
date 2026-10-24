@@ -4,6 +4,8 @@
 
 Timbrex 直接调用同步 HTTP API。适配器依据下列官方参考实现，核对日期为 **2026-10-22**。离线测试验证请求和响应契约，尚未验证真实账号兼容性或声音质量。凭证必须属于端点所在区域，并具有所选模型和音色的权限。
 
+厂商 TTS 能力与价格速查（核对日期：**2026-10-24**）：[OpenAI](providers/openai/readme.zh-cn.md) · [ElevenLabs](providers/elevenlabs/readme.zh-cn.md) · [MiniMax](providers/minimax/readme.zh-cn.md) · [Azure Speech](providers/azure/readme.zh-cn.md) · [Qwen](providers/qwen/readme.zh-cn.md) · [Gemini TTS](providers/gemini/readme.zh-cn.md) · [Fish Audio](providers/fish/readme.zh-cn.md)。这些页面仅介绍 TTS，不代表 Timbrex 已完整实现；本页仍是适配器配置指南。
+
 ## 配置
 
 设置来自 YAML 和环境变量。见 [配置](configuration.zh-cn.md)。将凭证放在环境变量或密钥管理器中。Timbrex 不加载 `.env` 文件。不要把密钥写入 `.tbx` 文件或提交到仓库。各厂商小节列出所需的环境变量。等价的 `providers.<id>` 文件字段同样有效。
