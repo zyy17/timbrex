@@ -35,6 +35,7 @@ func TestAdaptersRejectInvalidSynthesisOptionsBeforeSideEffects(t *testing.T) {
 	badTemperature := math.NaN()
 	badQwenSeed := int64(65536)
 	badMode := options.MiniMaxTextNormalization("invalid")
+	badDeployment := "\x00"
 	for _, id := range providers.IDs() {
 		t.Run(id, func(t *testing.T) {
 			p, err := providers.Get(id)
@@ -46,19 +47,22 @@ func TestAdaptersRejectInvalidSynthesisOptionsBeforeSideEffects(t *testing.T) {
 				(*options.Fish)(nil), &options.Fish{},
 				(*options.Qwen)(nil), &options.Qwen{},
 				(*options.MiniMax)(nil), &options.MiniMax{},
+				(*options.Azure)(nil), &options.Azure{},
 				embeddedOptions{}, (*embeddedOptions)(nil),
 				options.ElevenLabs{Seed: &badSeed},
 				options.ElevenLabs{ApplyTextNormalization: &badNorm},
 				options.Fish{Temperature: &badTemperature},
 				options.Qwen{Seed: &badQwenSeed},
 				options.MiniMax{TextNormalizationMode: &badMode},
+				options.Azure{DeploymentID: &badDeployment},
+				options.Fish{PronunciationDictionary: &options.FishDictionaries{}},
 			}
 			for _, variant := range []struct {
 				owner string
 				value options.Value
 			}{
 				{"elevenlabs", options.ElevenLabs{}}, {"fish", options.Fish{}},
-				{"qwen", options.Qwen{}}, {"minimax", options.MiniMax{}},
+				{"qwen", options.Qwen{}}, {"minimax", options.MiniMax{}}, {"azure", options.Azure{}},
 			} {
 				if id != variant.owner {
 					variants = append(variants, variant.value)
@@ -77,7 +81,7 @@ func TestAdaptersRejectInvalidSynthesisOptionsBeforeSideEffects(t *testing.T) {
 				for _, value := range variants {
 					opt := providers.Options{Out: out, Endpoint: srv.URL, Voice: "test-voice", Synthesis: value}
 					_, err := p.Synthesize(context.Background(), doc, opt)
-					if err == nil || !strings.Contains(err.Error(), "synthesis options") && !strings.Contains(err.Error(), "seed") && !strings.Contains(err.Error(), "apply_text_normalization") && !strings.Contains(err.Error(), "temperature") && !strings.Contains(err.Error(), "text_normalization_mode") {
+					if err == nil || !strings.Contains(err.Error(), "synthesis options") && !strings.Contains(err.Error(), "seed") && !strings.Contains(err.Error(), "apply_text_normalization") && !strings.Contains(err.Error(), "temperature") && !strings.Contains(err.Error(), "text_normalization_mode") && !strings.Contains(err.Error(), "deployment_id") && !strings.Contains(err.Error(), "pronunciation_dictionary") {
 						t.Fatalf("invalid options did not fail at the adapter boundary: %v", err)
 					}
 					data, err := os.ReadFile(out)

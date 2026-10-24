@@ -38,8 +38,9 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
 		return providers.Result{}, err
 	}
-	if opt.Synthesis != nil {
-		return providers.Result{}, fmt.Errorf("azure received an unsupported synthesis options type")
+	endpoint, err := synthesisEndpoint(opt)
+	if err != nil {
+		return providers.Result{}, err
 	}
 	if opt.Model != "" {
 		return providers.Result{}, fmt.Errorf("azure selects its model through the voice name; omit model")
@@ -55,7 +56,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 		"X-Microsoft-OutputFormat":  "raw-24khz-16bit-mono-pcm",
 	}
 	return providers.Render(ctx, p.ID(), opt, segments, func(ctx context.Context, i int) ([]byte, error) {
-		pcm, err := providers.Request(ctx, p.client, http.MethodPost, opt.Endpoint, "application/ssml+xml", headers, []byte(requests[i]), providers.ResponsePCM)
+		pcm, err := providers.Request(ctx, p.client, http.MethodPost, endpoint, "application/ssml+xml", headers, []byte(requests[i]), providers.ResponsePCM)
 		if err != nil {
 			return nil, err
 		}

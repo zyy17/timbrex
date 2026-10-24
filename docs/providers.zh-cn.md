@@ -109,7 +109,9 @@ export AZURE_SPEECH_REGION=eastus
 ./timbrex synth examples/expressive.tbx --provider azure --voice en-US-JennyNeural -o azure.wav
 ```
 
-使用订阅密钥和 SSML 调用 `POST https://{region}.tts.speech.microsoft.com/cognitiveservices/v1`，请求 `raw-24khz-16bit-mono-pcm`。文本和属性均进行 XML 转义。音色名称决定模型；指定 `--model` 或 front matter 的 `model:` 会报错。
+默认使用订阅密钥和 SSML 调用 `POST https://{region}.tts.speech.microsoft.com/cognitiveservices/v1`，请求 `raw-24khz-16bit-mono-pcm`。文本和属性均进行 XML 转义。音色名称决定模型；指定 `--model` 或 front matter 的 `model:` 会报错。
+
+可选的[自定义部署配置](configuration.zh-cn.md#azure) 提供已有 `deployment_id` 和不含查询参数的显式自定义音色端点，例如 `https://eastus.voice.speech.microsoft.com/cognitiveservices/v1`。使用托管资源的密钥和实际部署的音色名称。标准 `.tts.speech` 主机名会被拒绝，不会自动改写；也不会推测托管区域。一次调用的所有片段使用同一部署，不调用音色创建、部署或目录 API。见 Microsoft 的[自定义 REST 端点](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech#custom-voices) 和[自定义音色使用说明](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/professional-voice-deploy-endpoint#use-your-custom-voice)。
 
 Style、role 和强调能力依赖所选音色。Azure 可能忽略音色不支持的 style，Timbrex 尚未查询音色能力。适配器只允许每个片段一个 style，冲突时会报错。`[role Boy]` 需要同一作用域中存在 style。与韵律控制组合时，强调元素包裹一个包含所请求语速、音高和音量属性的 prosody 元素，因此等效控制无论按什么标签顺序书写，都会生成相同且符合文档要求的 SSML 层级。这只保证请求结构正确，不代表所选音色支持这些控制。尤其不能根据音色名称推断 HD 控制能力：Microsoft 的 [HD 支持表](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/high-definition-voices#supported-and-unsupported-ssml-elements-for-azure-speech-hd-voices)与部分 SSML 示例对韵律和风格的支持说明不一致。
 
@@ -193,7 +195,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 模型与自然语言控制](https://docs.fish.audio/developer-guide/models-pricing/models-overview)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，不接受用特殊长度值表示尚未结束的流式 WAV。
 
-可选的[合成配置](configuration.zh-cn.md#fish) 可控制文本规范化、规范化语言、响度、采样、服务端分块、延迟、前块上下文和提前停止。它不增加朗读语言选择，也不改变省略选项时的默认值。见[官方 OpenAPI](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json)。
+可选的[合成配置](configuration.zh-cn.md#fish) 控制规范化、规范化语言、响度、采样、服务端分块、延迟、上下文条件和提前停止，并支持[请求级功能标记](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech#body-features) 与[发音词典](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech#body-pronunciation-dictionary)。`quality-guard` 是否可用取决于后端。词典使用带版本的引用或内联发音条目，不是拼写别名或局部 DSL span。无法解析的引用可能被服务静默丢弃。这些设置不增加朗读语言选择，不创建/管理资源，也不改变省略字段的默认行为。见[官方 OpenAPI](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json)。
 
 ## 并发生成
 

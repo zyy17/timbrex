@@ -65,7 +65,7 @@ func TestExtendedSynthesisStrictConfiguration(t *testing.T) {
 			`{prosody: null}`, `{prosody: []}`, `{prosody: {normalize_loudness: null}}`, `{prosody: {normalize_loudness: 'false'}}`, `{prosody: {speed: 1}}`, `{prosody.normalize_loudness: true}`,
 			`{temperature: -.1}`, `{temperature: 1.1}`, `{temperature: .nan}`, `{temperature: .inf}`, `{temperature: '0'}`, `{temperature: false}`, `{temperature: null}`, `{top_p: -1}`, `{top_p: 2}`, `{top_p: -.inf}`,
 			`{chunk_length: 99}`, `{chunk_length: 301}`, `{chunk_length: 100.0}`, `{chunk_length: 1e2}`, `{chunk_length: '100'}`, `{chunk_length: 18446744073709551615}`, `{chunk_length: 18446744073709551616}`, `{min_chunk_length: -1}`, `{min_chunk_length: 101}`, `{min_chunk_length: 0.0}`,
-			`{latency: ''}`, `{latency: LOW}`, `{latency: true}`, `{condition_on_previous_chunks: 'false'}`, `{early_stop_threshold: -1}`, `{early_stop_threshold: 2}`, `{early_stop_threshold: .nan}`, `{features: [secret-value]}`, `{pronunciation_dictionary: []}`, `{max_new_tokens: 10}`, `{repetition_penalty: 1.2}`, `{secret-value: secret-value}`,
+			`{latency: ''}`, `{latency: LOW}`, `{latency: true}`, `{condition_on_previous_chunks: 'false'}`, `{early_stop_threshold: -1}`, `{early_stop_threshold: 2}`, `{early_stop_threshold: .nan}`, `{features: [secret-value]}`, `{max_new_tokens: 10}`, `{repetition_penalty: 1.2}`, `{secret-value: secret-value}`,
 		},
 		"qwen": {
 			`null`, `[]`, `{seed: -1}`, `{seed: 65536}`, `{seed: 1.0}`, `{seed: '0'}`, `{seed: true}`, `{seed: null}`, `{seed: .nan}`, `{seed: 18446744073709551615}`,

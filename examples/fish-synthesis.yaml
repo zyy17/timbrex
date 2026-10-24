@@ -1,5 +1,8 @@
 # Set FISH_API_KEY and replace the accessible existing reference ID.
 # Inspect offline: timbrex --config examples/fish-synthesis.yaml config
+# Official fields:
+# https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech#body-features
+# https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech#body-pronunciation-dictionary
 provider: fish
 providers:
   fish:
@@ -17,3 +20,14 @@ providers:
       latency: balanced
       condition_on_previous_chunks: false
       early_stop_threshold: 0
+      features: [quality-guard] # Backend-dependent; [] requests no flags.
+      pronunciation_dictionary:
+        - items:
+            - key: Timbrex
+              value: "tɪmbɹɛks" # Phonetic form, not a spelling alias.
+              case_sensitive: false
+      # Alternatively replace the entire dictionary list with existing refs:
+      # pronunciation_dictionary:
+      #   - id: YOUR_EXISTING_DICTIONARY_ID
+      #     version: YOUR_IMMUTABLE_VERSION
+      # Never mix refs with inline dictionaries. [] explicitly sends no entries.

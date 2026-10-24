@@ -45,6 +45,7 @@ Examples use `timbrex` on PATH. Substitute the verified executable path, quote f
 Read [references/running.md](references/running.md) for provider selection, voice mapping, configuration, synthesis, or troubleshooting. Read only the selected provider's detailed documentation when needed. Check that its adapter and model support every audible control.
 
 - Use voice/model IDs from user configuration, version-matched Timbrex documentation, or current official vendor documentation. Never invent IDs from character descriptions. A supported ID is not proof of this account's access.
+- Keep request-scoped pronunciation dictionaries, feature flags, and custom deployment routing in the supported provider configuration, not invented DSL tags. Review [references/running.md](references/running.md) and the exact schema in the matching checkout.
 - Keep API keys out of scripts, generated examples, chat, logs, and Git. Use existing environment/secret-manager setup. Do not print the environment or read secret values merely to check setup.
 - Real-provider synthesis sends the script to that service and may cost money. Run it only within requested generation scope and approved spending constraints. If only writing/checking was requested, stop there. Do not use `synth` as a dry run: no public provider-only preflight or `--dry-run` exists.
 - For a requested offline output smoke test, force `--provider stub`; never rely on configured defaults. Stub produces a tone, not speech, and ignores performance and pauses.

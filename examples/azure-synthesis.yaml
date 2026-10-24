@@ -1,0 +1,16 @@
+# Set AZURE_SPEECH_KEY to the hosting resource's key.
+# Replace the endpoint, voice name, and deployment ID with an existing deployment.
+# The endpoint is the actual custom synthesis URL with its query removed.
+# Do not use the standard regional .tts.speech host or guess a hosting region.
+# For an opaque voice name, set script front matter lang explicitly, e.g. en-US.
+# Inspect offline: timbrex --config examples/azure-synthesis.yaml config
+# Official routing and voice setup:
+# https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech#custom-voices
+# https://learn.microsoft.com/en-us/azure/ai-services/speech-service/professional-voice-deploy-endpoint#use-your-custom-voice
+provider: azure
+providers:
+  azure:
+    endpoint: https://eastus.voice.speech.microsoft.com/cognitiveservices/v1
+    voice: YOUR_DEPLOYED_CUSTOM_VOICE_NAME
+    synthesis:
+      deployment_id: YOUR_EXISTING_DEPLOYMENT_ID

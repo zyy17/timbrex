@@ -94,7 +94,7 @@ Cast 音色映射仍然优先于兜底音色，包括 `--voice`。`voice` 或 `a
 
 ## 厂商合成选项
 
-选中的 YAML 文件支持在 `providers.elevenlabs.synthesis`、`providers.fish.synthesis`、`providers.qwen.synthesis` 和 `providers.minimax.synthesis` 下设置强类型的单次请求选项。这些选项没有 CLI、环境变量或脚本 front matter 覆盖项。其他厂商拒绝 `synthesis` 配置段；它不是任意 API 参数透传，也不增加 DSL 语法。
+选中的 YAML 文件支持在 `providers.elevenlabs.synthesis`、`providers.fish.synthesis`、`providers.azure.synthesis`、`providers.qwen.synthesis` 和 `providers.minimax.synthesis` 下设置强类型的单次请求选项。这些选项没有 CLI、环境变量或脚本 front matter 覆盖项。其他厂商拒绝 `synthesis` 配置段；它不是任意 API 参数透传，也不增加 DSL 语法。
 
 省略字段会保留原请求。显式 `0`、`false`、允许的空字符串和空列表会原样保留；列表不会合并或去重。空映射不提供覆盖值。Null、未知或带点的 schema 键、错误标量类型、非有限数值和超范围值会在本地失败。所有片段都会在首个 HTTP 请求或输出变更前完成准备。这些选项不会创建资源，也不会修改已保存的音色或词典。
 
@@ -145,6 +145,12 @@ providers:
       latency: balanced
       condition_on_previous_chunks: false
       early_stop_threshold: 0
+      features: [quality-guard]
+      pronunciation_dictionary:
+        - items:
+            - key: Timbrex
+              value: "tɪmbɹɛks"
+              case_sensitive: false
 ```
 
 - `normalize` 和 `prosody.normalize_loudness`：布尔值。省略时保留 Timbrex 显式设置的 `normalize: false` 和响度规范化 `true`，不会采用新的服务默认值。响度规范化在支持的三个 S2 模型上生效。
@@ -152,8 +158,50 @@ providers:
 - `temperature`、`top_p`、`early_stop_threshold`：`0`–`1` 的数值。
 - `chunk_length`：`100`–`300` 的整数；`min_chunk_length`：`0`–`100` 的整数。它们控制单次请求内的服务端分块，不改变 Timbrex 脚本分段。
 - `latency`：`low`、`normal` 或 `balanced`；`condition_on_previous_chunks`：布尔值。
+- [`features`](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech#body-features)：列表只接受 `quality-guard`；未知标记在本地报错。`[]` 明确请求不启用标记，省略则不添加字段。功能是否生效由后端决定，不保证声音质量。
+- [`pronunciation_dictionary`](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech#body-pronunciation-dictionary)：直接列表，最多三个词典，全部使用内联形式或全部使用引用形式，不能混用。内联词典必须有 `items`，最多 5000 项。每项必须有 `key`（1–256 个 Unicode 字符）和音标形式的 `value`（1–1024 个）；可选的 `case_sensitive` 为布尔值。两个字符串必须是有效 UTF-8，且不能包含 `<|phoneme_start|>` 或 `<|phoneme_end|>`。
 
-此 schema 不提供 `features`、发音词典、`max_new_tokens` 或 `repetition_penalty`。见[配置示例](../examples/fish-synthesis.yaml)。
+也可引用现有词典，同时提供 `id` 和不可变的 `version`；两者均须匹配 `[A-Za-z0-9_-]{1,128}`，不会默认选用最新版本：
+
+```yaml
+providers:
+  fish:
+    synthesis:
+      pronunciation_dictionary:
+        - id: YOUR_EXISTING_DICTIONARY_ID
+          version: YOUR_IMMUTABLE_VERSION
+```
+
+[官方词典 schema](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json) 规定匹配覆盖整个请求文本，采用普通子串匹配，优先最左、再取最长；除非设置 `case_sensitive: true`，否则忽略 ASCII 大小写。后端替换的是发音形式，不是普通拼写别名。Timbrex 不改写脚本或 IR 文本，也不读取词典内容。无法解析的引用会被服务静默丢弃，因此请求成功不证明词典已应用。列表保留顺序与重复项；显式 `[]`、`items: []` 和 `case_sensitive: false` 均会保留。省略字段不发送；本地拒绝 `null`。每次合成调用会将词典数据复制为独立快照，由该次调用的各片段复用。
+
+此 schema 仍不提供 `max_new_tokens` 或 `repetition_penalty`。见[配置示例](../examples/fish-synthesis.yaml)。
+
+### Azure
+
+[`deployment_id`](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech#custom-voices) 将一次合成调用路由到一个已有的自定义音色部署：
+
+```yaml
+providers:
+  azure:
+    endpoint: https://eastus.voice.speech.microsoft.com/cognitiveservices/v1
+    voice: YOUR_DEPLOYED_CUSTOM_VOICE_NAME
+    synthesis:
+      deployment_id: YOUR_EXISTING_DEPLOYMENT_ID
+```
+
+使用该部署实际托管端点去掉查询部分后的地址，不使用标准区域 `.tts.speech` 端点。必须显式设置端点：Timbrex 不推测托管区域，也不改写标准主机名。它将不透明的 ID 编码为 `deploymentId` 查询参数，不要求 UUID 格式。空白、无效 UTF-8 或包含控制字符的 ID 会在本地报错。端点仍拒绝内嵌凭证、查询字符串（包括单独的 `?`）和片段标识。
+
+将 `AZURE_SPEECH_KEY` 设为托管该部署的资源密钥，`voice` 设为实际部署的音色名称，而非部署 ID。音色名称不含可识别的语言前缀时，在脚本中显式指定语言，例如：
+
+```tbx
+---
+timbrex: 1
+lang: en-US
+---
+Hello from my custom voice.
+```
+
+见 Microsoft 的[自定义音色使用说明](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/professional-voice-deploy-endpoint#use-your-custom-voice) 和[配置示例](../examples/azure-synthesis.yaml)。这只调用语音合成，不创建、训练、部署、管理或查询音色。音色和 SSML 限制仍然适用。省略 `deployment_id` 时保留普通端点/区域路由；不增加模型字段或 DSL/IR 语法。
 
 ### Qwen
 
@@ -196,4 +244,4 @@ providers:
 
 ## 查看
 
-`timbrex config` 将合并后的默认值、文件和环境变量以 YAML 输出。已配置的 API key 替换为 `REDACTED`。它不读取脚本、不应用 `synth` 参数、不验证凭证，也不联系厂商。词典标识符和 hot-fix 文本不会脱敏；不要公开包含私人文本的配置。输出不是凭证备份。仓库忽略根目录的 `timbrex.yaml`。不要提交凭证。
+`timbrex config` 将合并后的默认值、文件和环境变量以 YAML 输出。已配置的 API key 替换为 `REDACTED`。它不读取脚本、不应用 `synth` 参数、不验证凭证，也不联系厂商。部署/词典标识符、内联词典内容和 hot-fix 文本不会脱敏；不要公开包含私人文本的配置。输出不是凭证备份。仓库忽略根目录的 `timbrex.yaml`。不要提交凭证。

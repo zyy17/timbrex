@@ -169,6 +169,9 @@ func (c Config) Resolve(id, model, voice string) (Provider, error) {
 	if strings.TrimSpace(p.APIKey) == "" {
 		return Provider{}, fmt.Errorf("set providers.%s.api_key or its documented environment variable", id)
 	}
+	if v, ok := p.Synthesis.(options.Azure); ok && v.DeploymentID != nil && p.Endpoint == "" {
+		return Provider{}, fmt.Errorf("set providers.azure.endpoint to the existing custom voice endpoint when using deployment_id")
+	}
 	if id == "azure" && p.Endpoint == "" && p.Region != "" {
 		p.Endpoint = "https://" + p.Region + ".tts.speech.microsoft.com/cognitiveservices/v1"
 	}
