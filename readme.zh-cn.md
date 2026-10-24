@@ -6,7 +6,7 @@
 
 Timbrex 是一门语音脚本语言和配套 CLI。将台词、角色、表演指令和停顿写在文本文件中，再通过语音合成（TTS）厂商生成 WAV 音频。
 
-Timbrex 取意于音色（timbre）与表达（expression）。
+Timbrex 取意于音色（timbre）与表达（expression）。二者融合即为 Timbrex。
 
 TTS API 负责生成语音，Timbrex 负责组织调用这些 API 的脚本：哪句台词用哪个音色、表演指令作用于哪些文字、哪里需要停顿。这些设置与台词放在一起，可以随文本编辑、审阅并纳入 Git 版本管理；适配器负责构建请求和拼接音频。
 
