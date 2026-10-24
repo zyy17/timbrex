@@ -1,0 +1,13 @@
+---
+timbrex: 1
+strict_tags: true
+cast:
+  narrator: {name: 旁白}
+  lin: {name: 林}
+  chen: {name: 陈}
+---
+// A quiet reunion. Voice mappings are left to the chosen provider.
+narrator: 末班车开走以后，站台上只剩下两个人。 [pause 400ms]
+lin: [act "trying to sound casual"|我还以为你不来了。]
+chen: [act "out of breath, but relieved"|差一点。] [pause 300ms] 还好，你还在。
+lin: [whisper|我答应过等你。] [pause 500ms] 走吧，回家。

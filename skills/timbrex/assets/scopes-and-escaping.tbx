@@ -1,0 +1,16 @@
+---
+timbrex: 1
+strict_tags: true
+cast:
+  guide: {name: Guide}
+narrator: guide
+---
+// Scene defaults apply to later turns.
+[calm] [speed 0.9]
+guide: This starts calm and slow. [happy|This phrase is happy. [whisper|This one is also whispered.]] Back to calm.
+guide: [speed 1.1] Faster now. [reset speed] Back to scene speed. [sad] Sad now. [reset] Back to calm and slow.
+// The comment ended the turn. Repeat the ID for the next speech.
+guide: [act "say \"fine\" reluctantly"|I'm fine.] [pause 0.5s] The literal text is \[happy\], a vertical bar \|, and a backslash \\.
+// Reset on a scene line clears scene defaults.
+[reset]
+guide: No scene controls now.
