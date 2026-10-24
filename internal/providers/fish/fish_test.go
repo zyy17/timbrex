@@ -53,38 +53,42 @@ func TestRequestJSONMatchesOfficialFields(t *testing.T) {
 }
 
 func TestBuildContract(t *testing.T) {
-	seg := providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello (world) "}, {Kind: ir.Event, Name: "sigh"}}, Controls: []ir.Node{{Name: "happy"}, {Name: "whisper"}, {Name: "speed", Args: []ir.Arg{{Raw: "125%", Kind: "percent"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "-6dB", Kind: "decibel"}}}}}
-	r, err := build(seg, "s2.1-pro")
-	if err != nil || r.Text != "[happy] [whispering] Hello (world) [sighing]" || r.ReferenceID != "test-reference" || r.Prosody.Speed != 1.25 || r.Prosody.Volume != -6 || !r.Prosody.NormalizeLoudness || r.Normalize || r.Format != "wav" || r.SampleRate != 24000 {
-		t.Fatalf("%+v %v", r, err)
-	}
-	for name, speed := range map[string]float64{"fast": 1.2, "slow": 0.8} {
-		seg.Controls = []ir.Node{{Name: name}}
-		r, err := build(seg, "s2.1-pro")
-		if err != nil || r.Prosody.Speed != speed {
-			t.Fatalf("%s: %+v %v", name, r, err)
-		}
-	}
-	for name, cue := range cues {
-		seg.Controls = []ir.Node{{Name: name}}
-		r, err := build(seg, "s2.1-pro")
-		if err != nil || !strings.HasPrefix(r.Text, "["+cue+"] ") {
-			t.Fatalf("cue %s: %v", name, err)
-		}
-	}
-	for name, cue := range events {
-		seg.Controls = nil
-		seg.Nodes = []ir.Node{{Kind: ir.Event, Name: name}}
-		r, err := build(seg, "s2.1-pro")
-		if err != nil || r.Text != cue {
-			t.Fatalf("event %s: %v", name, err)
-		}
+	for _, model := range []string{"s2.1-pro", "s2.1-pro-free", "s2-pro"} {
+		t.Run(model, func(t *testing.T) {
+			seg := providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello (world) "}, {Kind: ir.Event, Name: "sigh"}}, Controls: []ir.Node{{Name: "happy"}, {Name: "whisper"}, {Name: "speed", Args: []ir.Arg{{Raw: "125%", Kind: "percent"}}}, {Name: "volume", Args: []ir.Arg{{Raw: "-6dB", Kind: "decibel"}}}}}
+			r, err := build(seg, model)
+			if err != nil || r.Text != "[happy] [whispering] Hello (world) [sighing]" || r.ReferenceID != "test-reference" || r.Prosody.Speed != 1.25 || r.Prosody.Volume != -6 || !r.Prosody.NormalizeLoudness || r.Normalize || r.Format != "wav" || r.SampleRate != 24000 {
+				t.Fatalf("%+v %v", r, err)
+			}
+			for name, speed := range map[string]float64{"fast": 1.2, "slow": 0.8} {
+				seg.Controls = []ir.Node{{Name: name}}
+				r, err := build(seg, model)
+				if err != nil || r.Prosody.Speed != speed {
+					t.Fatalf("%s: %+v %v", name, r, err)
+				}
+			}
+			for name, cue := range cues {
+				seg.Controls = []ir.Node{{Name: name}}
+				r, err := build(seg, model)
+				if err != nil || !strings.HasPrefix(r.Text, "["+cue+"] ") {
+					t.Fatalf("cue %s: %v", name, err)
+				}
+			}
+			for name, cue := range events {
+				seg.Controls = nil
+				seg.Nodes = []ir.Node{{Kind: ir.Event, Name: name}}
+				r, err := build(seg, model)
+				if err != nil || r.Text != cue {
+					t.Fatalf("event %s: %v", name, err)
+				}
+			}
+		})
 	}
 }
 
 func TestBuildRejectsUnsupported(t *testing.T) {
 	base := providers.Segment{Voice: "test-reference", Nodes: []ir.Node{{Text: "Hello"}}}
-	for _, model := range []string{"s1", "s2-pro", "s2.1-pro-free", "drama-3", "unknown", ""} {
+	for _, model := range []string{"s1", "drama-3", "unknown", "s2.1-pro-FREE", " s2-pro", "s2-pro ", ""} {
 		if _, err := build(base, model); err == nil {
 			t.Fatalf("accepted model %q", model)
 		}
@@ -105,7 +109,6 @@ func TestBuildRejectsUnsupported(t *testing.T) {
 		{"pitch", func(s *providers.Segment) {
 			s.Controls = []ir.Node{{Name: "pitch", Args: []ir.Arg{{Raw: "2st", Kind: "semitone"}}}}
 		}},
-		{"act", func(s *providers.Segment) { s.Controls = []ir.Node{{Name: "act", Note: "softly"}} }},
 		{"speed low", func(s *providers.Segment) {
 			s.Controls = []ir.Node{{Name: "speed", Args: []ir.Arg{{Raw: "0.49", Kind: "number"}}}}
 		}},

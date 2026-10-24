@@ -2,7 +2,7 @@
 
 [English](market_survey.md) · [教程](tutorial.zh-cn.md)
 
-核对日期：**2026-10-22**。本文记录与 Timbrex 有关的 API 设计差异，不是质量基准、价格比较或法律评估。未进行真实试听研究，部署时应向厂商确认模型可用性和服务条款。
+核对日期：**2026-10-22**；Fish 模型与表演指令覆盖更新于 **2026-10-24**。本文记录与 Timbrex 有关的 API 设计差异，不是质量基准、价格比较或法律评估。未进行真实试听研究，部署时应向厂商确认模型可用性和服务条款。
 
 | 服务 | 官方控制方式 | 对 Timbrex 的影响 |
 | --- | --- | --- |
@@ -12,7 +12,7 @@
 | [Azure Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice) | SSML 音色、韵律、style 和 role，支持情况取决于音色 | 转义 XML，区分语法支持与实际音色能力 |
 | [Qwen-Audio-TTS](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api) | 工作空间端点、指令与数值控制、可下载音频 | 要求正确的工作空间端点，区分认证合成请求与签名下载 |
 | [Gemini TTS](https://ai.google.dev/gemini-api/docs/speech-generation) | 结构化 `speech_metadata.style`、行内发声标记、WAV 或原始 PCM | 将回合级风格与台词分开；在共享 PCM 渲染前从 WAV 中提取 PCM 数据 |
-| [Fish Audio](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech) | Bearer `POST /v1/tts`、`model` 请求头、`reference_id`、S2 方括号标记、WAV/PCM/MP3/Opus | 要求显式音色 ID；映射文档中的标记子集；在共享 PCM 渲染前从 WAV 中提取 PCM 数据 |
+| [Fish Audio](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech) | Bearer `POST /v1/tts`、`model` 请求头、`reference_id`、S2 方括号标记、WAV/PCM/MP3/Opus | 要求显式音色 ID；映射部分标记和自由表演指令；在共享 PCM 渲染前从 WAV 中提取 PCM 数据 |
 
 Timbrex 请求格式兼容的原始 PCM 或含有 PCM 的 WAV，再将采样拼成一个 WAV。处理 Gemini 和 Fish 响应时，只提取 WAV 中的 PCM，不重采样。当前渲染器不拼接压缩音频，也不依赖转码器。
 

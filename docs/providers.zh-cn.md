@@ -154,7 +154,7 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 - Provider ID：`fish`。
 - 环境变量配置：`FISH_API_KEY`，音色/reference ID。
-- 默认模型：`s2.1-pro`。
+- 默认模型：`s2.1-pro`；也支持 `s2.1-pro-free` 和 `s2-pro`。
 - 默认音色：无；通过 `FISH_VOICE_ID`、`--voice`、front matter 或角色映射设置。
 - 可选的模型默认值：`FISH_MODEL`。
 - 可选的音色默认值：`FISH_VOICE_ID`。
@@ -165,13 +165,13 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 ./timbrex synth examples/fish.tbx -o fish.wav
 ```
 
-使用 bearer 认证、`model: s2.1-pro` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。初版仅支持 `s2.1-pro`；由于服务端会对未知模型请求头静默回退，未知及其他模型均在本地拒绝。没有默认账号音色。使用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；各角色使用独立的片段请求，启用并发时也不例外。
+使用 bearer 认证、所选 `model` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。支持 `s2.1-pro`、`s2.1-pro-free` 和 `s2-pro`，使用相同的单说话人请求格式与 S2 方括号标记。未知模型、旧版 `s1` 和 `drama-3` 在本地拒绝；否则服务端会对未知模型请求头静默回退。免费模型受公平使用限制，不提供 TTFA 或 DPA 保证，不会被自动选用。没有默认账号音色。使用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；各角色使用独立的片段请求，启用并发时也不例外。
 
-语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入；自由表演指令、数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
+语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入。`act` 接受一个位置参数或 bare note，例如 `[act "whispers sweetly"]` 或 `[act holding back tears]`，映射为自然语言方括号提示。指令不能为空，也不能包含 ASCII `[`/`]` 或原生 token 前缀 `<|`。数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
 
 请求指定 `format: wav` 和 `sample_rate: 24000`。WAV 解码遵循下文的共用格式检查。即使 HTTP 状态成功，响应中的 JSON 错误也会导致失败。有效 WAV 不能证明模型读出了每个字。官方 HTTP 错误包括 400、401、402、403、404、429 和 5xx；失败时不重试，诊断也不包含响应正文。
 
-参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，不接受用特殊长度值表示尚未结束的流式 WAV。
+参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 模型与自然语言控制](https://docs.fish.audio/developer-guide/models-pricing/models-overview)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，不接受用特殊长度值表示尚未结束的流式 WAV。
 
 ## 并发生成
 

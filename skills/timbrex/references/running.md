@@ -1,6 +1,6 @@
 # Providers, execution, and troubleshooting
 
-Use this beyond provider-neutral authoring. These are adapter constraints at the skill's pinned revision, not a complete vendor manual or proof of current service availability.
+Use this beyond provider-neutral authoring. These describe adapter constraints, with post-baseline additions called out, not a complete vendor manual or proof of current service availability.
 
 ## Establish the target
 
@@ -42,7 +42,7 @@ All real adapters support text, cast voices, scoped `voice`/`as`/`reset`, and lo
 - **Azure (`azure`)**: `AZURE_SPEECH_KEY` plus `AZURE_SPEECH_REGION` or `AZURE_SPEECH_ENDPOINT`; fallback `en-US-JennyNeural`. Voice chooses model: omit `model`/`--model`. Speed 0.5–2, pitch −12…about +7.01955 st, volume −60…+20 dB. Voice-dependent styles/emphasis; role needs style. No arbitrary `act` or nonverbal events. Timbrex does not query style support, and Azure may ignore unsupported styles.
 - **Qwen (`qwen`)**: `DASHSCOPE_API_KEY` plus verified workspace `QWEN_ENDPOINT`. Baseline `qwen-audio-3.1-tts-flash`, fallback `longanhuan_v3.1`. This is Qwen-Audio-TTS 3.0/3.1, not older Qwen3/local weights. Speed 0.5–2, pitch −12…+12 st, volume −60…about +6.02 dB; instructions and selected events. Model/voice/language combinations must match.
 - **Gemini (`gemini`)**: `GEMINI_API_KEY`; only baseline model `gemini-3.8-flash-tts`, fallback `Kore`, supported prebuilt voices. Acting/delivery are instructions. `fast`/`slow` are approximate; numeric speed/pitch/volume are rejected. Selected events work. Explicit language needs a supported code such as `en-US` or `cmn-CN`, not arbitrary short codes.
-- **Fish (`fish`)**: `FISH_API_KEY` and accessible reference voice ID (`FISH_VOICE_ID` or mapping); no default voice. Only `s2.1-pro`. Speed 0.5–2, volume −60…+20 dB; selected S2 emotions/delivery/events. No pitch, explicit language, arbitrary acting, numeric emotion intensity, or laugh/cry/sigh speech spans. Timbrex does not clone/upload voices.
+- **Fish (`fish`)**: `FISH_API_KEY` and accessible reference voice ID (`FISH_VOICE_ID` or mapping); no default voice. Supports `s2.1-pro`, `s2.1-pro-free`, and `s2-pro` in the updated adapter; the pinned baseline links below predate the latter two and `act` support. Speed 0.5–2, volume −60…+20 dB; selected S2 emotions/delivery/events and natural-language `act` directions. Directions must be nonempty and cannot contain ASCII brackets or `<|`. No pitch, explicit language, numeric emotion intensity, or laugh/cry/sigh speech spans. Timbrex does not clone/upload voices.
 
 Do not infer specific event support from “selected events.” Consult the exact mapping. Instructions request performances, not calibrated measurements or guaranteed sounds. Preserve user-supplied voice IDs unless rejected.
 
