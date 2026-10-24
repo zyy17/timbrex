@@ -13,13 +13,19 @@ import (
 )
 
 var (
-	tbxBlocks      = regexp.MustCompile("(?ms)^```tbx\\r?\\n(.*?)^```[ \\t]*$")
-	tbxOpen        = regexp.MustCompile("(?m)^```tbx\\r?\\n")
-	mdLinks        = regexp.MustCompile(`\[[^\]]+\]\(([^)]+)\)`)
-	atxHeadings    = regexp.MustCompile(`(?m)^(#{1,6}) `)
-	fenceLine      = regexp.MustCompile("^(`{3,})([^`]*)$")
-	inlineCode     = regexp.MustCompile("`([^`]*)`")
-	skipBilingual  = map[string]bool{"AGENTS.md": true}
+	tbxBlocks     = regexp.MustCompile("(?ms)^```tbx\\r?\\n(.*?)^```[ \\t]*$")
+	tbxOpen       = regexp.MustCompile("(?m)^```tbx\\r?\\n")
+	mdLinks       = regexp.MustCompile(`\[[^\]]+\]\(([^)]+)\)`)
+	atxHeadings   = regexp.MustCompile(`(?m)^(#{1,6}) `)
+	fenceLine     = regexp.MustCompile("^(`{3,})([^`]*)$")
+	inlineCode    = regexp.MustCompile("`([^`]*)`")
+	skipBilingual = map[string]bool{
+		// Portable agent instructions stay English; human guides remain bilingual.
+		"AGENTS.md":                              true,
+		"skills/timbrex/SKILL.md":                true,
+		"skills/timbrex/references/authoring.md": true,
+		"skills/timbrex/references/running.md":   true,
+	}
 	fenceLanguages = map[string]bool{
 		"go": true, "bash": true, "tbx": true, "yaml": true, "json": true, "text": true, "mermaid": true,
 	}
