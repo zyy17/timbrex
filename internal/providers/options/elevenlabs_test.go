@@ -1,4 +1,4 @@
-package provideropts
+package options
 
 import (
 	"math"
@@ -6,33 +6,18 @@ import (
 	"testing"
 )
 
-type embeddedValue struct{ Value }
-
 func TestValidateSynthesisOptions(t *testing.T) {
 	for _, seed := range []int64{-9223372036854775808, -1, 0, 1, 4294967295, 4294967296, 9223372036854775807} {
-		err := Validate("elevenlabs", ElevenLabs{Seed: &seed})
+		err := (ElevenLabs{Seed: &seed}).Validate()
 		if (err != nil) != (seed < 0 || seed > 4294967295) {
 			t.Errorf("seed %d: %v", seed, err)
 		}
 	}
 	for _, norm := range []ElevenTextNormalization{"auto", "on", "off", "", "AUTO", "false", "unknown"} {
-		err := Validate("elevenlabs", ElevenLabs{ApplyTextNormalization: &norm})
+		err := (ElevenLabs{ApplyTextNormalization: &norm}).Validate()
 		valid := norm == "auto" || norm == "on" || norm == "off"
 		if (err == nil) != valid {
 			t.Errorf("normalization %q: %v", norm, err)
-		}
-	}
-	for _, id := range []string{"elevenlabs", "fish", "openai", "stub"} {
-		if err := Validate(id, nil); err != nil {
-			t.Errorf("omitted %s options: %v", id, err)
-		}
-		for _, value := range []Value{(*ElevenLabs)(nil), &ElevenLabs{}, embeddedValue{}, (*embeddedValue)(nil)} {
-			if err := Validate(id, value); err == nil {
-				t.Errorf("%s accepted a pointer or embedded options variant", id)
-			}
-		}
-		if id != "elevenlabs" && Validate(id, ElevenLabs{}) == nil {
-			t.Errorf("%s accepted another vendor's options", id)
 		}
 	}
 }
@@ -51,11 +36,8 @@ func TestElevenVoiceSettingsValidation(t *testing.T) {
 			}
 			value := ElevenLabs{VoiceSettings: settings}
 			wantErr := math.IsNaN(number) || math.IsInf(number, 0) || field != "style" && (number < 0 || number > 1)
-			// Both the direct variant and shared dispatcher enforce constraints.
-			for _, err := range []error{value.Validate(), Validate("elevenlabs", value)} {
-				if (err != nil) != wantErr || err != nil && !strings.Contains(err.Error(), "voice_settings."+field) {
-					t.Errorf("%s=%g: error=%v, wantErr=%v", field, number, err, wantErr)
-				}
+			if err := value.Validate(); (err != nil) != wantErr || err != nil && !strings.Contains(err.Error(), "voice_settings."+field) {
+				t.Errorf("%s=%g: error=%v, wantErr=%v", field, number, err, wantErr)
 			}
 		}
 	}
@@ -86,10 +68,8 @@ func TestElevenPronunciationDictionaryValidation(t *testing.T) {
 				locators[0].PronunciationDictionaryID = id
 			}
 			value := ElevenLabs{PronunciationDictionaryLocators: &locators}
-			for _, err := range []error{value.Validate(), Validate("elevenlabs", value)} {
-				if err == nil || !strings.Contains(err.Error(), "[0]."+field) {
-					t.Errorf("%s=%q: %v", field, id, err)
-				}
+			if err := value.Validate(); err == nil || !strings.Contains(err.Error(), "[0]."+field) {
+				t.Errorf("%s=%q: %v", field, id, err)
 			}
 		}
 	}

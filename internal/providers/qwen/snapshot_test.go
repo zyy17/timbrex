@@ -11,14 +11,14 @@ import (
 	"testing"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 func TestSynthesisSnapshotSharedOnlyWithinPreparation(t *testing.T) {
 	seed := int64(65535)
-	pairs := []provideropts.QwenTextPair{{Text: "天气", Replacement: "tian1 qi4"}}
-	value := provideropts.Qwen{Seed: &seed, HotFix: &provideropts.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
+	pairs := []options.QwenTextPair{{Text: "天气", Replacement: "tian1 qi4"}}
+	value := options.Qwen{Seed: &seed, HotFix: &options.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
 	first, err := synthesisOptions(value)
 	if err != nil {
 		t.Fatal(err)
@@ -56,8 +56,8 @@ func TestSynthesisSeparateInvocationsSnapshotCallerValues(t *testing.T) {
 	for _, concurrency := range []int{1, 4} {
 		t.Run(fmt.Sprint(concurrency), func(t *testing.T) {
 			seed := int64(1)
-			pairs := []provideropts.QwenTextPair{{Text: "word", Replacement: "first"}}
-			value := provideropts.Qwen{Seed: &seed, HotFix: &provideropts.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
+			pairs := []options.QwenTextPair{{Text: "word", Replacement: "first"}}
+			value := options.Qwen{Seed: &seed, HotFix: &options.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
 			started, release := make(chan struct{}), make(chan struct{})
 			var start sync.Once
 			releaseFirst := sync.OnceFunc(func() { close(release) })
@@ -162,12 +162,12 @@ func BenchmarkSynthesisHotFixPreparation(b *testing.B) {
 	}
 }
 
-func benchmarkHotFix(count int) provideropts.Qwen {
-	pairs := make([]provideropts.QwenTextPair, count)
+func benchmarkHotFix(count int) options.Qwen {
+	pairs := make([]options.QwenTextPair, count)
 	for i := range pairs {
-		pairs[i] = provideropts.QwenTextPair{Text: fmt.Sprintf("word%d", i), Replacement: "replacement"}
+		pairs[i] = options.QwenTextPair{Text: fmt.Sprintf("word%d", i), Replacement: "replacement"}
 	}
-	return provideropts.Qwen{HotFix: &provideropts.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
+	return options.Qwen{HotFix: &options.QwenHotFix{Pronunciation: &pairs, Replace: &pairs}}
 }
 
 func benchmarkDocument(segments int) *ir.Document {

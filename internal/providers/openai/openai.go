@@ -32,8 +32,11 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := opt.Validate(p.ID()); err != nil {
+	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
 		return providers.Result{}, err
+	}
+	if opt.Synthesis != nil {
+		return providers.Result{}, fmt.Errorf("openai received an unsupported synthesis options type")
 	}
 	segments, requests, err := providers.Prepare(ctx, doc, p.ID(), opt.Voice, func(seg providers.Segment) (request, error) { return build(seg, opt.Model) })
 	if err != nil {

@@ -18,22 +18,22 @@ import (
 	"testing/synctest"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 func optionPointer[T any](value T) *T { return &value }
 
-func nestedOptions() provideropts.ElevenLabs {
-	return provideropts.ElevenLabs{
+func nestedOptions() options.ElevenLabs {
+	return options.ElevenLabs{
 		Seed:                           optionPointer(int64(0)),
-		ApplyTextNormalization:         optionPointer(provideropts.ElevenNormalizationOff),
+		ApplyTextNormalization:         optionPointer(options.ElevenNormalizationOff),
 		ApplyLanguageTextNormalization: optionPointer(false),
-		VoiceSettings: &provideropts.ElevenVoiceSettings{
+		VoiceSettings: &options.ElevenVoiceSettings{
 			Stability: optionPointer(0.0), SimilarityBoost: optionPointer(1.0),
 			Style: optionPointer(0.0), UseSpeakerBoost: optionPointer(false),
 		},
-		PronunciationDictionaryLocators: &[]provideropts.ElevenPronunciationDictionaryLocator{
+		PronunciationDictionaryLocators: &[]options.ElevenPronunciationDictionaryLocator{
 			{PronunciationDictionaryID: "dict-b", VersionID: optionPointer("version-2")},
 			{PronunciationDictionaryID: "dict-a"},
 			{PronunciationDictionaryID: "dict-b", VersionID: optionPointer("version-2")},
@@ -65,18 +65,18 @@ func TestSynthesisNestedRequestWireFixture(t *testing.T) {
 func TestSynthesisNestedOmissionAndExplicitEmpty(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
-		value provideropts.ElevenLabs
+		value options.ElevenLabs
 		want  string
 	}{
-		{"omitted", provideropts.ElevenLabs{}, `{"text":"Hello","model_id":"eleven_multilingual_v2"}`},
-		{"empty settings", provideropts.ElevenLabs{VoiceSettings: &provideropts.ElevenVoiceSettings{}}, `{"text":"Hello","model_id":"eleven_multilingual_v2"}`},
-		{"stability zero", provideropts.ElevenLabs{VoiceSettings: &provideropts.ElevenVoiceSettings{Stability: optionPointer(0.0)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"stability":0}}`},
-		{"similarity zero", provideropts.ElevenLabs{VoiceSettings: &provideropts.ElevenVoiceSettings{SimilarityBoost: optionPointer(0.0)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"similarity_boost":0}}`},
-		{"style zero", provideropts.ElevenLabs{VoiceSettings: &provideropts.ElevenVoiceSettings{Style: optionPointer(0.0)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"style":0}}`},
-		{"boost false", provideropts.ElevenLabs{VoiceSettings: &provideropts.ElevenVoiceSettings{UseSpeakerBoost: optionPointer(false)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"use_speaker_boost":false}}`},
-		{"boost true", provideropts.ElevenLabs{VoiceSettings: &provideropts.ElevenVoiceSettings{UseSpeakerBoost: optionPointer(true)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"use_speaker_boost":true}}`},
-		{"empty locators", provideropts.ElevenLabs{PronunciationDictionaryLocators: &[]provideropts.ElevenPronunciationDictionaryLocator{}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","pronunciation_dictionary_locators":[]}`},
-		{"nil slice locators", provideropts.ElevenLabs{PronunciationDictionaryLocators: new([]provideropts.ElevenPronunciationDictionaryLocator)}, `{"text":"Hello","model_id":"eleven_multilingual_v2","pronunciation_dictionary_locators":[]}`},
+		{"omitted", options.ElevenLabs{}, `{"text":"Hello","model_id":"eleven_multilingual_v2"}`},
+		{"empty settings", options.ElevenLabs{VoiceSettings: &options.ElevenVoiceSettings{}}, `{"text":"Hello","model_id":"eleven_multilingual_v2"}`},
+		{"stability zero", options.ElevenLabs{VoiceSettings: &options.ElevenVoiceSettings{Stability: optionPointer(0.0)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"stability":0}}`},
+		{"similarity zero", options.ElevenLabs{VoiceSettings: &options.ElevenVoiceSettings{SimilarityBoost: optionPointer(0.0)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"similarity_boost":0}}`},
+		{"style zero", options.ElevenLabs{VoiceSettings: &options.ElevenVoiceSettings{Style: optionPointer(0.0)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"style":0}}`},
+		{"boost false", options.ElevenLabs{VoiceSettings: &options.ElevenVoiceSettings{UseSpeakerBoost: optionPointer(false)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"use_speaker_boost":false}}`},
+		{"boost true", options.ElevenLabs{VoiceSettings: &options.ElevenVoiceSettings{UseSpeakerBoost: optionPointer(true)}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","voice_settings":{"use_speaker_boost":true}}`},
+		{"empty locators", options.ElevenLabs{PronunciationDictionaryLocators: &[]options.ElevenPronunciationDictionaryLocator{}}, `{"text":"Hello","model_id":"eleven_multilingual_v2","pronunciation_dictionary_locators":[]}`},
+		{"nil slice locators", options.ElevenLabs{PronunciationDictionaryLocators: new([]options.ElevenPronunciationDictionaryLocator)}, `{"text":"Hello","model_id":"eleven_multilingual_v2","pronunciation_dictionary_locators":[]}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r, err := buildWithSynthesis(providers.Segment{Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}, "eleven_multilingual_v2", tc.value)
@@ -96,7 +96,7 @@ func TestSynthesisEmptyVoiceSettingsPreservesDSLSpeed(t *testing.T) {
 		Nodes:    []ir.Node{{Kind: ir.Text, Text: "Hello"}},
 		Controls: []ir.Node{{Name: "speed", Args: []ir.Arg{{Kind: "number", Raw: "1.1"}}}},
 	}
-	r, err := buildWithSynthesis(seg, "eleven_multilingual_v2", provideropts.ElevenLabs{VoiceSettings: &provideropts.ElevenVoiceSettings{}})
+	r, err := buildWithSynthesis(seg, "eleven_multilingual_v2", options.ElevenLabs{VoiceSettings: &options.ElevenVoiceSettings{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func TestSynthesisNestedSnapshotsAreIndependent(t *testing.T) {
 	*value.VoiceSettings.Style, *value.VoiceSettings.UseSpeakerBoost = 0.5, true
 	(*value.PronunciationDictionaryLocators)[0].PronunciationDictionaryID = "changed"
 	*(*value.PronunciationDictionaryLocators)[0].VersionID = "changed-version"
-	*value.PronunciationDictionaryLocators = append(*value.PronunciationDictionaryLocators, provideropts.ElevenPronunciationDictionaryLocator{})
+	*value.PronunciationDictionaryLocators = append(*value.PronunciationDictionaryLocators, options.ElevenPronunciationDictionaryLocator{})
 	for _, r := range []request{first, second} {
 		body, err := json.Marshal(r)
 		if err != nil || !bytes.Equal(body, want) {
@@ -225,15 +225,15 @@ func TestSynthesisNestedSerialConcurrentWireAndOutput(t *testing.T) {
 }
 
 func TestSynthesisNestedInvalidPreflightPreservesOutput(t *testing.T) {
-	for _, value := range []provideropts.ElevenLabs{
-		{VoiceSettings: &provideropts.ElevenVoiceSettings{Stability: optionPointer(-0.1)}},
-		{VoiceSettings: &provideropts.ElevenVoiceSettings{SimilarityBoost: optionPointer(1.1)}},
-		{VoiceSettings: &provideropts.ElevenVoiceSettings{Style: optionPointer(math.NaN())}},
-		{VoiceSettings: &provideropts.ElevenVoiceSettings{Stability: optionPointer(math.Inf(1))}},
-		{VoiceSettings: &provideropts.ElevenVoiceSettings{SimilarityBoost: optionPointer(math.Inf(-1))}},
-		{PronunciationDictionaryLocators: &[]provideropts.ElevenPronunciationDictionaryLocator{{PronunciationDictionaryID: "valid"}, {PronunciationDictionaryID: ""}}},
-		{PronunciationDictionaryLocators: &[]provideropts.ElevenPronunciationDictionaryLocator{{PronunciationDictionaryID: "valid", VersionID: optionPointer("")}}},
-		{PronunciationDictionaryLocators: &[]provideropts.ElevenPronunciationDictionaryLocator{{PronunciationDictionaryID: "a"}, {PronunciationDictionaryID: "b"}, {PronunciationDictionaryID: "c"}, {PronunciationDictionaryID: "d"}}},
+	for _, value := range []options.ElevenLabs{
+		{VoiceSettings: &options.ElevenVoiceSettings{Stability: optionPointer(-0.1)}},
+		{VoiceSettings: &options.ElevenVoiceSettings{SimilarityBoost: optionPointer(1.1)}},
+		{VoiceSettings: &options.ElevenVoiceSettings{Style: optionPointer(math.NaN())}},
+		{VoiceSettings: &options.ElevenVoiceSettings{Stability: optionPointer(math.Inf(1))}},
+		{VoiceSettings: &options.ElevenVoiceSettings{SimilarityBoost: optionPointer(math.Inf(-1))}},
+		{PronunciationDictionaryLocators: &[]options.ElevenPronunciationDictionaryLocator{{PronunciationDictionaryID: "valid"}, {PronunciationDictionaryID: ""}}},
+		{PronunciationDictionaryLocators: &[]options.ElevenPronunciationDictionaryLocator{{PronunciationDictionaryID: "valid", VersionID: optionPointer("")}}},
+		{PronunciationDictionaryLocators: &[]options.ElevenPronunciationDictionaryLocator{{PronunciationDictionaryID: "a"}, {PronunciationDictionaryID: "b"}, {PronunciationDictionaryID: "c"}, {PronunciationDictionaryID: "d"}}},
 	} {
 		for _, concurrency := range []int{0, 2} {
 			var calls atomic.Int32
@@ -245,8 +245,8 @@ func TestSynthesisNestedInvalidPreflightPreservesOutput(t *testing.T) {
 			if err := os.WriteFile(out, []byte("KEEP"), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := buildWithSynthesis(providers.Segment{Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}, "eleven_multilingual_v2", value); err == nil {
-				t.Fatal("direct builder accepted invalid options")
+			if _, err := synthesisOptions(value); err == nil {
+				t.Fatal("synthesis entry accepted invalid options")
 			}
 			_, err := p.Synthesize(context.Background(), synthesisDocument(), providers.Options{Out: out, Voice: "test-voice", Model: "eleven_multilingual_v2", Endpoint: "https://example.invalid", Concurrency: concurrency, Synthesis: value})
 			if err == nil || calls.Load() != 0 {

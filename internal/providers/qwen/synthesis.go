@@ -3,8 +3,8 @@ package qwen
 import (
 	"fmt"
 
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 // synthesisSnapshot is detached from caller storage and read-only after creation.
@@ -15,11 +15,11 @@ type synthesisSnapshot struct {
 	hotFix *hotFix
 }
 
-func synthesisOptions(value provideropts.Value) (synthesisSnapshot, error) {
+func synthesisOptions(value options.Value) (synthesisSnapshot, error) {
 	switch v := value.(type) {
 	case nil:
 		return synthesisSnapshot{}, nil
-	case provideropts.Qwen:
+	case options.Qwen:
 		if err := v.Validate(); err != nil {
 			return synthesisSnapshot{}, err
 		}
@@ -39,7 +39,7 @@ func synthesisOptions(value provideropts.Value) (synthesisSnapshot, error) {
 	}
 }
 
-func buildWithSynthesis(seg providers.Segment, model string, value provideropts.Qwen) (request, error) {
+func buildWithSynthesis(seg providers.Segment, model string, value options.Qwen) (request, error) {
 	snapshot, err := synthesisOptions(value)
 	if err != nil {
 		return request{}, err
@@ -56,7 +56,7 @@ func (snapshot synthesisSnapshot) build(seg providers.Segment, model string) (re
 	return r, nil
 }
 
-func textPairs(pairs *[]provideropts.QwenTextPair) *[]map[string]string {
+func textPairs(pairs *[]options.QwenTextPair) *[]map[string]string {
 	if pairs == nil {
 		return nil
 	}

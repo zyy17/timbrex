@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zyy17/timbrex/internal/provideropts"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 func TestElevenLabsSynthesisConfiguration(t *testing.T) {
@@ -80,7 +80,7 @@ func TestSynthesisConfigurationPresenceAndResolution(t *testing.T) {
 			}
 			continue
 		}
-		value, ok := p.Synthesis.(provideropts.ElevenLabs)
+		value, ok := p.Synthesis.(options.ElevenLabs)
 		if !ok {
 			t.Fatalf("options have wrong concrete type %T", p.Synthesis)
 		}
@@ -112,7 +112,7 @@ func TestElevenLabsSynthesisExample(t *testing.T) {
 	if c.Provider != "elevenlabs" {
 		t.Fatal("example does not select ElevenLabs")
 	}
-	if _, ok := c.Providers["elevenlabs"].Synthesis.(provideropts.ElevenLabs); !ok {
+	if _, ok := c.Providers["elevenlabs"].Synthesis.(options.ElevenLabs); !ok {
 		t.Fatal("example did not load typed options")
 	}
 }

@@ -24,14 +24,16 @@ Three goals:
 | `internal/vocab` | The standard tag list | Files, the CLI |
 | `internal/check` | AST, vocabulary, diagnostics | Lexing, providers, the CLI |
 | `internal/providers` | IR, the provider interface | Lexing, Cobra |
-| `internal/providers/<name>` | That vendor's API and one `Provider` | The lexer, the parser, Cobra |
-| `internal/config` | koanf, YAML configuration, environment variables, typed settings | AST, IR, provider execution, Cobra |
-| `internal/provideropts` | Typed per-request settings and their validation | I/O, AST, IR, provider execution, Cobra |
+| `internal/providers/options` | Typed provider schemas, strict decoding, field constraints | I/O, IR, provider execution, registration |
+| `internal/providers/<name>` | That vendor's API, typed options, and one `Provider` | The lexer, the parser, Cobra |
+| `internal/config` | koanf, YAML configuration, environment variables, `providers/options` | AST, IR, provider execution, Cobra |
 | `internal/cli` | Cobra, configuration, wiring parse → lower → provider | Tag grammar details |
 
 Only `internal/cli` may import Cobra. A provider registers itself from `init`. The CLI blank-imports the providers it ships.
 
 Later packages, not in this tree yet: `internal/expand` (dataset templates), `internal/caps` (provider capability files). Do not add them as empty shells.
+
+Keep each provider's synthesis schema, strict decoder, and field constraints together in `internal/providers/options`. This package has no I/O or provider registration. Configuration validates every configured provider; adapters also validate direct calls before planning or side effects. Model checks and request snapshots belong to the adapter.
 
 Load configuration once through the Cobra entry point. Keep environment bindings and defaults in `internal/config`; adapters receive resolved options. Configuration priority is flags, script front matter, environment, the selected YAML file, then defaults. See [configuration](docs/configuration.md).
 

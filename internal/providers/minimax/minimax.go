@@ -13,8 +13,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 func init() { providers.Register(provider{}) }
@@ -25,14 +25,14 @@ func (provider) ID() string { return "minimax" }
 
 // https://platform.minimax.io/docs/api-reference/speech-t2a-http
 type request struct {
-	Model                 string                                 `json:"model"`
-	Text                  string                                 `json:"text"`
-	Stream                bool                                   `json:"stream"`
-	Output                string                                 `json:"output_format"`
-	Language              string                                 `json:"language_boost,omitempty"`
-	Voice                 voiceSettings                          `json:"voice_setting"`
-	Audio                 audioSettings                          `json:"audio_setting"`
-	TextNormalizationMode *provideropts.MiniMaxTextNormalization `json:"text_normalization_mode,omitempty"`
+	Model                 string                            `json:"model"`
+	Text                  string                            `json:"text"`
+	Stream                bool                              `json:"stream"`
+	Output                string                            `json:"output_format"`
+	Language              string                            `json:"language_boost,omitempty"`
+	Voice                 voiceSettings                     `json:"voice_setting"`
+	Audio                 audioSettings                     `json:"audio_setting"`
+	TextNormalizationMode *options.MiniMaxTextNormalization `json:"text_normalization_mode,omitempty"`
 }
 
 type voiceSettings struct {
@@ -62,7 +62,7 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := opt.Validate(p.ID()); err != nil {
+	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
 		return providers.Result{}, err
 	}
 	synthesis, err := synthesisOptions(opt.Synthesis, opt.Model)

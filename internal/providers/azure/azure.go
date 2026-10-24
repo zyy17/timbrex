@@ -35,8 +35,11 @@ func (p provider) Synthesize(ctx context.Context, doc *ir.Document, opt provider
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := opt.Validate(p.ID()); err != nil {
+	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
 		return providers.Result{}, err
+	}
+	if opt.Synthesis != nil {
+		return providers.Result{}, fmt.Errorf("azure received an unsupported synthesis options type")
 	}
 	if opt.Model != "" {
 		return providers.Result{}, fmt.Errorf("azure selects its model through the voice name; omit model")

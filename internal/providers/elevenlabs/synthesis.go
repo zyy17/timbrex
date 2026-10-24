@@ -3,25 +3,23 @@ package elevenlabs
 import (
 	"fmt"
 
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
-func synthesisOptions(value provideropts.Value) (provideropts.ElevenLabs, error) {
+func synthesisOptions(value options.Value) (options.ElevenLabs, error) {
 	switch v := value.(type) {
 	case nil:
-		return provideropts.ElevenLabs{}, nil
-	case provideropts.ElevenLabs:
+		return options.ElevenLabs{}, nil
+	case options.ElevenLabs:
 		return v, v.Validate()
 	default:
-		return provideropts.ElevenLabs{}, fmt.Errorf("elevenlabs received an unsupported synthesis options type")
+		return options.ElevenLabs{}, fmt.Errorf("elevenlabs received an unsupported synthesis options type")
 	}
 }
 
-func buildWithSynthesis(seg providers.Segment, model string, value provideropts.ElevenLabs) (request, error) {
-	if err := value.Validate(); err != nil {
-		return request{}, err
-	}
+// buildWithSynthesis applies settings already checked by synthesisOptions.
+func buildWithSynthesis(seg providers.Segment, model string, value options.ElevenLabs) (request, error) {
 	r, err := build(seg, model)
 	if err != nil {
 		return r, err

@@ -1,4 +1,4 @@
-package provideropts
+package options
 
 import (
 	"math"
@@ -73,19 +73,6 @@ func TestFishLatencyAndPresence(t *testing.T) {
 	for _, value := range []bool{false, true} {
 		if err := (Fish{Normalize: &value, ConditionOnPreviousChunks: &value, Prosody: &FishProsody{NormalizeLoudness: &value}}).Validate(); err != nil {
 			t.Fatal(err)
-		}
-	}
-}
-
-func TestFishValueRegistration(t *testing.T) {
-	for _, id := range []string{"fish", "elevenlabs", "openai", "stub"} {
-		if err := Validate(id, Fish{}); (err == nil) != (id == "fish") {
-			t.Errorf("%s: %v", id, err)
-		}
-		for _, value := range []Value{(*Fish)(nil), &Fish{}, embeddedValue{Value: Fish{}}} {
-			if err := Validate(id, value); err == nil {
-				t.Errorf("%s accepted a pointer or embedded Fish variant", id)
-			}
 		}
 	}
 }

@@ -3,26 +3,26 @@ package minimax
 import (
 	"fmt"
 
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
-func synthesisOptions(value provideropts.Value, model string) (provideropts.MiniMax, error) {
+func synthesisOptions(value options.Value, model string) (options.MiniMax, error) {
 	switch v := value.(type) {
 	case nil:
-		return provideropts.MiniMax{}, nil
-	case provideropts.MiniMax:
+		return options.MiniMax{}, nil
+	case options.MiniMax:
 		return v, validateSynthesis(v, model)
 	default:
-		return provideropts.MiniMax{}, fmt.Errorf("minimax received an unsupported synthesis options type")
+		return options.MiniMax{}, fmt.Errorf("minimax received an unsupported synthesis options type")
 	}
 }
 
-func validateSynthesis(value provideropts.MiniMax, model string) error {
+func validateSynthesis(value options.MiniMax, model string) error {
 	if err := value.Validate(); err != nil {
 		return err
 	}
-	if value.TextNormalizationMode != nil && *value.TextNormalizationMode == provideropts.MiniMaxNormalizationQuality {
+	if value.TextNormalizationMode != nil && *value.TextNormalizationMode == options.MiniMaxNormalizationQuality {
 		// This adapter sends stream=false. Other models silently fall back to
 		// basic, so reject that downgrade locally instead of claiming quality:
 		// https://platform.minimax.io/docs/api-reference/speech-t2a-http.md
@@ -35,10 +35,8 @@ func validateSynthesis(value provideropts.MiniMax, model string) error {
 	return nil
 }
 
-func buildWithSynthesis(seg providers.Segment, model string, value provideropts.MiniMax) (request, error) {
-	if err := validateSynthesis(value, model); err != nil {
-		return request{}, err
-	}
+// buildWithSynthesis applies settings already checked by synthesisOptions.
+func buildWithSynthesis(seg providers.Segment, model string, value options.MiniMax) (request, error) {
 	r, err := build(seg, model)
 	if err != nil {
 		return r, err

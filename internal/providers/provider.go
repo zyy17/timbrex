@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 // Options contains resolved settings. Providers do not load files or environment variables.
@@ -21,7 +21,7 @@ type Options struct {
 	Voice     string
 	APIKey    string
 	Endpoint  string
-	Synthesis provideropts.Value
+	Synthesis options.Value
 	// Concurrency bounds uncommitted segments; zero preserves serial synthesis.
 	Concurrency int
 }
@@ -78,12 +78,4 @@ func ValidateConcurrency(n int) error {
 		return fmt.Errorf("concurrency must be between 1 and 8 (or 0 for the serial default)")
 	}
 	return nil
-}
-
-// Validate checks invocation options before planning, requests, or output writes.
-func (o Options) Validate(id string) error {
-	if err := ValidateConcurrency(o.Concurrency); err != nil {
-		return err
-	}
-	return provideropts.Validate(id, o.Synthesis)
 }

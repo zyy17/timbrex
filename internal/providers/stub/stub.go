@@ -30,8 +30,11 @@ func (provider) Synthesize(ctx context.Context, doc *ir.Document, opt providers.
 	if err := ctx.Err(); err != nil {
 		return providers.Result{}, err
 	}
-	if err := opt.Validate("stub"); err != nil {
+	if err := providers.ValidateConcurrency(opt.Concurrency); err != nil {
 		return providers.Result{}, err
+	}
+	if opt.Synthesis != nil {
+		return providers.Result{}, fmt.Errorf("stub received an unsupported synthesis options type")
 	}
 	if opt.Concurrency > 1 {
 		return providers.Result{}, fmt.Errorf("stub does not support concurrency greater than 1")

@@ -1,6 +1,10 @@
-package provideropts
+package options
 
-import "fmt"
+import (
+	"fmt"
+	"maps"
+	"slices"
+)
 
 // MiniMax overrides the corresponding fields on each synchronous T2A request.
 type MiniMax struct {
@@ -27,4 +31,22 @@ func (v MiniMax) Validate() error {
 		}
 	}
 	return nil
+}
+
+func decodeMiniMax(raw any) (MiniMax, error) {
+	var value MiniMax
+	fields, err := synthesisFields(raw)
+	if err != nil {
+		return value, err
+	}
+	for _, key := range slices.Sorted(maps.Keys(fields)) {
+		if key != "text_normalization_mode" {
+			return value, fmt.Errorf("unknown synthesis option")
+		}
+		value.TextNormalizationMode, err = synthesisString[MiniMaxTextNormalization](fields[key], key)
+		if err != nil {
+			return value, err
+		}
+	}
+	return value, value.Validate()
 }

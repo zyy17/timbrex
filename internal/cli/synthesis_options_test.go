@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -16,11 +17,11 @@ import (
 	"testing"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
-type embeddedOptions struct{ provideropts.Value }
+type embeddedOptions struct{ options.Value }
 
 func TestAdaptersRejectInvalidSynthesisOptionsBeforeSideEffects(t *testing.T) {
 	var calls atomic.Int32
@@ -30,47 +31,90 @@ func TestAdaptersRejectInvalidSynthesisOptionsBeforeSideEffects(t *testing.T) {
 	}))
 	defer srv.Close()
 	badSeed := int64(4294967296)
-	badNorm := provideropts.ElevenTextNormalization("invalid")
+	badNorm := options.ElevenTextNormalization("invalid")
+	badTemperature := math.NaN()
+	badQwenSeed := int64(65536)
+	badMode := options.MiniMaxTextNormalization("invalid")
 	for _, id := range providers.IDs() {
 		t.Run(id, func(t *testing.T) {
 			p, err := providers.Get(id)
 			if err != nil {
 				t.Fatal(err)
 			}
-			variants := []provideropts.Value{
-				(*provideropts.ElevenLabs)(nil), &provideropts.ElevenLabs{},
+			variants := []options.Value{
+				(*options.ElevenLabs)(nil), &options.ElevenLabs{},
+				(*options.Fish)(nil), &options.Fish{},
+				(*options.Qwen)(nil), &options.Qwen{},
+				(*options.MiniMax)(nil), &options.MiniMax{},
 				embeddedOptions{}, (*embeddedOptions)(nil),
-				provideropts.ElevenLabs{Seed: &badSeed},
-				provideropts.ElevenLabs{ApplyTextNormalization: &badNorm},
+				options.ElevenLabs{Seed: &badSeed},
+				options.ElevenLabs{ApplyTextNormalization: &badNorm},
+				options.Fish{Temperature: &badTemperature},
+				options.Qwen{Seed: &badQwenSeed},
+				options.MiniMax{TextNormalizationMode: &badMode},
 			}
-			if id != "elevenlabs" {
-				variants = append(variants, provideropts.ElevenLabs{})
+			for _, variant := range []struct {
+				owner string
+				value options.Value
+			}{
+				{"elevenlabs", options.ElevenLabs{}}, {"fish", options.Fish{}},
+				{"qwen", options.Qwen{}}, {"minimax", options.MiniMax{}},
+			} {
+				if id != variant.owner {
+					variants = append(variants, variant.value)
+				}
+				variants = append(variants, embeddedOptions{Value: variant.value})
 			}
 			out := filepath.Join(t.TempDir(), "out.wav")
 			if err := os.WriteFile(out, []byte("KEEP"), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			doc := &ir.Document{Utterances: []ir.Utterance{{Speaker: "narrator", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}}}
-			for _, value := range variants {
-				opt := providers.Options{Out: out, Endpoint: srv.URL, Voice: "test-voice", Synthesis: value}
-				_, err := p.Synthesize(context.Background(), doc, opt)
-				if err == nil || !strings.Contains(err.Error(), "synthesis options") && !strings.Contains(err.Error(), "seed") && !strings.Contains(err.Error(), "apply_text_normalization") {
-					t.Fatalf("invalid options did not fail at the adapter boundary: %v", err)
-				}
-				data, err := os.ReadFile(out)
-				if err != nil || string(data) != "KEEP" {
-					t.Fatalf("existing output changed: %q, %v", data, err)
-				}
-				ctx, cancel := context.WithCancel(context.Background())
-				cancel()
-				if _, err := p.Synthesize(ctx, doc, opt); !errors.Is(err, context.Canceled) {
-					t.Fatalf("cancellation must still precede validation: %v", err)
+			for _, doc := range []*ir.Document{
+				nil,
+				{},
+				{Utterances: []ir.Utterance{{Speaker: "narrator", Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}}},
+			} {
+				for _, value := range variants {
+					opt := providers.Options{Out: out, Endpoint: srv.URL, Voice: "test-voice", Synthesis: value}
+					_, err := p.Synthesize(context.Background(), doc, opt)
+					if err == nil || !strings.Contains(err.Error(), "synthesis options") && !strings.Contains(err.Error(), "seed") && !strings.Contains(err.Error(), "apply_text_normalization") && !strings.Contains(err.Error(), "temperature") && !strings.Contains(err.Error(), "text_normalization_mode") {
+						t.Fatalf("invalid options did not fail at the adapter boundary: %v", err)
+					}
+					data, err := os.ReadFile(out)
+					if err != nil || string(data) != "KEEP" {
+						t.Fatalf("existing output changed: %q, %v", data, err)
+					}
+					ctx, cancel := context.WithCancel(context.Background())
+					cancel()
+					if _, err := p.Synthesize(ctx, doc, opt); !errors.Is(err, context.Canceled) {
+						t.Fatalf("cancellation must still precede validation: %v", err)
+					}
 				}
 			}
 		})
 	}
 	if calls.Load() != 0 {
 		t.Fatalf("invalid options made %d requests", calls.Load())
+	}
+}
+
+func TestAdapterOptionValidationOrdering(t *testing.T) {
+	for _, id := range providers.IDs() {
+		t.Run(id, func(t *testing.T) {
+			p, err := providers.Get(id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			opt := providers.Options{Concurrency: -1, Synthesis: &options.ElevenLabs{}}
+			if _, err := p.Synthesize(context.Background(), nil, opt); err == nil || !strings.Contains(err.Error(), "concurrency") {
+				t.Fatalf("concurrency must precede option and document validation: %v", err)
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			if _, err := p.Synthesize(ctx, nil, opt); !errors.Is(err, context.Canceled) {
+				t.Fatalf("cancellation must precede concurrency validation: %v", err)
+			}
+		})
 	}
 }
 

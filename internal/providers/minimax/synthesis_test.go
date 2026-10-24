@@ -17,19 +17,19 @@ import (
 	"testing"
 
 	"github.com/zyy17/timbrex/internal/ir"
-	"github.com/zyy17/timbrex/internal/provideropts"
 	"github.com/zyy17/timbrex/internal/providers"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 func TestSynthesisCompleteRequest(t *testing.T) {
-	mode := provideropts.MiniMaxNormalizationQuality
+	mode := options.MiniMaxNormalizationQuality
 	seg := providers.Segment{Voice: "voice", Lang: "zh-CN", Nodes: []ir.Node{{Kind: ir.Text, Text: "今天是10月24日。"}}, Controls: []ir.Node{
 		{Name: "speed", Args: []ir.Arg{{Kind: "number", Raw: "1.1"}}},
 		{Name: "pitch", Args: []ir.Arg{{Kind: "semitone", Raw: "+2st"}}},
 		{Name: "volume", Args: []ir.Arg{{Kind: "decibel", Raw: "0dB"}}},
 		{Name: "happy"},
 	}}
-	r, err := buildWithSynthesis(seg, "speech-2.8-hd", provideropts.MiniMax{TextNormalizationMode: &mode})
+	r, err := buildWithSynthesis(seg, "speech-2.8-hd", options.MiniMax{TextNormalizationMode: &mode})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,35 +46,39 @@ func TestSynthesisOmissionAndModelEligibility(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		r, err := buildWithSynthesis(seg, model, provideropts.MiniMax{})
+		r, err := buildWithSynthesis(seg, model, options.MiniMax{})
 		if err != nil || requestJSON(t, r) != requestJSON(t, base) {
 			t.Fatalf("omission changed %s: %+v, %v", model, r, err)
 		}
-		for _, mode := range []provideropts.MiniMaxTextNormalization{provideropts.MiniMaxNormalizationBasic, provideropts.MiniMaxNormalizationQuality} {
-			r, err := buildWithSynthesis(seg, model, provideropts.MiniMax{TextNormalizationMode: &mode})
+		for _, mode := range []options.MiniMaxTextNormalization{options.MiniMaxNormalizationBasic, options.MiniMaxNormalizationQuality} {
+			value, err := synthesisOptions(options.MiniMax{TextNormalizationMode: &mode}, model)
 			legacy := strings.HasPrefix(model, "speech-0")
-			if mode == provideropts.MiniMaxNormalizationQuality && legacy {
+			if mode == options.MiniMaxNormalizationQuality && legacy {
 				if err == nil || !strings.Contains(err.Error(), "quality requires") {
 					t.Fatalf("quality should not silently downgrade on %s: %v", model, err)
 				}
 				continue
 			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			r, err := buildWithSynthesis(seg, model, value)
 			if err != nil || r.Stream || r.TextNormalizationMode == nil || *r.TextNormalizationMode != mode {
 				t.Fatalf("%s %s: %+v, %v", model, mode, r, err)
 			}
 		}
 	}
-	quality := provideropts.MiniMaxNormalizationQuality
+	quality := options.MiniMaxNormalizationQuality
 	for _, model := range []string{"", "speech-2.8-HD", "speech-2.8", "speech-2.8-hd-preview", "speech-2.9-hd", "speech-02.8-hd"} {
-		if _, err := buildWithSynthesis(seg, model, provideropts.MiniMax{TextNormalizationMode: &quality}); err == nil {
+		if _, err := synthesisOptions(options.MiniMax{TextNormalizationMode: &quality}, model); err == nil {
 			t.Fatalf("quality allowed for unverified model %q", model)
 		}
 	}
 }
 
 func TestSynthesisSnapshots(t *testing.T) {
-	mode := provideropts.MiniMaxNormalizationQuality
-	value := provideropts.MiniMax{TextNormalizationMode: &mode}
+	mode := options.MiniMaxNormalizationQuality
+	value := options.MiniMax{TextNormalizationMode: &mode}
 	seg := providers.Segment{Nodes: []ir.Node{{Kind: ir.Text, Text: "Hello"}}}
 	first, err := buildWithSynthesis(seg, "speech-2.8-hd", value)
 	if err != nil {
@@ -84,31 +88,31 @@ func TestSynthesisSnapshots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mode = provideropts.MiniMaxNormalizationBasic
-	if *first.TextNormalizationMode != provideropts.MiniMaxNormalizationQuality || *second.TextNormalizationMode != provideropts.MiniMaxNormalizationQuality {
+	mode = options.MiniMaxNormalizationBasic
+	if *first.TextNormalizationMode != options.MiniMaxNormalizationQuality || *second.TextNormalizationMode != options.MiniMaxNormalizationQuality {
 		t.Fatal("request shares caller option")
 	}
 	*first.TextNormalizationMode = "changed"
-	if *second.TextNormalizationMode != provideropts.MiniMaxNormalizationQuality || mode != provideropts.MiniMaxNormalizationBasic {
+	if *second.TextNormalizationMode != options.MiniMaxNormalizationQuality || mode != options.MiniMaxNormalizationBasic {
 		t.Fatal("request mutation changed another request or caller")
 	}
 }
 
 func TestSynthesisInvalidOptionsAndLastSegmentPreflight(t *testing.T) {
-	quality := provideropts.MiniMaxNormalizationQuality
-	invalid := provideropts.MiniMaxTextNormalization("Quality")
+	quality := options.MiniMaxNormalizationQuality
+	invalid := options.MiniMaxTextNormalization("Quality")
 	for _, tc := range []struct {
 		name  string
-		value provideropts.Value
+		value options.Value
 		model string
 		bad   bool
 	}{
-		{"invalid enum", provideropts.MiniMax{TextNormalizationMode: &invalid}, "speech-2.8-hd", false},
-		{"legacy quality", provideropts.MiniMax{TextNormalizationMode: &quality}, "speech-02-hd", false},
-		{"unknown quality", provideropts.MiniMax{TextNormalizationMode: &quality}, "speech-new-hd", false},
-		{"wrong options", provideropts.ElevenLabs{}, "speech-2.8-hd", false},
-		{"pointer options", &provideropts.MiniMax{}, "speech-2.8-hd", false},
-		{"invalid last segment", provideropts.MiniMax{TextNormalizationMode: &quality}, "speech-2.8-hd", true},
+		{"invalid enum", options.MiniMax{TextNormalizationMode: &invalid}, "speech-2.8-hd", false},
+		{"legacy quality", options.MiniMax{TextNormalizationMode: &quality}, "speech-02-hd", false},
+		{"unknown quality", options.MiniMax{TextNormalizationMode: &quality}, "speech-new-hd", false},
+		{"wrong options", options.ElevenLabs{}, "speech-2.8-hd", false},
+		{"pointer options", &options.MiniMax{}, "speech-2.8-hd", false},
+		{"invalid last segment", options.MiniMax{TextNormalizationMode: &quality}, "speech-2.8-hd", true},
 	} {
 		for _, concurrency := range []int{1, 4} {
 			t.Run(fmt.Sprintf("%s/%d", tc.name, concurrency), func(t *testing.T) {
@@ -145,7 +149,7 @@ func TestSynthesisSerialConcurrentSnapshots(t *testing.T) {
 	var baseline []byte
 	var baselineBodies []string
 	for _, concurrency := range []int{1, 4} {
-		mode := provideropts.MiniMaxNormalizationQuality
+		mode := options.MiniMaxNormalizationQuality
 		var once sync.Once
 		var mu sync.Mutex
 		var bodies []string
@@ -162,8 +166,8 @@ func TestSynthesisSerialConcurrentSnapshots(t *testing.T) {
 			if err := json.Unmarshal(body, &r); err != nil {
 				return nil, err
 			}
-			once.Do(func() { mode = provideropts.MiniMaxNormalizationBasic })
-			if r.TextNormalizationMode == nil || *r.TextNormalizationMode != provideropts.MiniMaxNormalizationQuality || r.Stream {
+			once.Do(func() { mode = options.MiniMaxNormalizationBasic })
+			if r.TextNormalizationMode == nil || *r.TextNormalizationMode != options.MiniMaxNormalizationQuality || r.Stream {
 				t.Errorf("request was not snapshotted: %s", body)
 			}
 			mu.Lock()
@@ -186,7 +190,7 @@ func TestSynthesisSerialConcurrentSnapshots(t *testing.T) {
 			return &http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(response))}, nil
 		})}}
 		out := filepath.Join(t.TempDir(), "out.wav")
-		_, err := p.Synthesize(context.Background(), synthesisDocument(), providers.Options{Out: out, Voice: "voice", Model: "speech-2.8-hd", Endpoint: "https://example.invalid/v1/", APIKey: "FAKE", Synthesis: provideropts.MiniMax{TextNormalizationMode: &mode}, Concurrency: concurrency})
+		_, err := p.Synthesize(context.Background(), synthesisDocument(), providers.Options{Out: out, Voice: "voice", Model: "speech-2.8-hd", Endpoint: "https://example.invalid/v1/", APIKey: "FAKE", Synthesis: options.MiniMax{TextNormalizationMode: &mode}, Concurrency: concurrency})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -222,9 +226,9 @@ func TestSynthesisCancellationPreservesOutput(t *testing.T) {
 				if preCanceled {
 					cancel()
 				}
-				mode := provideropts.MiniMaxNormalizationQuality
+				mode := options.MiniMaxNormalizationQuality
 				out := preservedOutput(t)
-				_, err := p.Synthesize(ctx, synthesisDocument(), providers.Options{Out: out, Voice: "voice", Model: "speech-2.8-hd", Endpoint: "https://example.invalid", Synthesis: provideropts.MiniMax{TextNormalizationMode: &mode}, Concurrency: concurrency})
+				_, err := p.Synthesize(ctx, synthesisDocument(), providers.Options{Out: out, Voice: "voice", Model: "speech-2.8-hd", Endpoint: "https://example.invalid", Synthesis: options.MiniMax{TextNormalizationMode: &mode}, Concurrency: concurrency})
 				if !errors.Is(err, context.Canceled) || preCanceled && calls.Load() != 0 || !preCanceled && calls.Load() == 0 {
 					t.Fatalf("error = %v, calls = %d", err, calls.Load())
 				}

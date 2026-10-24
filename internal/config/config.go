@@ -20,7 +20,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/zyy17/timbrex/internal/inputfile"
-	"github.com/zyy17/timbrex/internal/provideropts"
+	"github.com/zyy17/timbrex/internal/providers/options"
 )
 
 type Config struct {
@@ -30,12 +30,12 @@ type Config struct {
 }
 
 type Provider struct {
-	Synthesis provideropts.Value `koanf:"-" yaml:"synthesis,omitempty"`
-	APIKey    string             `koanf:"api_key" yaml:"api_key,omitempty"`
-	Model     string             `koanf:"model" yaml:"model,omitempty"`
-	Voice     string             `koanf:"voice" yaml:"voice,omitempty"`
-	Endpoint  string             `koanf:"endpoint" yaml:"endpoint,omitempty"`
-	Region    string             `koanf:"region" yaml:"region,omitempty"`
+	Synthesis options.Value `koanf:"-" yaml:"synthesis,omitempty"`
+	APIKey    string        `koanf:"api_key" yaml:"api_key,omitempty"`
+	Model     string        `koanf:"model" yaml:"model,omitempty"`
+	Voice     string        `koanf:"voice" yaml:"voice,omitempty"`
+	Endpoint  string        `koanf:"endpoint" yaml:"endpoint,omitempty"`
+	Region    string        `koanf:"region" yaml:"region,omitempty"`
 }
 
 // Load applies defaults, one YAML file, then the documented environment keys.
