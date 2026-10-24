@@ -2,7 +2,7 @@
 
 [简体中文](readme.zh-cn.md) · [Timbrex setup](../../providers.md) · [Supported controls](../../capabilities.md)
 
-Developer quick reference, reviewed **2026-10-24**. This describes the vendor offering, not full Timbrex support; see the links above for the current adapter scope.
+Developer quick reference, reviewed **2026-10-24**. This covers the vendor’s TTS offering only, not full Timbrex support; see the links above for the current adapter scope.
 
 ## Models and strengths
 
@@ -18,9 +18,9 @@ Developer quick reference, reviewed **2026-10-24**. This describes the vendor of
 ## API choices and limits
 
 - HTTP accepts complete text under 10,000 characters, with whole-response or streaming output. Text over 3,000 characters is a candidate for streaming.
-- WebSocket offers sentence-oriented and bidirectional text streaming. These are separate transports, not HTTP flags. [API inventory](https://platform.minimax.io/docs/llms.txt).
+- WebSocket offers sentence-oriented and bidirectional text streaming. These are separate transports, not HTTP flags. [WebSocket guide](https://platform.minimax.io/docs/guides/speech-t2a-websocket).
 - Asynchronous synthesis accepts up to 50,000 inline characters or a text file up to 1,000,000 characters. File jobs also support TXT/JSON/ZIP packaging. [Async API](https://platform.minimax.io/docs/api-reference/speech-t2a-async-create).
-- Voice cloning, voice design, and voice list/delete are separate APIs; their resulting voice IDs can be used in synthesis. Voice blending produces one mixed timbre, not a multi-speaker dialogue. [Voice cloning](https://platform.minimax.io/docs/api-reference/voice-cloning-clone), [voice design](https://platform.minimax.io/docs/api-reference/voice-design-design).
+- Synthesis accepts existing system/custom voice IDs. Voice blending produces one mixed timbre, not a multi-speaker dialogue. [Synthesis options](https://platform.minimax.io/docs/api-reference/speech-t2a-http).
 
 ## Pricing and regions
 
@@ -30,9 +30,7 @@ Public pay-as-you-go prices, before account-specific offers:
 | --- | --- | --- |
 | 2.8 HD, sync or async | $100 / million input characters | ¥3.50 / 10,000 input characters |
 | 2.8 Turbo, sync or async | $60 / million input characters | ¥2.00 / 10,000 input characters |
-| Rapid voice cloning | $1.50 / voice | ¥9.90 / voice |
-| Voice design | $3 / voice | ¥9.90 / voice |
 
-New voice charges occur on first synthesis use; preview synthesis is billed separately. China billing counts a Chinese character as two characters. International subscriptions use monthly audio points; China resource packs use character allowances. Neither should be treated as an automatic pay-as-you-go discount. [International prices](https://platform.minimax.io/docs/pricing/overview), [China prices](https://platform.minimax.cn/docs/pricing/overview).
+China billing counts a Chinese character as two characters. International subscriptions use monthly audio points; China resource packs use character allowances. Neither should be treated as an automatic pay-as-you-go discount. [International prices](https://platform.minimax.io/docs/pricing/overview), [China prices](https://platform.minimax.cn/docs/pricing/overview).
 
 Use the endpoint, key, and billing account for the intended platform: international `api.minimax.io`, US West `api-uw.minimax.io`, or the current China documentation's `api.minimax.cn`. Do not assume keys or balances transfer between platforms. [International endpoints](https://platform.minimax.io/docs/guides/speech-t2a-websocket#endpoints), [China API](https://platform.minimax.cn/docs/api-reference/speech-t2a-http).

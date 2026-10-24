@@ -2,11 +2,11 @@
 
 [简体中文](readme.zh-cn.md) · [Timbrex setup](../../providers.md) · [Supported controls](../../capabilities.md)
 
-Developer quick reference, reviewed **2026-10-24**. This describes the vendor offering, not full Timbrex support; see the links above for the current adapter scope.
+Developer quick reference, reviewed **2026-10-24**. This covers the vendor’s TTS offering only, not full Timbrex support; see the links above for the current adapter scope.
 
 ## At a glance
 
-Fish Audio emphasizes natural-language voice direction, multilingual speech and reusable or reference-based voices. Its direct TTS API supports both single-speaker speech and native dialogue.
+Fish Audio emphasizes natural-language voice direction, multilingual speech and reusable voices. Its direct TTS API supports both single-speaker speech and native dialogue.
 
 | Model | Main distinction |
 | --- | --- |
@@ -21,7 +21,7 @@ S1 uses parentheses for cues, unlike the square-bracket directions used by S2. A
 ## Capabilities
 
 - **Voice direction:** emotions, delivery styles and human sounds. S2 accepts natural descriptions, not just a fixed emotion list. Drama 3 adds word-scoped paired tags and experimental language switching.
-- **Voice choice:** saved library/custom voices or inline audio plus a transcript for zero-shot synthesis. Creating and managing saved clones is a separate workflow.
+- **Voice choice:** existing library/custom voice IDs select the synthesis voice.
 - **Dialogue:** S2 and Drama 3 can generate multiple speakers together rather than concatenate independent clips.
 - **Pronunciation and readability:** phoneme cues, inline or managed pronunciation dictionaries, number/date/unit normalization. The language option affects normalization and alignment, not the spoken voice or accent.
 - **Generation controls:** speed (0.5–2×), dB volume, loudness normalization, sampling variation, latency modes, chunking and previous-chunk conditioning. Optional quality-guard support depends on the backend.
@@ -29,7 +29,7 @@ S1 uses parentheses for cues, unlike the square-bracket directions used by S2. A
 
 See [TTS API](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech), [emotion control](https://docs.fish.audio/developer-guide/core-features/emotions), [Drama 3](https://docs.fish.audio/features/text-to-speech/drama-3), [streaming](https://docs.fish.audio/api-reference/endpoint/websocket/tts-live) and [timestamps](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps).
 
-Voice design, saved-voice lifecycle and speech recognition are adjacent products, not extra TTS options. Performance cues are model interpretations rather than guarantees. The API schema does not publish a universal maximum text length; a client-side cap should not be presented as a vendor limit.
+Performance cues are model interpretations rather than guarantees. The API schema does not publish a universal maximum text length; a client-side cap should not be presented as a vendor limit.
 
 ## Pricing and caveats
 

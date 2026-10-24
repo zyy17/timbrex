@@ -2,7 +2,7 @@
 
 [English](readme.md) · [Timbrex 配置](../../providers.zh-cn.md) · [已支持的控制](../../capabilities.zh-cn.md)
 
-面向开发者的厂商速查，核对日期：**2026-10-24**。本页介绍厂商提供的功能，不代表 Timbrex 已支持全部能力；当前支持范围见上方链接。
+面向开发者的厂商速查，核对日期：**2026-10-24**。本页仅介绍厂商的 TTS 能力，不代表 Timbrex 已全部支持；当前支持范围见上方链接。
 
 ## 快速了解
 
@@ -10,7 +10,7 @@ ElevenLabs 提供富有表现力的语音、丰富的音色资源和多种低延
 
 | 模型 | 主要特点 | 官方文本上限 |
 | --- | --- | --- |
-| `eleven_v4` | 表现力较强，支持 90 多种语言，改进了音色克隆 | 10,000 个字符 |
+| `eleven_v4` | 语音表现力较强，支持 90 多种语言 | 10,000 个字符 |
 | `eleven_v4_turbo` | 面向实时交互的 v4 系列，模型推理延迟中位数约 100 ms | 需核对所选传输方式 |
 | `eleven_v3` / `eleven_v3_conversational` | 上一代表现力模型，支持 70 多种语言；Conversational 面向实时使用 | v3 为 5,000 个字符 |
 | `eleven_multilingual_v2` | 长文本表现较稳定，支持 29 种语言 | 10,000 个字符 |
@@ -24,12 +24,10 @@ ElevenLabs 提供富有表现力的语音、丰富的音色资源和多种低延
 - **发音：**发音词典、文本规范化和模型专属的音素或 IPA 引导。v4 支持斜杠包围的 IPA；旧模型对 SSML 的支持有限。
 - **连续性：**可利用前后文本或请求上下文连接多次生成。seed 仅提供尽力而为的可复现性。
 - **交付方式：**完整音频、HTTP 流式输出、字符时间戳、增量文本 WebSocket 和多上下文会话。格式包括 MP3、PCM、WAV、Opus 及电话音频编码，不同传输方式的格式范围不同。
-- **音频效果：**滤镜、距离感、空间效果、背景声和声像定位；立体声效果需要兼容格式。
+- **音频效果：**滤镜、距离感、空间效果和声像定位；立体声效果需要兼容格式。
 - **多角色对话：**独立的 Text to Dialogue API 可同时生成多个音色。当前接口文档建议每次请求的合计文本不超过 2,000 个字符，即使底层模型上限更大。
 
 参考：[语音 API](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)、[提示指南](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices)、[音频效果](https://elevenlabs.io/docs/overview/capabilities/text-to-speech)、[时间戳](https://elevenlabs.io/docs/api-reference/text-to-speech/convert-with-timestamps)和[对话 API](https://elevenlabs.io/docs/api-reference/text-to-dialogue/convert)。
-
-音色设计、即时或专业音色克隆、变声、配音翻译、音效、音乐、转写和语音智能体属于独立工作流，不是普通语音请求的参数。
 
 ## 价格与注意事项
 

@@ -2,7 +2,7 @@
 
 [简体中文](readme.zh-cn.md) · [Timbrex setup](../../providers.md) · [Supported controls](../../capabilities.md)
 
-Developer quick reference, reviewed **2026-10-24**. This describes the vendor offering, not full Timbrex support; see the links above for the current adapter scope.
+Developer quick reference, reviewed **2026-10-24**. This covers the vendor’s TTS offering only, not full Timbrex support; see the links above for the current adapter scope.
 
 Qwen-Audio-TTS combines multilingual preset/custom voices, acting instructions, pronunciation controls and streaming. Choose the API family first: **Qwen Audio 3.x TTS, Qwen3-TTS and TTS-Next do not share one request contract**.
 
@@ -12,18 +12,17 @@ The current standard speech family comprises `qwen-audio-3.1-tts-flash`, `qwen-a
 
 ## Speech capabilities
 
-- Sixteen language hints, dialect-aware voices, natural-language emotion/style/role instructions, 23 inline delivery controls and seven nonverbal events. Instructions can guide system, cloned and designed voices, but dialect support is voice-specific; designed voices do not support dialect synthesis. [Guide](https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide)
+- Sixteen language hints, dialect-aware voices, natural-language emotion/style/role instructions, 23 inline delivery controls and seven nonverbal events. Instructions apply to eligible existing system/custom voices; dialect synthesis is voice-specific. [Guide](https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide)
 - Rate and pitch 0.5–2, volume 0–100, seed control, pronunciation hot-fixes and substitutions. MP3, PCM, WAV and Opus; sample rates span 8–48 kHz with codec-specific restrictions. Optional AIGC provenance tags exclude PCM. [HTTP options](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api)
-- Eligible system voices and cloned voices support SSML: pauses, aliases, Chinese Pinyin/English CMU phonemes, specialized reading, sound events, voice/effect controls and background music. SSML availability is not universal. The detailed LaTeX guide names CosyVoice, so Qwen Audio LaTeX support is not established here. [SSML guide](https://help.aliyun.com/en/model-studio/ssml-latex-user-guide)
+- Eligible system voices and existing cloned-voice IDs support SSML: pauses, aliases, Chinese Pinyin/English CMU phonemes, specialized reading, sound events, voice/effect controls. SSML availability is not universal. The detailed LaTeX guide names CosyVoice, so Qwen Audio LaTeX support is not established here. [SSML guide](https://help.aliyun.com/en/model-studio/ssml-latex-user-guide)
 - Whole-text HTTP returns a downloadable result; SSE returns audio progressively. Word timing is a streaming-only, voice-dependent feature. Download URLs expire after 24 hours. WebSocket incremental-text synthesis is a separate transport. [HTTP](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api) · [WebSocket](https://www.alibabacloud.com/help/en/model-studio/realtime-tts-user-guide)
 
 No explicit whole-text character ceiling was established for these four models in the current HTTP reference. Do not apply Qwen3's 600-character limit to them. The standard Flash/Plus contract does not document native multi-speaker dialogue or previous/next-text context.
 
-## Adjacent products
+## Other TTS families
 
-- **Voice cloning/design:** separate `voice-enrollment` workflows create model-bound voice IDs. Creation is currently free; synthesis is billed. The account quota is 1,000 custom voices shared across cloning/design. Design is documented in Beijing. The cloning guide's Singapore list omits 3.1 Flash; verify that combination before relying on it. [Cloning](https://www.alibabacloud.com/help/en/model-studio/voice-cloning-user-guide) · [Design](https://www.alibabacloud.com/help/en/model-studio/voice-design-user-guide)
 - **Qwen3-TTS:** a separate API and voice catalog. The undated Flash alias remains documented, but an official notice scheduled many dated, instruct, VC and VD variants for retirement on 2026-10-10. Check the exact ID rather than copying old examples. [API](https://www.alibabacloud.com/help/en/model-studio/qwen-tts-api) · [Retirement notice](https://www.alibabacloud.com/en/notice/model_studio_notice_of_retirement_for_selected_legacy_longtail_models_7d4?_p_lc=1)
-- **TTS-Next:** prompt-driven speech, dialogue and soundscapes, with up to three audio references rather than standard voice IDs. Chinese/English; up to four-minute podcasts or two-minute other audio. It is a distinct generation product. [Reference](https://www.alibabacloud.com/help/en/model-studio/audio-generation-api)
+- **TTS-Next (speech uses only):** text-driven single-speaker speech, dialogue and spoken podcasts in Chinese/English. It uses a separate API, accepts up to 3,000 text characters and returns non-streaming WAV, MP3 or PCM. Podcasts can last up to four minutes; other speech up to two minutes. [Model reference](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-3-1-tts-next)
 
 ## Standard pricing
 

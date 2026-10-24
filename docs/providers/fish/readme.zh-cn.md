@@ -2,11 +2,11 @@
 
 [English](readme.md) · [Timbrex 配置](../../providers.zh-cn.md) · [已支持的控制](../../capabilities.zh-cn.md)
 
-面向开发者的厂商速查，核对日期：**2026-10-24**。本页介绍厂商提供的功能，不代表 Timbrex 已支持全部能力；当前支持范围见上方链接。
+面向开发者的厂商速查，核对日期：**2026-10-24**。本页仅介绍厂商的 TTS 能力，不代表 Timbrex 已全部支持；当前支持范围见上方链接。
 
 ## 快速了解
 
-Fish Audio 侧重自然语言表演指令、多语言语音，以及可复用或由参考音频指定的音色。其直接 TTS API 同时支持单人语音与原生多角色对话。
+Fish Audio 侧重自然语言表演指令、多语言语音和可复用音色。其直接 TTS API 同时支持单人语音与原生多角色对话。
 
 | 模型 | 主要特点 |
 | --- | --- |
@@ -21,7 +21,7 @@ S1 使用圆括号提示，S2 使用方括号指令。官方说明 S1 退役后�
 ## 能力范围
 
 - **表演指令：**情绪、表达方式和人声反应。S2 支持自然语言描述，不限于固定情绪列表。Drama 3 增加词语范围的成对标签和实验性语言切换。
-- **音色选择：**使用音色库或自定义音色，也可通过参考音频及转写文本进行零样本合成。创建和管理持久化克隆音色属于独立工作流。
+- **音色选择：**通过已有的音色库或自定义音色 ID 选择合成音色。
 - **多角色对话：**S2 和 Drama 3 可一次生成多个说话人的对话，无需分别生成后拼接。
 - **发音与文本处理：**音素提示、内联或托管发音词典、数字与日期及单位规范化。language 选项影响规范化和时间对齐，不直接改变音色或口音。
 - **生成控制：**0.5–2 倍语速、dB 音量、响度规范化、采样变化、延迟模式、分块和前序音频上下文。可选的 quality-guard 功能取决于后端。
@@ -29,7 +29,7 @@ S1 使用圆括号提示，S2 使用方括号指令。官方说明 S1 退役后�
 
 参考：[TTS API](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[情绪控制](https://docs.fish.audio/developer-guide/core-features/emotions)、[Drama 3](https://docs.fish.audio/features/text-to-speech/drama-3)、[流式接口](https://docs.fish.audio/api-reference/endpoint/websocket/tts-live)和[时间戳](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech-stream-with-timestamps)。
 
-音色设计、持久化音色管理和语音识别是相关产品，不是额外的 TTS 参数。表演提示依赖模型理解，不是效果保证。API schema 没有给出统一的文本长度上限，不应将客户端限制写成厂商上限。
+表演提示依赖模型理解，不是效果保证。API schema 没有给出统一的文本长度上限，不应将客户端限制写成厂商上限。
 
 ## 价格与注意事项
 

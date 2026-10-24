@@ -4,7 +4,7 @@
 
 Timbrex uses synchronous HTTP APIs directly. The adapters are based on the official references below, reviewed on **2026-10-22**. Offline tests verify request and response contracts; live account compatibility and acoustic quality have not been verified. Credentials must belong to the endpoint's region and have access to the chosen model and voice.
 
-Vendor capabilities and prices (reviewed **2026-10-24**): [OpenAI](providers/openai/readme.md) · [ElevenLabs](providers/elevenlabs/readme.md) · [MiniMax](providers/minimax/readme.md) · [Azure Speech](providers/azure/readme.md) · [Qwen](providers/qwen/readme.md) · [Gemini TTS](providers/gemini/readme.md) · [Fish Audio](providers/fish/readme.md). These describe the vendors, not a claim of full Timbrex support. This page remains the adapter setup guide.
+Vendor TTS capabilities and prices (reviewed **2026-10-24**): [OpenAI](providers/openai/readme.md) · [ElevenLabs](providers/elevenlabs/readme.md) · [MiniMax](providers/minimax/readme.md) · [Azure Speech](providers/azure/readme.md) · [Qwen](providers/qwen/readme.md) · [Gemini TTS](providers/gemini/readme.md) · [Fish Audio](providers/fish/readme.md). These cover TTS only, not a claim of full Timbrex support. This page remains the adapter setup guide.
 
 ## Configuration
 
