@@ -62,6 +62,8 @@ Eleven v3 speed support is described inconsistently across official product and 
 
 References: [Create speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert), [model language support](https://elevenlabs.io/docs/help-center/technical/what-models-do-you-offer-and-what-is-the-difference-between-them), [audio tags](https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4), [speed control](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech). Audio tags describe desired performance; they are not guaranteed sound effects.
 
+Typed per-request [synthesis options](configuration.md#elevenlabs) add seed, text normalization, voice settings, and up to three existing pronunciation dictionary locators. They do not update saved voices or create dictionaries; model efficacy is not inferred from UI controls. [Official request schema](https://elevenlabs.io/docs/api-reference/text-to-speech/convert).
+
 ## MiniMax
 
 - Provider ID: `minimax`.
@@ -88,6 +90,8 @@ Hints are case-insensitive and accept `language[-Script][-REGION]`: a mapped pri
 Unknown codes, malformed hints such as `en-foo`, and extlang/variant/extension/private-use forms fail before any synthesis request. This deliberately tightens the old prefix-only handling, which could silently accept malformed suffixes. Use a supported primary code or the simple locale form instead.
 
 Reference: [Synchronous speech synthesis API](https://platform.minimax.io/docs/api-reference/speech-t2a-http).
+
+Optional [synthesis configuration](configuration.md#minimax) exposes `text_normalization_mode: basic|quality`. Quality requires unary speech-2.8/2.6 HD/Turbo; unsupported model combinations fail rather than silently downgrade. Omission retains disabled normalization. [Official schema](https://platform.minimax.io/docs/api-reference/speech-t2a-http).
 
 ## Azure Speech
 
@@ -137,6 +141,8 @@ The workspace endpoint is required. Singapore uses `ap-southeast-1`; Beijing use
 
 References: [HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api), [models and usage restrictions](https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide).
 
+Optional [synthesis configuration](configuration.md#qwen) maps seed and ordered typed text/pronunciation pairs to `input.hot_fix`. It preserves list order and duplicate keys without assigning undocumented matching precedence; no standalone `input.replace` is sent. [Official HTTP schema](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api).
+
 ## Gemini TTS
 
 - Provider ID: `gemini`.
@@ -181,11 +187,13 @@ References: [GenerateContent TTS guide](https://ai.google.dev/gemini-api/docs/ge
 
 Calls `POST https://api.fish.audio/v1/tts` with bearer authentication, the selected `model` header, JSON and an explicit single-speaker `reference_id`. Supported models are `s2.1-pro`, `s2.1-pro-free`, and `s2-pro`, using the same single-speaker request contract and S2 bracket cues. Unknown models, legacy `s1`, and `drama-3` fail locally; the service otherwise silently falls back for unrecognized model headers. The free model has fair-use limits and no TTFA or DPA guarantees; it is not chosen automatically. No account voice is chosen by default. Use `FISH_VOICE_ID`, `--voice`, front matter or a `fish` cast mapping for a voice you can access. The adapter does not upload reference audio, create clones, or use native multi-speaker requests; cast voices use separate segment requests, including when concurrency is enabled.
 
-Speed maps to the documented 0.5–2 multiplier and volume is passed in dB. Volume has a local −60…+20 dB bound, not a claimed vendor limit. Loudness normalization is explicitly enabled. Text normalization is explicitly disabled to avoid the API's additional number/date/unit rewriting. Speech pronunciation is still model-dependent. Explicit `lang` fails: Fish's `language` field only affects normalization/timestamp alignment and cannot select spoken language or accent. Selected S2 emotion and event cues use square brackets. `act` accepts one positional direction or a bare note, such as `[act "whispers sweetly"]` or `[act holding back tears]`, and maps it to a natural-language bracket cue. Directions must be nonempty and cannot contain ASCII `[`/`]` or the native token prefix `<|`. Numeric emotion intensity, pitch and unsupported controls fail before any HTTP call. Text including generated cues has a local 4096-character bound, not a claimed vendor maximum.
+Speed maps to the documented 0.5–2 multiplier and volume is passed in dB. Volume has a local −60…+20 dB bound, not a claimed vendor limit. By default, loudness normalization is explicitly enabled and text normalization is explicitly disabled to avoid the API's additional number/date/unit rewriting. Speech pronunciation is still model-dependent. Explicit `lang` fails: Fish's `language` field only affects normalization/timestamp alignment and cannot select spoken language or accent. Selected S2 emotion and event cues use square brackets. `act` accepts one positional direction or a bare note, such as `[act "whispers sweetly"]` or `[act holding back tears]`, and maps it to a natural-language bracket cue. Directions must be nonempty and cannot contain ASCII `[`/`]` or the native token prefix `<|`. Numeric emotion intensity, pitch and unsupported controls fail before any HTTP call. Text including generated cues has a local 4096-character bound, not a claimed vendor maximum.
 
 Requests specify `format: wav` and `sample_rate: 24000`. WAV decoding follows the shared format checks below. JSON errors in a successful HTTP response also fail. A valid WAV does not prove the model recited every word. Official HTTP errors include 400, 401, 402, 403, 404, 429, and 5xx; they fail without retry, and response bodies stay out of diagnostics.
 
 References: [TTS endpoint](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech), [OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json), [errors](https://docs.fish.audio/api-reference/errors), [model choice](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model), [S2 models and natural-language control](https://docs.fish.audio/developer-guide/models-pricing/models-overview), [S2 emotion and event cues](https://docs.fish.audio/developer-guide/core-features/emotions). Offline fixtures cover requests and rejection paths. Live account access, complete-WAV interoperability and acoustic behavior remain unverified; streaming sentinel sizes are deliberately rejected rather than guessed.
+
+Optional [synthesis configuration](configuration.md#fish) controls normalization, normalization language, loudness, sampling, server-side chunking, latency, context conditioning, and early stopping. It does not add spoken-language selection or change omitted defaults. [Official OpenAPI](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json).
 
 ## Concurrent generation
 

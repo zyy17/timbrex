@@ -55,7 +55,7 @@ func TestRejectInvalidSynthesisConfiguration(t *testing.T) {
 			}
 		})
 	}
-	for _, id := range []string{"stub", "openai", "azure", "fish", "minimax", "gemini", "qwen"} {
+	for _, id := range []string{"stub", "openai", "azure", "gemini"} {
 		for _, value := range []string{"{}", "null", "{seed: 0}"} {
 			if _, err := loadTest(t, "providers: {"+id+": {synthesis: "+value+"}}"); err == nil {
 				t.Errorf("accepted %s synthesis options %s", id, value)

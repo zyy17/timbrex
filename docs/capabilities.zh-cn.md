@@ -6,6 +6,17 @@
 
 OpenAI 指令要求模型支持 `instructions`，`tts-1` 和 `tts-1-hd` 会拒绝。ElevenLabs 表演和事件要求 `eleven_v3`、`eleven_v4` 或 `eleven_v4_turbo`。`eleven_v4` 和 `eleven_v4_turbo` 不支持语速设置，因此会拒绝显式语速控制；其他模型的适配器语速范围保守地采用所链接产品指南中的范围。其他范围和语言限制见 [厂商接入](providers.zh-cn.md)。ElevenLabs 在 `eleven_multilingual_v2`、主要语言子标签为空，或仅支持英语的 `eleven_flash_v2` / `eleven_turbo_v2` 使用非 `en` 提示时，会在本地报错。适配器不会查询其他模型的语言支持，服务可能忽略不支持的代码。
 
+## 单次请求配置
+
+强类型 YAML 选项与下方的 DSL 控制分开。准确的键、范围、默认值、示例和本地校验规则见[配置说明](configuration.zh-cn.md#厂商合成选项)。
+
+- [ElevenLabs](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)：seed 和文本规范化、四个单次请求音色设置，以及最多三个有序的现有词典引用。不检查词典内容或模型实际效果；不把 UI 可用性当作 HTTP 约定。
+- [Fish](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json)：支持的 S2 模型可设置文本/响度规范化、规范化语言、采样、分块长度、延迟、前块上下文和提前停止。规范化语言不是朗读语言覆盖项。Fish 词典仍未实现。
+- [Qwen](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api)：每片段 seed 和有序的 `input.hot_fix` 发音/替换对。重复项或重叠项的匹配优先级尚未明确。
+- [MiniMax](https://platform.minimax.io/docs/api-reference/speech-t2a-http)：`basic` 或 `quality` 文本规范化；quality 只适用于非流式 2.8/2.6 HD/Turbo，其他组合会被拒绝。
+
+这些新增选项保留省略字段时的默认行为，不实现内联发音 span、资源创建/管理、新输出格式、原生对话或流式请求。契约测试是离线验证，不是真实账户或声学验证。
+
 ## 按厂商查询控制
 
 [OpenAI](#openai) · [ElevenLabs](#elevenlabs) · [MiniMax](#minimax) · [Azure](#azure) · [Qwen](#qwen) · [Gemini](#gemini) · [Fish](#fish)

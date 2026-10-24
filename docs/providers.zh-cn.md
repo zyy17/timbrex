@@ -62,6 +62,8 @@ Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致
 
 参考：[Create speech](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)、[模型语言支持](https://elevenlabs.io/docs/help-center/technical/what-models-do-you-offer-and-what-is-the-difference-between-them)、[audio tags](https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4)、[语速控制](https://elevenlabs.io/docs/eleven-creative/playground/text-to-speech)。Audio tags 描述期望的表演，不保证生成指定音效。
 
+强类型的单次请求[合成选项](configuration.zh-cn.md#elevenlabs) 支持 seed、文本规范化、音色设置和最多三个现有发音词典引用。它们不修改已保存的音色、不创建词典，也不依据 UI 控件推断模型实际效果。见[官方请求 schema](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)。
+
 ## MiniMax
 
 - Provider ID：`minimax`。
@@ -88,6 +90,8 @@ Eleven v3 的 speed 支持在官方产品文档和工具文档中描述不一致
 未知代码、`en-foo` 等格式不符的提示，以及 extlang、variant、extension、private-use 形式，都会在任何合成请求前失败。这有意收紧了旧版只提取前缀的处理方式，避免格式错误的后缀被静默接受。请改用支持的主要语言代码或上述简单 locale 形式。
 
 参考：[同步语音合成 API](https://platform.minimax.io/docs/api-reference/speech-t2a-http)。
+
+可选的[合成配置](configuration.zh-cn.md#minimax) 提供 `text_normalization_mode: basic|quality`。Quality 要求非流式 speech-2.8/2.6 HD/Turbo；不支持的模型组合会失败，而非静默降级。省略时仍关闭规范化。见[官方 schema](https://platform.minimax.io/docs/api-reference/speech-t2a-http)。
 
 ## Azure Speech
 
@@ -137,6 +141,8 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 参考：[HTTP API](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api)、[模型与使用限制](https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide)。
 
+可选的[合成配置](configuration.zh-cn.md#qwen) 将 seed 和有序的强类型文本/发音对映射到 `input.hot_fix`。列表顺序和重复键会保留，不自行规定文档未说明的匹配优先级；不会发送独立的 `input.replace`。见[官方 HTTP schema](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-http-api)。
+
 ## Gemini TTS
 
 - Provider ID：`gemini`。
@@ -181,11 +187,13 @@ export QWEN_ENDPOINT='https://YOUR_WORKSPACE_ID.ap-southeast-1.maas.aliyuncs.com
 
 使用 bearer 认证、所选 `model` 请求头、JSON 和显式单说话人 `reference_id` 调用 `POST https://api.fish.audio/v1/tts`。支持 `s2.1-pro`、`s2.1-pro-free` 和 `s2-pro`，使用相同的单说话人请求格式与 S2 方括号标记。未知模型、旧版 `s1` 和 `drama-3` 在本地拒绝；否则服务端会对未知模型请求头静默回退。免费模型受公平使用限制，不提供 TTFA 或 DPA 保证，不会被自动选用。没有默认账号音色。使用 `FISH_VOICE_ID`、`--voice`、front matter 或 `fish` 角色映射指定有权访问的音色。适配器不上传参考音频、不创建克隆，也不使用原生多说话人请求；各角色使用独立的片段请求，启用并发时也不例外。
 
-语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入。`act` 接受一个位置参数或 bare note，例如 `[act "whispers sweetly"]` 或 `[act holding back tears]`，映射为自然语言方括号提示。指令不能为空，也不能包含 ASCII `[`/`]` 或原生 token 前缀 `<|`。数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
+语速映射为文档中的 0.5–2 倍率，音量直接传入 dB。音量采用本地 −60…+20 dB 范围，不宣称是厂商上限。默认明确启用响度规范化，明确关闭文本规范化，以避免 API 额外改写数字、日期和单位；发音仍取决于模型。显式 `lang` 会失败：Fish 的 `language` 只影响规范化/时间戳对齐，不能指定发声语言或口音。部分 S2 情绪和事件通过方括号标记传入。`act` 接受一个位置参数或 bare note，例如 `[act "whispers sweetly"]` 或 `[act holding back tears]`，映射为自然语言方括号提示。指令不能为空，也不能包含 ASCII `[`/`]` 或原生 token 前缀 `<|`。数值情绪强度、音高和不支持的控制会在任何 HTTP 调用前失败。文本连同生成标记采用本地 4096 字符限制，不宣称是厂商最大值。
 
 请求指定 `format: wav` 和 `sample_rate: 24000`。WAV 解码遵循下文的共用格式检查。即使 HTTP 状态成功，响应中的 JSON 错误也会导致失败。有效 WAV 不能证明模型读出了每个字。官方 HTTP 错误包括 400、401、402、403、404、429 和 5xx；失败时不重试，诊断也不包含响应正文。
 
 参考：[TTS 接口](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech)、[OpenAPI schema](https://docs.fish.audio/api-reference/openapi.json)、[错误码](https://docs.fish.audio/api-reference/errors)、[模型选择](https://docs.fish.audio/developer-guide/models-pricing/choosing-a-model)、[S2 模型与自然语言控制](https://docs.fish.audio/developer-guide/models-pricing/models-overview)、[S2 情绪与事件标记](https://docs.fish.audio/developer-guide/core-features/emotions)。离线样例覆盖请求和拒绝路径；真实账号访问、完整 WAV 互操作和声学效果尚未验证，不接受用特殊长度值表示尚未结束的流式 WAV。
+
+可选的[合成配置](configuration.zh-cn.md#fish) 可控制文本规范化、规范化语言、响度、采样、服务端分块、延迟、前块上下文和提前停止。它不增加朗读语言选择，也不改变省略选项时的默认值。见[官方 OpenAPI](https://github.com/fishaudio/docs/blob/main/api-reference/openapi.json)。
 
 ## 并发生成
 

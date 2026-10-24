@@ -121,19 +121,22 @@ func decode(k *koanf.Koanf) (Config, error) {
 		},
 	})
 	if err != nil {
-		return Config{}, fmt.Errorf("invalid configuration: %w", err)
+		return Config{}, safeDecodeError(err)
 	}
 	for _, key := range k.Keys() {
 		if k.Get(key) == nil {
-			return Config{}, fmt.Errorf("configuration %s must not be null", key)
+			if field := knownConfigField(key); field != "" {
+				return Config{}, fmt.Errorf("configuration %s must not be null", field)
+			}
+			return Config{}, fmt.Errorf("configuration fields must not be null")
 		}
 	}
 	if _, ok := providerDefaults[c.Provider]; !ok {
-		return Config{}, fmt.Errorf("unknown default provider %q", c.Provider)
+		return Config{}, fmt.Errorf("unknown default provider")
 	}
 	for _, id := range slices.Sorted(maps.Keys(c.Providers)) {
 		if _, ok := providerDefaults[id]; !ok {
-			return Config{}, fmt.Errorf("unknown provider configuration %q", id)
+			return Config{}, fmt.Errorf("unknown provider configuration")
 		}
 		p := c.Providers[id]
 		p.Synthesis = synthesis[id]

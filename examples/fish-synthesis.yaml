@@ -1,0 +1,19 @@
+# Set FISH_API_KEY and replace the accessible existing reference ID.
+# Inspect offline: timbrex --config examples/fish-synthesis.yaml config
+provider: fish
+providers:
+  fish:
+    model: s2.1-pro
+    voice: YOUR_REFERENCE_ID
+    synthesis:
+      normalize: true
+      normalization_language: en
+      prosody:
+        normalize_loudness: false
+      temperature: 0.7
+      top_p: 0.7
+      chunk_length: 200
+      min_chunk_length: 0
+      latency: balanced
+      condition_on_previous_chunks: false
+      early_stop_threshold: 0

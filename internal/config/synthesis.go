@@ -29,10 +29,7 @@ func splitSynthesis(k *koanf.Koanf) (*koanf.Koanf, map[string]provideropts.Value
 			continue
 		}
 		key := "providers." + id + ".synthesis"
-		if id != "elevenlabs" {
-			return nil, nil, fmt.Errorf("%s is not supported", key)
-		}
-		value, err := decodeElevenLabs(options)
+		value, err := decodeSynthesis(id, options)
 		if err != nil {
 			return nil, nil, fmt.Errorf("%s: %w", key, err)
 		}
@@ -46,47 +43,18 @@ func splitSynthesis(k *koanf.Koanf) (*koanf.Koanf, map[string]provideropts.Value
 	return common, values, nil
 }
 
-func decodeElevenLabs(raw any) (provideropts.ElevenLabs, error) {
-	var value provideropts.ElevenLabs
-	fields, ok := raw.(map[string]any)
-	if !ok {
-		return value, fmt.Errorf("expected a non-null mapping")
+// Select a closed schema by the provider key, never a user-supplied discriminator.
+func decodeSynthesis(id string, raw any) (provideropts.Value, error) {
+	switch id {
+	case "elevenlabs":
+		return decodeElevenLabs(raw)
+	case "fish":
+		return decodeFish(raw)
+	case "qwen":
+		return decodeQwen(raw)
+	case "minimax":
+		return decodeMiniMax(raw)
+	default:
+		return nil, fmt.Errorf("synthesis options are not supported")
 	}
-	for _, key := range slices.Sorted(maps.Keys(fields)) {
-		switch key {
-		case "seed":
-			var seed int64
-			switch n := fields[key].(type) {
-			case int:
-				seed = int64(n)
-			case int64:
-				seed = n
-			case uint64:
-				if n > 4294967295 {
-					return value, fmt.Errorf("seed must be an integer between 0 and 4294967295")
-				}
-				seed = int64(n)
-			default:
-				return value, fmt.Errorf("seed must be an integer between 0 and 4294967295")
-			}
-			value.Seed = &seed
-		case "apply_text_normalization":
-			s, ok := fields[key].(string)
-			if !ok {
-				return value, fmt.Errorf("apply_text_normalization must be auto, on, or off")
-			}
-			normalization := provideropts.ElevenTextNormalization(s)
-			value.ApplyTextNormalization = &normalization
-		case "apply_language_text_normalization":
-			b, ok := fields[key].(bool)
-			if !ok {
-				return value, fmt.Errorf("apply_language_text_normalization must be a boolean")
-			}
-			value.ApplyLanguageTextNormalization = &b
-		default:
-			// Do not echo arbitrary keys or values, which may contain credentials.
-			return value, fmt.Errorf("unknown synthesis option")
-		}
-	}
-	return value, value.Validate()
 }

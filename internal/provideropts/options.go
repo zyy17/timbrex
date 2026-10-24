@@ -19,6 +19,21 @@ func Validate(id string, value Value) error {
 			return fmt.Errorf("%s does not support ElevenLabs synthesis options", id)
 		}
 		return v.Validate()
+	case Fish:
+		if id != "fish" {
+			return fmt.Errorf("%s does not support Fish synthesis options", id)
+		}
+		return v.Validate()
+	case Qwen:
+		if id != "qwen" {
+			return fmt.Errorf("%s does not support Qwen synthesis options", id)
+		}
+		return v.Validate()
+	case MiniMax:
+		if id != "minimax" {
+			return fmt.Errorf("%s does not support MiniMax synthesis options", id)
+		}
+		return v.Validate()
 	default:
 		return fmt.Errorf("%s received an unsupported synthesis options type", id)
 	}

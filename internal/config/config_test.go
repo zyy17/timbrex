@@ -141,6 +141,38 @@ func TestMalformedProviderSettingsDoNotLeakCredentials(t *testing.T) {
 	}
 }
 
+func TestMalformedConfigurationKeysDoNotLeakValues(t *testing.T) {
+	const secret = "FAKE-SECRET-DO-NOT-LOG"
+	for _, body := range []string{
+		secret + ": true",
+		"provider: " + secret,
+		"providers: {" + secret + ": {voice: example}}",
+		"providers: {" + secret + ": {voice: null}}",
+		"providers: {qwen: {synthesis." + secret + ": 1}}",
+		"providers: {qwen.synthesis." + secret + ": {}}",
+		"providers.qwen.synthesis." + secret + ": {}",
+	} {
+		_, err := loadTest(t, body)
+		if err == nil || strings.Contains(err.Error(), secret) {
+			t.Fatalf("invalid envelope accepted or leaked an input key/value: %v", err)
+		}
+	}
+}
+
+func TestMalformedConfigurationKeepsKnownFieldDiagnostics(t *testing.T) {
+	for _, tc := range []struct{ body, field string }{
+		{"strict_tags: invalid", "strict_tags"},
+		{"providers: {openai: {model: 42}}", "providers.openai.model"},
+		{"providers: {qwen: {api_key: [invalid]}}", "providers.qwen.api_key"},
+		{"providers: {minimax: {voice: null}}", "providers.minimax.voice"},
+	} {
+		_, err := loadTest(t, tc.body)
+		if err == nil || !strings.Contains(err.Error(), tc.field) {
+			t.Fatalf("known schema field lost from diagnostic for %s: %v", tc.field, err)
+		}
+	}
+}
+
 func TestSelectedProviderRequirementsAndAzureEndpoint(t *testing.T) {
 	c, err := loadTest(t, "providers:\n  azure: {api_key: test-key, region: eastus}\n")
 	if err != nil {

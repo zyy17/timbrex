@@ -23,17 +23,27 @@ func (provider) ID() string { return "elevenlabs" }
 
 // https://elevenlabs.io/docs/api-reference/text-to-speech/convert
 type request struct {
-	Text                           string                                `json:"text"`
-	Model                          string                                `json:"model_id"`
-	Language                       string                                `json:"language_code,omitempty"`
-	Settings                       *settings                             `json:"voice_settings,omitempty"`
-	Seed                           *uint32                               `json:"seed,omitempty"`
-	ApplyTextNormalization         *provideropts.ElevenTextNormalization `json:"apply_text_normalization,omitempty"`
-	ApplyLanguageTextNormalization *bool                                 `json:"apply_language_text_normalization,omitempty"`
+	Text                            string                                `json:"text"`
+	Model                           string                                `json:"model_id"`
+	Language                        string                                `json:"language_code,omitempty"`
+	Settings                        *settings                             `json:"voice_settings,omitempty"`
+	Seed                            *uint32                               `json:"seed,omitempty"`
+	ApplyTextNormalization          *provideropts.ElevenTextNormalization `json:"apply_text_normalization,omitempty"`
+	ApplyLanguageTextNormalization  *bool                                 `json:"apply_language_text_normalization,omitempty"`
+	PronunciationDictionaryLocators *[]pronunciationDictionaryLocator     `json:"pronunciation_dictionary_locators,omitempty"`
 }
 
 type settings struct {
-	Speed float64 `json:"speed"`
+	Speed           *float64 `json:"speed,omitempty"`
+	Stability       *float64 `json:"stability,omitempty"`
+	SimilarityBoost *float64 `json:"similarity_boost,omitempty"`
+	Style           *float64 `json:"style,omitempty"`
+	UseSpeakerBoost *bool    `json:"use_speaker_boost,omitempty"`
+}
+
+type pronunciationDictionaryLocator struct {
+	PronunciationDictionaryID string  `json:"pronunciation_dictionary_id"`
+	VersionID                 *string `json:"version_id,omitempty"`
 }
 
 var events = map[string]string{
@@ -105,7 +115,7 @@ func build(seg providers.Segment, model string) (request, error) {
 			if err != nil {
 				return r, err
 			}
-			r.Settings = &settings{Speed: speed}
+			r.Settings = &settings{Speed: &speed}
 			continue
 		}
 		if !inline {
